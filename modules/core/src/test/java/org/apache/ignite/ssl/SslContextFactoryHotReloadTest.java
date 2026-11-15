@@ -56,15 +56,19 @@ public class SslContextFactoryHotReloadTest {
     /** */
     private TestCertificateAuthority authority;
 
-    /** */
+    /**
+     * Each test gets a test CA whose certificate is valid from a year before to a year after {@code now}.
+     * The tests issue their certificates from this CA with dates counted from {@code now}.
+     */
     @Before
     public void setUp() throws Exception {
         authority = new TestCertificateAuthority("issuer", now - DAYS.toMillis(365), now + DAYS.toMillis(365));
     }
 
     /**
-     * A new factory has hot reload disabled and no hot reload date.
-     * The test reads the flag and the date of a factory with default settings.
+     * Given: a factory with default settings.
+     * When: the test reads its hot reload flag and date.
+     * Then: hot reload is disabled, and the date is zero.
      */
     @Test
     public void testHotReloadIsDisabledByDefault() {
@@ -75,8 +79,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * With hot reload disabled, a key store without private keys loads.
-     * The test loads a key store that holds only a CA certificate.
+     * Given: hot reload is disabled, and the key store holds only a CA certificate.
+     * When: the factory loads the key store.
+     * Then: the load succeeds.
      */
     @Test
     public void testDisabledHotReloadAcceptsStoreWithoutPrivateKeys() throws Exception {
@@ -88,9 +93,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * A load with hot reload disabled clears the hot reload date of an earlier load.
-     * The test loads due certificates with hot reload enabled and then reloads them with it disabled.
-     * It turns the flag back on and checks that the date stays zero.
+     * Given: the factory has loaded due certificates with hot reload enabled.
+     * When: it reloads them with hot reload disabled, and the flag is turned back on.
+     * Then: the hot reload date is zero.
      */
     @Test
     public void testLoadWithHotReloadDisabledClearsHotReloadTime() throws Exception {
@@ -109,11 +114,12 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * The hot reload window opens when the chain that expires first has 15% of its lifetime left.
-     * In each key store, that chain has 15 of its 100 hours left, so the test expects the window to open now.
-     * One key store has an issuer that expires before its key certificate and so sets the chain expiry.
-     * The other entries must not move the window: a chain that expires later, a chain with the same expiry
-     * and a shorter lifetime, a chain whose window opened earlier, and a secret key.
+     * Given: key stores in which the chain that expires first has 15 of its 100 hours left.
+     *     In one of them, that chain gets its expiry from an issuer that expires before the key certificate.
+     *     Other entries are a chain that expires later, a chain with the same expiry and a shorter lifetime,
+     *     a chain whose window opened earlier, and a secret key.
+     * When: the factory loads each key store with hot reload enabled.
+     * Then: the window opens now, when the chain that expires first has 15% of its lifetime left.
      */
     @Test
     public void testHotReloadTimeIsWindowStartOfEarliestExpiringChain() throws Exception {
@@ -139,8 +145,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * A load reads the key store once, so the hot reload date matches the loaded key managers.
-     * The test counts the reads of the in-memory key store during one load.
+     * Given: a factory with hot reload enabled and an in-memory key store that counts its reads.
+     * When: the factory loads its certificates.
+     * Then: it reads the key store once, so the hot reload date matches the loaded key managers.
      */
     @Test
     public void testLoadReadsKeyStoreOnce() throws Exception {
@@ -153,8 +160,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * If the issuer expires before the key certificate becomes valid, the window opens when the issuer expires.
-     * The test loads a chain whose issuer expired an hour ago and whose key certificate becomes valid in 99 hours.
+     * Given: the issuer expired an hour ago, and the key certificate becomes valid in 99 hours.
+     * When: the factory loads the chain with hot reload enabled.
+     * Then: the window opens at the moment the issuer expired.
      */
     @Test
     public void testExpiredChainIsDueBeforeKeyCertificateBecomesValid() throws Exception {
@@ -168,8 +176,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * With hot reload enabled, a key store without a private key fails to load and leaves no hot reload date.
-     * The test loads a key store that holds only a CA certificate and checks the error and the date.
+     * Given: hot reload is enabled, and the key store holds only a CA certificate.
+     * When: the factory loads the key store.
+     * Then: the load fails and asks for a private key, and the factory has no hot reload date.
      */
     @Test
     public void testEnabledHotReloadRequiresPrivateKey() throws Exception {
@@ -184,8 +193,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * With hot reload enabled, the first load accepts expired certificates and leaves the decision to TLS peers.
-     * The test loads certificates that expired an hour ago.
+     * Given: hot reload is enabled, and the certificates expired an hour ago.
+     * When: the factory loads them for the first time.
+     * Then: the load succeeds, and TLS peers decide whether to accept the certificates.
      */
     @Test
     public void testFirstLoadAcceptsExpiredCertificates() throws Exception {
@@ -197,8 +207,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * {@link SslContextFactory#hotReload()} does not load a factory that has never loaded its certificates.
-     * The test enables hot reload on a new factory, calls hotReload() and checks that the key store was not read.
+     * Given: a factory with hot reload enabled that has never loaded its certificates.
+     * When: {@link SslContextFactory#hotReload()} runs.
+     * Then: the factory does not read its key store.
      */
     @Test
     public void testHotReloadWithoutLoadedDateDoesNotLoad() throws Exception {
@@ -211,8 +222,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * {@link SslContextFactory#hotReload()} does not load new certificates before the window opens.
-     * The test loads certificates whose window opens in 84 hours and checks that hotReload() reads nothing.
+     * Given: the factory has loaded certificates whose window opens in 84 hours.
+     * When: {@link SslContextFactory#hotReload()} runs.
+     * Then: the factory does not read its key store.
      */
     @Test
     public void testHotReloadBeforeWindowDoesNotLoad() throws Exception {
@@ -231,8 +243,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * {@link SslContextFactory#hotReload()} does nothing after hot reload is turned off, even if the date is due.
-     * The test loads due certificates with hot reload enabled, turns the flag off and checks that hotReload() reads nothing.
+     * Given: the factory has loaded due certificates, and then hot reload is turned off.
+     * When: {@link SslContextFactory#hotReload()} runs.
+     * Then: the factory does not read its key store.
      */
     @Test
     public void testHotReloadDoesNothingWhenDisabled() throws Exception {
@@ -246,8 +259,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Hot reload installs a replacement that expires at the same time as the current certificates or earlier.
-     * The current certificates expire in 10 hours, and the test reloads replacements that expire in 10 and 5 hours.
+     * Given: due certificates that expire in 10 hours, and a replacement that expires in 10 or 5 hours.
+     * When: hot reload runs.
+     * Then: the factory installs a new context.
      */
     @Test
     public void testHotReloadAcceptsSameOrEarlierExpiry() throws Exception {
@@ -263,8 +277,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Hot reload installs a new context when only the trust store changes.
-     * The test loads due key certificates, adds a new trusted issuer and checks that hotReload() installs a new context.
+     * Given: due key certificates that stay the same, and a trust store that gets a new issuer.
+     * When: hot reload runs.
+     * Then: the factory installs a new context.
      */
     @Test
     public void testHotReloadAcceptsTrustStoreOnlyChange() throws Exception {
@@ -289,8 +304,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Hot reload installs replacements without checking their validity dates.
-     * The test reloads an expired certificate, a certificate that is not valid yet, and a certificate of an expired issuer.
+     * Given: due certificates, and a replacement that has expired, is not valid yet, or comes from an expired issuer.
+     * When: hot reload runs.
+     * Then: the factory installs a new context without checking the validity dates.
      */
     @Test
     public void testHotReloadAcceptsCertificatesOutsideValidityPeriod() throws Exception {
@@ -314,8 +330,10 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * A failed trust store load keeps the current context and date, and the next attempt installs the replacement.
-     * The test fails the first attempt with a missing trust store file and lets the second use trust managers set directly.
+     * Given: due certificates, a replacement in the source, and a missing trust store file.
+     * When: hot reload runs, and then runs again with trust managers set directly.
+     * Then: the first run fails and keeps the current context and date.
+     *     The second run installs the replacement.
      */
     @Test
     public void testHotReloadRecoversAfterFailedTrustStoreLoad() throws Exception {
@@ -337,8 +355,10 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * A failure to create the SSL context keeps the current context and date, and the next attempt installs the replacement.
-     * The test fails the first attempt with an unsupported protocol after the key store loads and then restores the protocol.
+     * Given: due certificates, a replacement in the source, and an unsupported protocol.
+     * When: hot reload runs, and then runs again with a supported protocol.
+     * Then: the first run fails after the key store loads and keeps the current context and date.
+     *     The second run installs the replacement.
      */
     @Test
     public void testHotReloadRecoversAfterContextCreationFailure() throws Exception {
@@ -358,9 +378,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * {@link SslContextFactory#getHotReloadTime()} returns the current date while a reload is in progress.
-     * The test starts a reload of certificates with a new date, blocks it on the trust store load and reads the date.
-     * Then it lets the load fail.
+     * Given: a reload of certificates with a new date blocks on the trust store load.
+     * When: another thread reads {@link SslContextFactory#getHotReloadTime()} during the reload.
+     * Then: the read returns the current date without waiting for the reload.
      */
     @Test
     public void testHotReloadTimeRemainsReadableDuringLoad() throws Exception {
@@ -402,7 +422,10 @@ public class SslContextFactoryHotReloadTest {
         load.checkError();
     }
 
-    /** @return Factory that has loaded certificates whose hot reload window has started. */
+    /**
+     * Creates a factory with hot reload enabled that has loaded certificates whose window opened 5 hours ago.
+     * The certificates have 10 of their 100 hours left. The method checks the date, so a wrong setup fails here.
+     */
     private InMemorySslContextFactory dueFactory() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
@@ -440,7 +463,12 @@ public class SslContextFactoryHotReloadTest {
         return now + HOURS.toMillis(hours);
     }
 
-    /** */
+    /**
+     * A factory that reads its key store from a field instead of a file and counts the reads.
+     * Tests change the field to put new certificates into the source.
+     * By default the factory trusts every peer. A test that sets the trust store path to {@code memory-trust}
+     * and clears the trust managers gets the trust store from a field too.
+     */
     private static class InMemorySslContextFactory extends SslContextFactory {
         /** */
         private static final long serialVersionUID = 0L;

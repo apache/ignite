@@ -131,7 +131,12 @@ public class SslFactoryRegistryTest {
     /** */
     private TestCertificateAuthority authority;
 
-    /** */
+    /**
+     * Each test gets a registry whose hot reload executor records scheduled attempts instead of running them.
+     * The executor is a mock that runs other tasks at once in the calling thread and reports termination,
+     * so stopping does not wait. The setup also writes the trust store of a test CA to a temporary directory
+     * and stubs the node metrics and logger.
+     */
     @Before
     public void setUp() throws Exception {
         dir = Files.createTempDirectory("ssl-factory-registry");
@@ -175,7 +180,10 @@ public class SslFactoryRegistryTest {
             .thenReturn(executor);
     }
 
-    /** */
+    /**
+     * After each test, the registry stops, and the static executor mock and the temporary directory are released.
+     * The stop runs in another thread with a timeout, so a test that leaves an attempt blocked fails instead of hanging.
+     */
     @After
     public void tearDown() throws Exception {
         try {
@@ -188,8 +196,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Registering a second factory for the same transport fails and keeps the first factory.
-     * The test registers two factories for the communication transport.
+     * Given: a factory registered for the communication transport.
+     * When: another factory registers for the same transport.
+     * Then: registration fails, and the first factory stays registered.
      */
     @Test
     public void testDuplicateRegistrationKeepsOriginalFactory() {
@@ -200,8 +209,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * The registry starts no hot reload thread for a factory with hot reload disabled, and the failure metric reads zero.
-     * The test starts the registry with a factory that has valid certificates, so only the flag keeps hot reload off.
+     * Given: a factory with hot reload disabled and valid certificates.
+     * When: the registry starts.
+     * Then: no hot reload thread starts, and the failure metric reads zero.
      */
     @Test
     public void testDisabledFactoryDoesNotStartHotReload() throws Exception {
@@ -214,9 +224,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * At start, the registry loads a factory without certificates and schedules one attempt for it.
-     * The test registers one factory for two transports.
-     * It checks that a single attempt waits for the window of the loaded certificates.
+     * Given: one factory with hot reload enabled, registered for two transports, that has not loaded its certificates.
+     * When: the registry starts.
+     * Then: the registry loads the factory and schedules one attempt for the window of its certificates.
      */
     @Test
     public void testStartLoadsSharedFactoryAndSchedulesItOnce() throws Exception {
@@ -233,8 +243,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * The load at start counts neither as a manual attempt nor as an automatic one.
-     * The test starts the registry with a factory that has not loaded its certificates and checks both counters.
+     * Given: a factory with hot reload enabled that has not loaded its certificates.
+     * When: the registry starts and loads them.
+     * Then: neither the manual nor the automatic attempt counter grows.
      */
     @Test
     public void testStartupLoadIsNotCounted() throws Exception {
@@ -251,9 +262,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Certificates whose window opens exactly at the epoch are due, and the registry loads their replacement.
-     * The test loads certificates from 1970, checks that an attempt is scheduled at once and runs it with new certificates.
-     * Zero also means no date, so the factory must not report it for such a window.
+     * Given: certificates from 1970 whose window opens exactly at 0 ms, the value that also means no date.
+     * When: the registry starts, and the source then gets new certificates.
+     * Then: the registry schedules an attempt at once, and the attempt loads the new certificates.
      */
     @Test
     public void testHotReloadAtEpochLoadsReplacement() throws Exception {
@@ -274,8 +285,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Start fails if a factory cannot load its certificates, and the registry schedules nothing.
-     * The test points the factory to a key store file that does not exist.
+     * Given: a factory with hot reload enabled whose key store file does not exist.
+     * When: the registry starts.
+     * Then: the start fails, and the registry schedules nothing.
      */
     @Test
     public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() {
@@ -291,8 +303,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A manual reload before the registry starts is rejected, does not load the factory, and is not counted.
-     * The test reloads a factory with hot reload enabled before start and then starts the registry to read the counter.
+     * Given: a factory with hot reload enabled that has not loaded its certificates.
+     * When: a manual reload runs before the registry starts.
+     * Then: the reload is rejected, the factory stays unloaded, and the counter read after start is zero.
      */
     @Test
     public void testManualReloadBeforeStartIsRejectedWithoutLoadingOrCounting() throws Exception {
@@ -313,8 +326,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A failed attempt is retried after a delay that doubles from 1 minute up to 1 hour, plus up to half of it at random.
-     * The test deletes the key store file after start, so all eight attempts fail, and checks the delay after each one.
+     * Given: hot reload is enabled, and the key store file is deleted after start.
+     * When: eight automatic attempts fail in a row.
+     * Then: each retry waits 1, 2, 4 ... up to 60 minutes, plus up to half of that at random.
      */
     @Test
     public void testFailedAttemptsRetryWithDoublingDelayUpToOneHour() throws Exception {
@@ -346,8 +360,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A failed automatic attempt is counted as an automatic attempt.
-     * The test deletes the key store file after start and runs one attempt.
+     * Given: hot reload is enabled, and the key store file is deleted after start.
+     * When: an automatic attempt fails.
+     * Then: the automatic attempt counter shows one attempt.
      */
     @Test
     public void testFailedAutomaticAttemptIsCounted() throws Exception {
@@ -365,9 +380,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A successful attempt resets the failure count and schedules the next attempt for the window of the new certificates.
-     * The test fails the first attempt with a missing key store file.
-     * Then it writes certificates with the window in 84 hours and runs the second attempt.
+     * Given: an automatic attempt has failed on a missing key store file.
+     * When: the source gets certificates with the window in 84 hours, and the next attempt succeeds.
+     * Then: the failure count resets, and the next attempt waits for the new window.
      */
     @Test
     public void testSuccessfulAttemptResetsFailuresAndSchedulesNextHotReload() throws Exception {
@@ -390,9 +405,11 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A manual reload cancels the pending retry and schedules the next attempt for the window of the loaded certificates.
-     * The test fails an attempt with a missing key store file and reloads certificates whose window is open.
-     * The next attempt must run at once. A second reload loads certificates with the window in 84 hours.
+     * Given: an automatic attempt has failed on a missing key store file, and a retry is pending.
+     * When: a manual reload loads certificates whose window is open.
+     *     A second reload loads certificates with the window in 84 hours.
+     * Then: the first reload cancels the retry and schedules an attempt at once.
+     *     The second reload schedules the attempt for the new window.
      */
     @Test
     public void testManualReloadReplacesRetryWithLoadedHotReloadTime() throws Exception {
@@ -422,8 +439,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * For a factory without hot reload, every manual reload, including a failed one, counts as a manual attempt only.
-     * The test reloads the factory twice and deletes the key store file before the second reload.
+     * Given: a factory with hot reload disabled.
+     * When: a manual reload succeeds, and a second one fails because the key store file is deleted.
+     * Then: both count as manual attempts, and none counts as automatic.
      */
     @Test
     public void testManualReloadWithoutHotReloadCountsAppliedAndFailedLoads() throws Exception {
@@ -444,8 +462,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A manual reload also reloads a factory that is not an {@link SslContextFactory}.
-     * The test reloads a mock of the base factory class and checks that it was loaded.
+     * Given: a registered factory that is not an {@link SslContextFactory}.
+     * When: a manual reload runs.
+     * Then: the factory is loaded.
      */
     @Test
     public void testManualReloadSupportsAbstractFactory() throws Exception {
@@ -459,8 +478,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A failed manual reload keeps the pending retry and the failure count.
-     * The test fails an attempt with a missing key store file and runs a manual reload while the file is still missing.
+     * Given: an automatic attempt has failed on a missing key store file, and a retry is pending.
+     * When: a manual reload runs while the file is still missing.
+     * Then: the reload fails, and the pending retry and the failure count stay.
      */
     @Test
     public void testFailedManualReloadKeepsRetryAndFailures() throws Exception {
@@ -483,8 +503,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A manual reload that has loaded the factory succeeds even if the node stops before the next attempt is scheduled.
-     * During the load, the executor starts to report a shutdown, and then it rejects the next attempt.
+     * Given: the node starts stopping while a manual reload loads the factory.
+     * When: the executor rejects the next attempt.
+     * Then: the manual reload still succeeds.
      */
     @Test
     public void testManualReloadSucceedsWhenNodeStopsAfterLoad() throws Exception {
@@ -506,8 +527,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A manual reload resets the failure count of its own factory only.
-     * The test fails the attempts of two factories, fixes the key store file of one of them and reloads it.
+     * Given: the automatic attempts of two factories have failed on missing key store files.
+     * When: one factory gets its file back and is reloaded manually.
+     * Then: only that factory's failure count resets.
      */
     @Test
     public void testManualReloadResetsOnlyItsFactoryFailures() throws Exception {
@@ -539,9 +561,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * A manual reload loads the factory with the caller's operation context and leaves that context unchanged.
-     * The executor passes the context to its tasks like the node executor.
-     * The test reloads under an operator context and records the context that the load sees.
+     * Given: an executor that passes the operation context to its tasks like the node executor.
+     * When: a manual reload runs under an operator context.
+     * Then: the load sees the operator context, and the caller keeps it after the reload.
      */
     @Test
     public void testManualReloadKeepsCallerContext() throws Exception {
@@ -570,9 +592,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * An automatic attempt runs without the operation context of the caller whose reload scheduled it.
-     * The executor passes the context to its tasks like the node executor.
-     * The test reloads under an operator context and runs the attempt that the reload scheduled.
+     * Given: an executor that passes the operation context to its tasks like the node executor.
+     * When: a manual reload under an operator context schedules the next attempt, and the attempt runs.
+     * Then: the attempt sees no operation context.
      */
     @Test
     public void testAttemptsDoNotInheritCallerContext() throws Exception {
@@ -601,8 +623,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * The registry does not start hot reload on a node that is stopping.
-     * The factory holds due certificates, so a started registry would run an attempt at once.
+     * Given: a factory with due certificates on a node that is stopping.
+     * When: the registry starts.
+     * Then: it starts no hot reload thread.
      */
     @Test
     public void testStoppingNodeDoesNotStartHotReload() throws Exception {
@@ -618,8 +641,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Stopping the registry interrupts an attempt in progress.
-     * The attempt blocks until it is interrupted, and the test stops the registry while the attempt waits.
+     * Given: an automatic attempt that blocks until it is interrupted.
+     * When: the registry stops.
+     * Then: the attempt is interrupted, and the stop completes.
      */
     @Test
     public void testStopInterruptsActiveAttempt() throws Exception {
@@ -660,8 +684,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Stopping the registry cancels a manual reload that waits in the queue, so the reload neither loads nor counts.
-     * A blocking task keeps the hot reload thread busy, and the test stops the registry while the reload waits.
+     * Given: a blocking task keeps the hot reload thread busy, and a manual reload waits in the queue.
+     * When: the registry stops.
+     * Then: the reload is cancelled, does not load the factory, and is not counted.
      */
     @Test
     public void testStopCancelsQueuedManualReload() throws Exception {
@@ -714,9 +739,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Stopping the registry waits for an attempt that ignores the interrupt.
-     * The attempt blocks until the test releases it.
-     * The test checks that the stop is still waiting and only then releases the attempt.
+     * Given: an automatic attempt that ignores the interrupt and blocks until the test releases it.
+     * When: the registry stops.
+     * Then: the stop waits until the attempt is released and the executor terminates.
      */
     @Test
     public void testStopWaitsForActiveLoad() throws Exception {
@@ -763,8 +788,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * An interrupted caller of a manual reload gets an error, the queued reload is cancelled, and the interrupt flag stays set.
-     * The future of the queued reload throws an interrupt when the caller waits for it.
+     * Given: a manual reload waits in the queue.
+     * When: the waiting caller is interrupted.
+     * Then: the caller gets an interrupted error and keeps the interrupt flag, and the queued reload is cancelled.
      */
     @Test
     public void testInterruptedManualReloadCancelsQueuedReload() throws Exception {
@@ -784,8 +810,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * An attempt that fails because the node is stopping is neither counted as a failure nor retried.
-     * During the attempt, the executor starts to report a shutdown, and then the attempt fails.
+     * Given: the node starts stopping during an automatic attempt.
+     * When: the attempt fails.
+     * Then: the failure is not counted, and no retry is scheduled.
      */
     @Test
     public void testAttemptFailingDuringStopIsNotCountedOrRetried() {
@@ -815,6 +842,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Makes the factory mock look like a factory with hot reload enabled and loaded certificates with the given date.
+     * The mock returns {@code true} from {@code isHotReloadEnabled()} and the date from {@code getHotReloadTime()}.
+     *
      * @param factory Factory mock.
      * @param hotReloadTime Hot reload time of the loaded certificates, or {@code 0} if they were loaded without hot reload.
      */
@@ -833,7 +863,10 @@ public class SslFactoryRegistryTest {
         return System.currentTimeMillis() + HOURS.toMillis(2);
     }
 
-    /** @return Factory that reads its key store from {@code keyStore}. */
+    /**
+     * Creates a factory with hot reload disabled that reads its key store from the given file.
+     * The factory trusts the test CA through the trust store file from the setup.
+     */
     private SslContextFactory factory(Path keyStore) {
         SslContextFactory sslFactory = new SslContextFactory();
 
@@ -845,12 +878,18 @@ public class SslFactoryRegistryTest {
         return sslFactory;
     }
 
-    /** Writes certificates with 10 of their 100 hours left, so their hot reload window has started. */
+    /**
+     * Writes a key store whose hot reload window has already opened.
+     * Its certificate has 10 of its 100 hours left, and the window opens with 15 hours left.
+     */
     private void writeDueCertificates(Path keyStore) throws Exception {
         save(authority.keyStore("node", at(-90), at(10)), keyStore);
     }
 
-    /** Writes certificates whose hot reload window starts in 84 hours. */
+    /**
+     * Writes a key store whose hot reload window opens in 84 hours.
+     * Its certificate became valid an hour ago and expires in 99 hours.
+     */
     private void writeFreshCertificates(Path keyStore) throws Exception {
         save(authority.keyStore("node", at(-1), at(99)), keyStore);
     }
@@ -860,7 +899,10 @@ public class SslFactoryRegistryTest {
         return System.currentTimeMillis() + HOURS.toMillis(hours);
     }
 
-    /** */
+    /**
+     * Makes the registry use a real single-thread executor and returns a spy on it.
+     * Tests use the spy to see when the registry submits a task or waits for termination.
+     */
     private ScheduledExecutorService useRealExecutor() {
         ScheduledExecutorService hotReloadExecutor = spy(new IgniteScheduledThreadPoolExecutor("ssl-hot-reload", null, 1));
 

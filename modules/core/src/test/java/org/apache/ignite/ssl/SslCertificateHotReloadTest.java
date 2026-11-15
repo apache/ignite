@@ -45,9 +45,9 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     private static final long TIMEOUT_MS = 30_000;
 
     /**
-     * A node replaces its certificates when the hot reload window opens, and new connections use the replacement.
-     * The factory loads due certificates of one CA, and then the files get certificates of another CA.
-     * The test waits for the new context and connects a client that trusts and presents only the new certificates.
+     * Given: the factory has loaded due certificates of one CA, and the files then get certificates of another CA.
+     * When: the node starts, and its hot reload attempt runs.
+     * Then: the node installs the new certificates, and a client that trusts and presents only them connects.
      */
     @Test
     public void testNodeHotReloadsCertificatesForNewConnections() throws Exception {
@@ -95,9 +95,9 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * A node keeps retrying while its source holds certificates that are still due, and it reports each failure.
-     * The node starts with expired certificates, so the window stays open after every attempt.
-     * The test checks the failure metric and the log line with the transport and the reason.
+     * Given: a node with hot reload enabled starts with expired certificates, so their window stays open.
+     * When: the automatic attempt reloads the same certificates.
+     * Then: the failure metric shows one failure, and the log names the transport and the reason.
      */
     @Test
     public void testHotReloadRetriesWhileSourceHoldsExpiredCertificates() throws Exception {
@@ -136,7 +136,10 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * Creates a client connector configuration that uses the given factory and requires client certificates.
+     * The connector uses this factory instead of the node factory.
+     */
     private static ClientConnectorConfiguration sslClientConnector(SslContextFactory factory) {
         return new ClientConnectorConfiguration()
             .setSslEnabled(true)
@@ -145,7 +148,10 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
             .setSslContextFactory(factory);
     }
 
-    /** */
+    /**
+     * Points the factory to the given key and trust store files with the test password.
+     * It returns the same factory, so a test can configure it inline.
+     */
     private static SslContextFactory configure(SslContextFactory factory, Path keys, Path trust) {
         factory.setKeyStoreFilePath(keys.toString());
         factory.setKeyStorePassword(PASSWORD);

@@ -35,7 +35,11 @@ import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-/** Test certificates with explicit validity dates. */
+/**
+ * Test CA that issues certificates with explicit validity dates.
+ * Each instance has its own EC key and a self-signed certificate.
+ * Its key stores hold a leaf certificate signed by the CA, followed by the CA certificate.
+ */
 public class TestCertificateAuthority {
     /** */
     public static final char[] PASSWORD = "123456".toCharArray();
@@ -52,13 +56,19 @@ public class TestCertificateAuthority {
     /** */
     private long serial;
 
-    /** */
+    /**
+     * Creates a CA with a self-signed certificate valid between the given dates.
+     * The name becomes the common name of the CA certificate.
+     */
     public TestCertificateAuthority(String name, long notBefore, long notAfter) throws Exception {
         this.name = new X500Principal("CN=" + name);
         cert = certificate(this.name, keys, notBefore, notAfter, true);
     }
 
-    /** */
+    /**
+     * Creates a key store with one private key and its chain under the given alias.
+     * The chain holds a leaf certificate with the given dates, signed by this CA, followed by the CA certificate.
+     */
     public KeyStore keyStore(String alias, long notBefore, long notAfter) throws Exception {
         KeyPair leafKeys = keyPair();
         X509Certificate leaf = certificate(new X500Principal("CN=" + alias), leafKeys, notBefore, notAfter, false);
@@ -69,7 +79,10 @@ public class TestCertificateAuthority {
         return store;
     }
 
-    /** */
+    /**
+     * Creates a trust store that trusts only this CA.
+     * It holds the CA certificate under the CA name.
+     */
     public KeyStore trustStore() throws Exception {
         KeyStore store = emptyStore();
 
@@ -78,7 +91,10 @@ public class TestCertificateAuthority {
         return store;
     }
 
-    /** */
+    /**
+     * Combines the key entries of several key stores into one key store.
+     * Aliases must differ, because an entry with the same alias replaces the earlier one.
+     */
     static KeyStore merge(KeyStore... stores) throws Exception {
         KeyStore merged = emptyStore();
 
@@ -90,7 +106,10 @@ public class TestCertificateAuthority {
         return merged;
     }
 
-    /** */
+    /**
+     * Writes the store to the file with the test password.
+     * It replaces an existing file, so a test can put new certificates in place of old ones.
+     */
     public static void save(KeyStore store, Path path) throws Exception {
         try (OutputStream out = Files.newOutputStream(path)) {
             store.store(out, PASSWORD);
