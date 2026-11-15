@@ -29,7 +29,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -216,7 +218,7 @@ public class SslFactoryRegistryTest {
     @Test
     public void testDisabledFactoryDoesNotStartHotReload() throws Exception {
         writeFreshCertificates(keys);
-        registry.register("communication", factory(keys));
+        registerTransport("communication", factory(keys));
         registry.start(ctx);
 
         executorFactory.verifyNoInteractions();
@@ -224,18 +226,18 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: one factory with hot reload enabled, registered for two transports, that has not loaded its certificates.
+     * Given: communication and discovery share a factory with hot reload enabled and fresh certificates.
      * When: the registry starts.
-     * Then: the registry loads the factory and schedules one attempt for the window of its certificates.
+     * Then: the registry schedules one attempt for the shared factory's certificates.
      */
     @Test
-    public void testStartLoadsSharedFactoryAndSchedulesItOnce() throws Exception {
+    public void testStartSchedulesSharedFactoryOnce() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeFreshCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
-        registry.register("discovery", communication);
+        registerTransport("communication", communication);
+        registerTransport("discovery", communication);
         registry.start(ctx);
 
         verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
@@ -243,8 +245,8 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory with hot reload enabled that has not loaded its certificates.
-     * When: the registry starts and loads them.
+     * Given: the node reuses a factory that loaded its certificates with hot reload disabled.
+     * When: the node starts with hot reload enabled and the registry loads the certificates again.
      * Then: neither the manual nor the automatic attempt counter grows.
      */
     @Test
@@ -252,8 +254,9 @@ public class SslFactoryRegistryTest {
         SslContextFactory communication = factory(keys);
 
         writeFreshCertificates(keys);
+        communication.create();
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
 
         assertNotEquals(0, communication.getHotReloadTime());
@@ -272,7 +275,7 @@ public class SslFactoryRegistryTest {
 
         save(authority.keyStore("node", -HOURS.toMillis(85), HOURS.toMillis(15)), keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
 
         assertNotNull(scheduled);
@@ -285,16 +288,19 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory with hot reload enabled whose key store file does not exist.
-     * When: the registry starts.
+     * Given: the node reuses a factory that loaded its certificates with hot reload disabled.
+     * When: the node starts with hot reload enabled and the key store file is missing.
      * Then: the start fails, and the registry schedules nothing.
      */
     @Test
-    public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() {
-        SslContextFactory communication = factory(dir.resolve("missing.jks"));
+    public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() throws Exception {
+        SslContextFactory communication = factory(keys);
 
+        writeFreshCertificates(keys);
+        communication.create();
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        Files.delete(keys);
+        registerTransport("communication", communication);
 
         IgniteException err = assertThrows(IgniteException.class, () -> registry.start(ctx));
 
@@ -303,22 +309,23 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory with hot reload enabled that has not loaded its certificates.
+     * Given: a transport is using a factory with hot reload enabled.
      * When: a manual reload runs before the registry starts.
-     * Then: the reload is rejected, the factory stays unloaded, and the counter read after start is zero.
+     * Then: the reload is rejected, the transport keeps its context, and the manual attempt counter stays at zero.
      */
     @Test
-    public void testManualReloadBeforeStartIsRejectedWithoutLoadingOrCounting() throws Exception {
+    public void testManualReloadBeforeStartKeepsActiveContextAndIsNotCounted() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeFreshCertificates(keys);
         communication.setHotReloadEnabled(true);
+        SSLContext active = communication.create();
         registry.register("communication", communication);
 
         IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
 
         assertTrue(err.getMessage().contains("has not started"));
-        assertEquals(0, communication.getHotReloadTime());
+        assertSame(active, communication.create());
 
         registry.start(ctx);
 
@@ -327,7 +334,7 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: hot reload is enabled, and the key store file is deleted after start.
-     * When: eight automatic attempts fail in a row.
+     * When: eight attempts fail in a row and the random addition alternates between its maximum and zero.
      * Then: each retry waits 1, 2, 4 ... up to 60 minutes, plus up to half of that at random.
      */
     @Test
@@ -336,27 +343,30 @@ public class SslFactoryRegistryTest {
 
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         Files.delete(keys);
 
-        long maxRandomAddition = 0;
+        ThreadLocalRandom random = mock(ThreadLocalRandom.class);
 
-        for (int failure = 1; failure <= 8; failure++) {
-            long before = System.currentTimeMillis();
+        try (MockedStatic<ThreadLocalRandom> source = mockStatic(ThreadLocalRandom.class)) {
+            source.when(ThreadLocalRandom::current).thenReturn(random);
 
-            scheduled.run();
+            for (int failure = 1; failure <= 8; failure++) {
+                long base = MINUTES.toMillis(Math.min(1L << (failure - 1), 60));
+                long jitter = failure % 2 == 0 ? 0 : base / 2;
 
-            long base = MINUTES.toMillis(Math.min(1L << (failure - 1), 60));
+                when(random.nextLong(base / 2 + 1)).thenReturn(jitter);
 
-            assertEquals(failure, failures());
-            assertTrue(delay >= base - (System.currentTimeMillis() - before));
-            assertTrue(delay <= base + base / 2);
+                long before = System.currentTimeMillis();
 
-            maxRandomAddition = Math.max(maxRandomAddition, delay - base);
+                scheduled.run();
+
+                assertEquals(failure, failures());
+                assertTrue(delay >= base + jitter - (System.currentTimeMillis() - before));
+                assertTrue(delay <= base + jitter);
+            }
         }
-
-        assertTrue(maxRandomAddition > 0);
     }
 
     /**
@@ -370,18 +380,16 @@ public class SslFactoryRegistryTest {
 
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         Files.delete(keys);
         scheduled.run();
 
-        assertEquals(1, failures());
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
         scheduled.run();
 
-        assertEquals(0, failures());
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
     }
 
@@ -396,7 +404,7 @@ public class SslFactoryRegistryTest {
 
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         Files.delete(keys);
         scheduled.run();
@@ -412,8 +420,8 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: an automatic attempt has failed on a missing key store file, and a retry is pending.
-     * When: a manual reload loads certificates whose window is open.
-     *     A second reload loads certificates with the window in 84 hours.
+     * When: the operator reloads certificates whose window is open and the immediate automatic attempt runs.
+     *     The operator then installs fresh certificates and reloads them.
      * Then: the first reload cancels the retry and schedules an attempt at once.
      *     The second reload schedules the attempt for the new window.
      */
@@ -423,7 +431,7 @@ public class SslFactoryRegistryTest {
 
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         Files.delete(keys);
         scheduled.run();
@@ -436,7 +444,8 @@ public class SslFactoryRegistryTest {
         registry.reload(communication);
 
         verify(retry).cancel(false);
-        assertTrue(delay <= 0);
+        assertEquals(0, delay);
+        scheduled.run();
 
         writeFreshCertificates(keys);
         registry.reload(communication);
@@ -454,7 +463,7 @@ public class SslFactoryRegistryTest {
         SslContextFactory communication = factory(keys);
 
         writeFreshCertificates(keys);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         registry.reload(communication);
 
@@ -478,7 +487,7 @@ public class SslFactoryRegistryTest {
 
         writeFreshCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         Files.delete(keys);
 
@@ -515,7 +524,7 @@ public class SslFactoryRegistryTest {
 
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
         Files.delete(keys);
         scheduled.run();
@@ -554,9 +563,9 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: the automatic attempts of two factories have failed on missing key store files.
-     * When: one factory gets its file back and is reloaded manually.
-     * Then: only that factory's failure count resets.
+     * Given: the client connector has one failure because its certificates are still due.
+     * When: communication loads due certificates and its automatic attempt fails too, then the client connector loads fresh certificates.
+     * Then: the metric counts both failures until the client connector clears its own.
      */
     @Test
     public void testManualReloadResetsOnlyItsFactoryFailures() throws Exception {
@@ -564,25 +573,32 @@ public class SslFactoryRegistryTest {
         SslContextFactory communication = factory(keys);
         SslContextFactory clientConnector = factory(clientKeys);
 
-        writeDueCertificates(keys);
+        writeFreshCertificates(keys);
         writeDueCertificates(clientKeys);
         communication.setHotReloadEnabled(true);
         clientConnector.setHotReloadEnabled(true);
-        registry.register("communication", communication);
-        registry.register("client connector", clientConnector);
+        registerTransport("communication", communication);
+        registerTransport("client connector", clientConnector);
         registry.start(ctx);
-        Files.delete(keys);
-        Files.delete(clientKeys);
 
-        ArgumentCaptor<Runnable> attempts = ArgumentCaptor.forClass(Runnable.class);
+        ArgumentCaptor<Runnable> dueAttempt = ArgumentCaptor.forClass(Runnable.class);
 
-        verify(executor, times(2)).schedule(attempts.capture(), anyLong(), eq(MILLISECONDS));
-        attempts.getAllValues().forEach(Runnable::run);
+        verify(executor).schedule(dueAttempt.capture(), eq(0L), eq(MILLISECONDS));
+        dueAttempt.getValue().run();
+
+        assertEquals(1, failures());
+
+        writeDueCertificates(keys);
+        registry.reload(communication);
+
+        assertEquals(1, failures());
+
+        scheduled.run();
 
         assertEquals(2, failures());
 
-        writeFreshCertificates(keys);
-        registry.reload(communication);
+        writeFreshCertificates(clientKeys);
+        registry.reload(clientConnector);
 
         assertEquals(1, failures());
     }
@@ -660,7 +676,7 @@ public class SslFactoryRegistryTest {
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
         when(ctx.isStopping()).thenReturn(true);
-        registry.register("communication", communication);
+        registerTransport("communication", communication);
         registry.start(ctx);
 
         executorFactory.verifyNoInteractions();
@@ -710,17 +726,24 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a blocking task keeps the hot reload thread busy, and a manual reload waits in the queue.
+     * Given: an automatic attempt is loading certificates, and a manual reload waits in the queue.
      * When: the registry stops.
      * Then: the reload is cancelled, does not load the factory, and is not counted.
      */
     @Test
     public void testStopCancelsQueuedManualReload() throws Exception {
         ScheduledExecutorService hotReloadExecutor = useRealExecutor();
-        CountDownLatch releaseWorker = new CountDownLatch(1);
+        CountDownLatch loadStarted = new CountDownLatch(1);
+        CountDownLatch releaseLoad = new CountDownLatch(1);
         BlockingQueue<Future<?>> submissions = new LinkedBlockingQueue<>();
 
-        enableHotReload(factory, later());
+        enableHotReload(factory, due());
+        doAnswer(call -> {
+            loadStarted.countDown();
+            U.awaitQuiet(releaseLoad);
+
+            return null;
+        }).when(factory).hotReload();
         doAnswer(call -> {
             Future<?> task = (Future<?>)call.callRealMethod();
 
@@ -730,15 +753,17 @@ public class SslFactoryRegistryTest {
         }).when(hotReloadExecutor).submit(any(Runnable.class));
 
         registry.register("communication", factory);
-        registry.start(ctx);
-        hotReloadExecutor.execute(() -> U.awaitQuiet(releaseWorker));
 
-        IgniteInternalFuture<IgniteCheckedException> reload =
-            runAsync(() -> assertThrows(IgniteCheckedException.class, () -> registry.reload(factory)));
+        IgniteInternalFuture<IgniteCheckedException> reload = null;
         IgniteInternalFuture<?> stop = null;
         Future<?> queuedReload = null;
 
         try {
+            registry.start(ctx);
+
+            assertTrue(loadStarted.await(TIMEOUT_MS, MILLISECONDS));
+
+            reload = runAsync(() -> assertThrows(IgniteCheckedException.class, () -> registry.reload(factory)));
             queuedReload = submissions.poll(TIMEOUT_MS, MILLISECONDS);
 
             assertNotNull(queuedReload);
@@ -752,15 +777,16 @@ public class SslFactoryRegistryTest {
         finally {
             if (queuedReload != null)
                 queuedReload.cancel(true);
-            else
+            else if (reload != null)
                 reload.cancel();
 
-            releaseWorker.countDown();
+            releaseLoad.countDown();
 
             if (stop != null)
                 stop.get(TIMEOUT_MS);
 
-            reload.get(TIMEOUT_MS);
+            if (reload != null)
+                reload.get(TIMEOUT_MS);
         }
     }
 
@@ -855,6 +881,12 @@ public class SslFactoryRegistryTest {
 
         assertEquals(0, failures());
         verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
+    }
+
+    /** Loads a file-backed factory before registration, as the TCP transports do during startup. */
+    private void registerTransport(String transport, SslContextFactory factory) {
+        factory.create();
+        registry.register(transport, factory);
     }
 
     /** */

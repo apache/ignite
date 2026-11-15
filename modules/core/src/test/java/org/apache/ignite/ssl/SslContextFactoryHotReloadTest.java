@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ssl;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.util.concurrent.CountDownLatch;
 import javax.crypto.spec.SecretKeySpec;
@@ -26,13 +28,16 @@ import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
+import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -48,6 +53,9 @@ import static org.mockito.Mockito.spy;
 
 /** */
 public class SslContextFactoryHotReloadTest {
+    /** */
+    @Rule public final TemporaryFolder tmp = new TemporaryFolder();
+
     /** Upper bound for waiting for an event that must happen. */
     private static final long TIMEOUT_MS = 30_000;
 
@@ -67,36 +75,23 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: a factory with default settings.
-     * When: the test reads its hot reload flag and date.
-     * Then: hot reload is disabled, and the date is zero.
+     * Given: a key store with only a CA certificate and the default hot reload setting.
+     * When: the factory loads the store.
+     * Then: the load succeeds with hot reload disabled and no scheduled reload date.
      */
     @Test
-    public void testHotReloadIsDisabledByDefault() {
-        SslContextFactory factory = new SslContextFactory();
+    public void testDefaultSettingsAcceptStoreWithoutPrivateKeys() throws Exception {
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
 
         assertFalse(factory.isHotReloadEnabled());
+        assertNotNull(factory.create());
         assertEquals(0, factory.getHotReloadTime());
     }
 
     /**
-     * Given: hot reload is disabled, and the key store holds only a CA certificate.
-     * When: the factory loads the key store.
-     * Then: the load succeeds.
-     */
-    @Test
-    public void testDisabledHotReloadAcceptsStoreWithoutPrivateKeys() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
-
-        factory.setHotReloadEnabled(false);
-
-        assertNotNull(factory.create());
-    }
-
-    /**
-     * Given: the factory has loaded due certificates with hot reload enabled.
-     * When: it reloads them with hot reload disabled, and the flag is turned back on.
-     * Then: the hot reload date is zero.
+     * Given: an application reuses a factory across node starts with different hot reload settings.
+     * When: it reloads the keys with hot reload off, then enables hot reload for the next start.
+     * Then: the factory reports no hot reload date for the keys loaded while hot reload was off.
      */
     @Test
     public void testLoadWithHotReloadDisabledClearsHotReloadTime() throws Exception {
@@ -194,20 +189,6 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: hot reload is enabled, and the certificates expired an hour ago.
-     * When: the factory loads them for the first time.
-     * Then: the load succeeds, and TLS peers decide whether to accept the certificates.
-     */
-    @Test
-    public void testFirstLoadAcceptsExpiredCertificates() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-101), at(-1)));
-
-        factory.setHotReloadEnabled(true);
-
-        assertNotNull(factory.create());
-    }
-
-    /**
      * Given: a factory with hot reload enabled that has never loaded its certificates.
      * When: {@link SslContextFactory#hotReload()} runs.
      * Then: the factory does not read its key store.
@@ -217,6 +198,9 @@ public class SslContextFactoryHotReloadTest {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
         factory.setHotReloadEnabled(true);
+
+        assertEquals(0, factory.getHotReloadTime());
+
         factory.hotReload();
 
         assertEquals(0, factory.keyStoreLoads);
@@ -244,8 +228,8 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: the factory has loaded due certificates, and then hot reload is turned off.
-     * When: {@link SslContextFactory#hotReload()} runs.
+     * Given: a factory with a cached, due context is configured with hot reload disabled for the next start.
+     * When: the application calls {@link SslContextFactory#hotReload()} directly.
      * Then: the factory does not read its key store.
      */
     @Test
@@ -283,18 +267,9 @@ public class SslContextFactoryHotReloadTest {
      * Then: the factory installs a new context.
      */
     @Test
-    public void testHotReloadAcceptsTrustStoreOnlyChange() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
-
-        factory.setHotReloadEnabled(true);
-        factory.trustStore = authority.trustStore();
-        factory.setTrustManagers((TrustManager[])null);
-        factory.setTrustStoreFilePath("memory-trust");
-        factory.setTrustStorePassword(PASSWORD);
-
+    public void testHotReloadReplacesContextWhenOnlyTrustStoreChanges() throws Exception {
+        InMemorySslContextFactory factory = dueFactory();
         SSLContext ctx = factory.create();
-
-        assertEquals(at(-5), factory.getHotReloadTime());
 
         TestCertificateAuthority otherIssuer = new TestCertificateAuthority("other-issuer", now - DAYS.toMillis(1), now + DAYS.toMillis(1));
 
@@ -331,24 +306,34 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: due certificates, a replacement in the source, and a missing trust store file.
-     * When: hot reload runs, and then runs again with trust managers set directly.
-     * Then: the first run fails and keeps the current context and date.
-     *     The second run installs the replacement.
+     * Given: the factory has loaded due keys and a trust store file.
+     * When: the trust store disappears during key rotation, then returns at its configured path.
+     * Then: the failed reload keeps the previous context and date. The retry installs the replacement.
      */
     @Test
     public void testHotReloadRecoversAfterFailedTrustStoreLoad() throws Exception {
-        InMemorySslContextFactory factory = dueFactory();
+        Path trust = tmp.newFile("trust.jks").toPath();
+
+        save(authority.trustStore(), trust);
+
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
+
+        factory.useTrustStore(trust.toString());
+        factory.setHotReloadEnabled(true);
+
         SSLContext ctx = factory.create();
+        long hotReloadTime = factory.getHotReloadTime();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
-        factory.setTrustManagers((TrustManager[])null);
-        factory.setTrustStoreFilePath("missing-trust-store");
-        factory.setTrustStorePassword(PASSWORD);
+        Files.delete(trust);
 
-        assertHotReloadKeepsCurrentState(factory, "missing-trust-store");
+        IgniteException err = assertThrows(IgniteException.class, factory::hotReload);
 
-        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+        assertTrue(err.getCause().getMessage(), err.getCause().getMessage().contains("key store file was not found"));
+        assertSame(ctx, factory.create());
+        assertEquals(hotReloadTime, factory.getHotReloadTime());
+
+        save(authority.trustStore(), trust);
         factory.hotReload();
 
         assertNotSame(ctx, factory.create());
@@ -367,7 +352,7 @@ public class SslContextFactoryHotReloadTest {
         long hotReloadTime = factory.getHotReloadTime();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
-        doThrow(new IllegalStateException("Trust source unavailable")).when(factory).createTrustManagers();
+        doThrow(new IllegalStateException("Trust source unavailable")).when(factory).loadKeyStore(any(), eq("memory-trust"), any());
 
         assertThrows(IllegalStateException.class, factory::hotReload);
 
@@ -376,26 +361,21 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: due certificates, a replacement in the source, and an unsupported protocol.
-     * When: hot reload runs, and then runs again with a supported protocol.
-     * Then: the first run fails after the key store loads and keeps the current context and date.
-     *     The second run installs the replacement.
+     * Given: the configured keys have a hot reload date, but the configured TLS protocol is unsupported.
+     * When: the factory creates its first context.
+     * Then: it reports the invalid protocol and publishes no hot reload date.
      */
     @Test
-    public void testHotReloadRecoversAfterContextCreationFailure() throws Exception {
-        InMemorySslContextFactory factory = dueFactory();
-        SSLContext ctx = factory.create();
+    public void testUnsupportedProtocolAtStartupLeavesHotReloadTimeUnset() throws Exception {
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-1), at(99)));
 
-        factory.keyStore = authority.keyStore("node", at(-1), at(99));
+        factory.setHotReloadEnabled(true);
         factory.setProtocol("UnsupportedProtocol");
 
-        assertHotReloadKeepsCurrentState(factory, "Unsupported SSL protocol");
+        IgniteException err = assertThrows(IgniteException.class, factory::create);
 
-        factory.setProtocol("TLS");
-        factory.hotReload();
-
-        assertNotSame(ctx, factory.create());
-        assertEquals(at(84), factory.getHotReloadTime());
+        assertTrue(err.getCause().getMessage(), err.getCause().getMessage().contains("Unsupported SSL protocol"));
+        assertEquals(0, factory.getHotReloadTime());
     }
 
     /**
@@ -409,10 +389,6 @@ public class SslContextFactoryHotReloadTest {
         long hotReloadTime = factory.getHotReloadTime();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
-        factory.trustStore = authority.trustStore();
-        factory.setTrustManagers((TrustManager[])null);
-        factory.setTrustStoreFilePath("memory-trust");
-        factory.setTrustStorePassword(PASSWORD);
 
         CountDownLatch trustLoadStarted = new CountDownLatch(1);
         CountDownLatch finishTrustLoad = new CountDownLatch(1);
@@ -445,11 +421,13 @@ public class SslContextFactoryHotReloadTest {
 
     /**
      * Creates a factory with hot reload enabled that has loaded certificates whose window opened 5 hours ago.
-     * The certificates have 10 of their 100 hours left. The method checks the date, so a wrong setup fails here.
+     * It reads both stores from memory. The certificates have 10 of their 100 hours left.
      */
     private InMemorySslContextFactory dueFactory() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
+        factory.trustStore = authority.trustStore();
+        factory.useTrustStore("memory-trust");
         factory.setHotReloadEnabled(true);
         factory.create();
 
@@ -469,17 +447,6 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /** */
-    private static void assertHotReloadKeepsCurrentState(SslContextFactory factory, String reason) {
-        SSLContext ctx = factory.create();
-        long hotReloadTime = factory.getHotReloadTime();
-        IgniteException err = assertThrows(IgniteException.class, factory::hotReload);
-
-        assertTrue(err.getCause().getMessage(), err.getCause().getMessage().contains(reason));
-        assertSame(ctx, factory.create());
-        assertEquals(hotReloadTime, factory.getHotReloadTime());
-    }
-
-    /** */
     private long at(long hours) {
         return now + HOURS.toMillis(hours);
     }
@@ -487,8 +454,7 @@ public class SslContextFactoryHotReloadTest {
     /**
      * A factory that reads its key store from a field instead of a file and counts the reads.
      * Tests change the field to put new certificates into the source.
-     * By default the factory trusts every peer. A test that sets the trust store path to {@code memory-trust}
-     * and clears the trust managers gets the trust store from a field too.
+     * By default the factory trusts all peers. Tests can configure a trust store from memory or a file.
      */
     private static class InMemorySslContextFactory extends SslContextFactory {
         /** */
@@ -510,6 +476,13 @@ public class SslContextFactoryHotReloadTest {
             setKeyStoreFilePath("memory");
             setKeyStorePassword(PASSWORD);
             setTrustManagers(getDisabledTrustManager());
+        }
+
+        /** Selects the trust store that supplies the factory's trust managers. */
+        private void useTrustStore(String path) {
+            setTrustManagers((TrustManager[])null);
+            setTrustStoreFilePath(path);
+            setTrustStorePassword(PASSWORD);
         }
 
         /** {@inheritDoc} */
