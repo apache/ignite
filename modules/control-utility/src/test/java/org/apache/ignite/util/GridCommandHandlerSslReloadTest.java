@@ -102,7 +102,11 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         }
     }
 
-    /** */
+    /**
+     * After {@code --ssl reload}, new connections use the replaced files of a factory with hot reload enabled.
+     * With hot reload enabled, the reload runs on the hot reload thread.
+     * The test certificates open their window only in November 2036, so no automatic attempt interferes.
+     */
     @Test
     public void testReloadedFilesApplyToNewConnectionsWithHotReloadEnabled() throws Exception {
         Path keys = stores.newFile("keys.jks").toPath();

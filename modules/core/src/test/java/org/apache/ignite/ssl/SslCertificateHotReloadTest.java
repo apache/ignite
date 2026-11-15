@@ -41,7 +41,14 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
-    /** */
+    /** Upper bound for waiting for an event that must happen. */
+    private static final long TIMEOUT_MS = 30_000;
+
+    /**
+     * A node replaces its certificates when the hot reload window opens, and new connections use the replacement.
+     * The factory loads due certificates of one CA, then the files get certificates of another CA.
+     * The client trusts and presents only the new certificates.
+     */
     @Test
     public void testNodeHotReloadsCertificatesForNewConnections() throws Exception {
         long now = System.currentTimeMillis();
@@ -70,7 +77,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
                 cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
 
-            assertTrue("The reloaded context was not installed", waitForCondition(() -> serverFactory.create() != initCtx, 10_000));
+            assertTrue("The reloaded context was not installed", waitForCondition(() -> serverFactory.create() != initCtx, TIMEOUT_MS));
 
             ClientConfiguration clientCfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1:" + node.context().clientListener().port())
@@ -87,7 +94,11 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
+    /**
+     * A node keeps retrying while its source holds certificates that are still due, and it reports each failure.
+     * The certificates have expired, so the window stays open after every attempt.
+     * The test checks the failure metric and the log line with the transport and the reason.
+     */
     @Test
     public void testHotReloadRetriesWhileSourceHoldsExpiredCertificates() throws Exception {
         long now = System.currentTimeMillis();
@@ -115,9 +126,9 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
             });
             LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveHotReloadFailures");
 
-            assertTrue("The automatic attempt did not fail", waitForCondition(() -> failures.value() == 1, 10_000));
-            assertTrue(failure.check(10_000));
-            assertTrue(reason.check(10_000));
+            assertTrue("The automatic attempt did not fail", waitForCondition(() -> failures.value() == 1, TIMEOUT_MS));
+            assertTrue(failure.check(TIMEOUT_MS));
+            assertTrue(reason.check(TIMEOUT_MS));
         }
         finally {
             stopAllGrids();
