@@ -32,6 +32,9 @@ public class ConnectionDescription {
     /** Server node id. */
     private final UUID srvNodeId;
 
+    /** Server-assigned connection ID. */
+    private final Long connId;
+
     /** */
     private final String protocol;
 
@@ -40,12 +43,15 @@ public class ConnectionDescription {
      * @param rmtAddr Remote connection address.
      * @param protocol String representation of a connection protocol details.
      * @param srvNodeId Server node id.
+     * @param connId Server-assigned connection ID, or {@code null} if unavailable.
      */
-    public ConnectionDescription(InetSocketAddress locAddr, InetSocketAddress rmtAddr, String protocol, UUID srvNodeId) {
+    public ConnectionDescription(InetSocketAddress locAddr, InetSocketAddress rmtAddr, String protocol, UUID srvNodeId,
+        @Nullable Long connId) {
         this.locAddr = locAddr;
         this.rmtAddr = rmtAddr;
         this.protocol = protocol;
         this.srvNodeId = srvNodeId;
+        this.connId = connId;
     }
 
     /**
@@ -71,6 +77,15 @@ public class ConnectionDescription {
      */
     @Nullable public UUID serverNodeId() {
         return srvNodeId;
+    }
+
+    /**
+     * Returns the server-assigned connection ID, matching {@code SYS.CLIENT_CONNECTIONS}.
+     *
+     * @return Connection ID, or {@code null} before a successful handshake or if unsupported by the server.
+     */
+    @Nullable public Long connectionId() {
+        return connId;
     }
 
     /**
