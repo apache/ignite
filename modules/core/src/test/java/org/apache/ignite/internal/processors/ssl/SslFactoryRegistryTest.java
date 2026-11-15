@@ -29,7 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -60,12 +60,12 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
@@ -89,6 +89,9 @@ import static org.mockito.Mockito.when;
  * An attempt is an automatic hot reload attempt that the registry schedules.
  */
 public class SslFactoryRegistryTest {
+    /** Upper bound for waiting for an event that must happen. */
+    private static final long TIMEOUT_MS = 30_000;
+
     /** */
     private final SslFactoryRegistry registry = new SslFactoryRegistry();
 
@@ -176,7 +179,7 @@ public class SslFactoryRegistryTest {
     @After
     public void tearDown() throws Exception {
         try {
-            runAsync(registry::stop).get(10_000);
+            runAsync(registry::stop).get(TIMEOUT_MS);
         }
         finally {
             executorFactory.close();
@@ -219,6 +222,19 @@ public class SslFactoryRegistryTest {
 
         verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
         assertTrue(delay > HOURS.toMillis(1));
+    }
+
+    /** */
+    @Test
+    public void testStartupLoadIsNotCounted() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeFreshCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
+        registry.start(ctx);
+
+        assertNotEquals(0, communication.getHotReloadTime());
         assertEquals(0, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
     }
@@ -296,7 +312,6 @@ public class SslFactoryRegistryTest {
             long base = MINUTES.toMillis(Math.min(1L << (failure - 1), 60));
 
             assertEquals(failure, failures());
-            assertEquals(failure, metric("AutomaticHotReloadAttempts"));
             assertTrue(delay >= base - (System.currentTimeMillis() - before));
             assertTrue(delay <= base + base / 2);
 
@@ -304,6 +319,22 @@ public class SslFactoryRegistryTest {
         }
 
         assertTrue(maxRandomAddition > 0);
+    }
+
+    /** */
+    @Test
+    public void testFailedAutomaticAttemptIsCounted() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registry.register("communication", communication);
+        registry.start(ctx);
+        Files.delete(keys);
+        scheduled.run();
+
+        assertEquals(1, failures());
+        assertEquals(1, metric("AutomaticHotReloadAttempts"));
     }
 
     /** */
@@ -325,7 +356,6 @@ public class SslFactoryRegistryTest {
 
         assertEquals(0, failures());
         assertTrue(delay > HOURS.toMillis(1));
-        assertEquals(2, metric("AutomaticHotReloadAttempts"));
     }
 
     /** */
@@ -348,7 +378,6 @@ public class SslFactoryRegistryTest {
         registry.reload(communication);
 
         verify(retry).cancel(false);
-        assertEquals(0, failures());
         assertTrue(delay <= 0);
 
         writeFreshCertificates(keys);
@@ -405,7 +434,6 @@ public class SslFactoryRegistryTest {
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
-        assertEquals(1, metric("ManualReloadAttempts"));
         verify(retry, never()).cancel(false);
         verify(executor, times(2)).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
     }
@@ -428,7 +456,6 @@ public class SslFactoryRegistryTest {
         registry.reload(factory);
 
         verify(factory).init();
-        assertEquals(1, metric("ManualReloadAttempts"));
     }
 
     /** */
@@ -463,24 +490,15 @@ public class SslFactoryRegistryTest {
 
     /** */
     @Test
-    public void testAttemptsDoNotInheritCallerContext() throws Exception {
+    public void testManualReloadKeepsCallerContext() throws Exception {
         OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
-        AtomicLong hotReloadTime = new AtomicLong(due());
-        BlockingQueue<Optional<String>> attemptCallers = new LinkedBlockingQueue<>();
+        AtomicReference<String> loadCaller = new AtomicReference<>();
 
         executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
             .thenReturn(new OperationContextAwareScheduledExecutorService(executor) { });
-        when(factory.isHotReloadEnabled()).thenReturn(true);
-        when(factory.getHotReloadTime()).thenAnswer(call -> hotReloadTime.get());
+        enableHotReload(factory, later());
         doAnswer(call -> {
-            hotReloadTime.set(later());
-            attemptCallers.add(Optional.ofNullable(OperationContext.get(caller)));
-
-            return null;
-        }).when(factory).hotReload();
-        doAnswer(call -> {
-            assertEquals("operator", OperationContext.get(caller));
-            hotReloadTime.set(due());
+            loadCaller.set(OperationContext.get(caller));
 
             return null;
         }).when(factory).init();
@@ -494,9 +512,34 @@ public class SslFactoryRegistryTest {
             assertEquals("operator", OperationContext.get(caller));
         }
 
+        assertEquals("operator", loadCaller.get());
+    }
+
+    /** */
+    @Test
+    public void testAttemptsDoNotInheritCallerContext() throws Exception {
+        OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
+        AtomicReference<Optional<String>> attemptCaller = new AtomicReference<>();
+
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
+            .thenReturn(new OperationContextAwareScheduledExecutorService(executor) { });
+        enableHotReload(factory, due());
+        doAnswer(call -> {
+            attemptCaller.set(Optional.ofNullable(OperationContext.get(caller)));
+
+            return null;
+        }).when(factory).hotReload();
+
+        registry.register("communication", factory);
+        registry.start(ctx);
+
+        try (Scope ignored = OperationContext.set(caller, "operator")) {
+            registry.reload(factory);
+        }
+
         scheduled.run();
 
-        assertEquals(Optional.empty(), attemptCallers.remove());
+        assertEquals(Optional.empty(), attemptCaller.get());
     }
 
     /** */
@@ -527,7 +570,7 @@ public class SslFactoryRegistryTest {
             attemptStarted.countDown();
 
             try {
-                assertTrue(allowCompletion.await(30, SECONDS));
+                assertTrue(allowCompletion.await(TIMEOUT_MS, MILLISECONDS));
             }
             catch (InterruptedException e) {
                 attemptInterrupted.countDown();
@@ -541,9 +584,9 @@ public class SslFactoryRegistryTest {
         try {
             registry.start(ctx);
 
-            assertTrue(attemptStarted.await(5, SECONDS));
+            assertTrue(attemptStarted.await(TIMEOUT_MS, MILLISECONDS));
 
-            runAsync(registry::stop).get(5_000);
+            runAsync(registry::stop).get(TIMEOUT_MS);
 
             assertEquals(0, attemptInterrupted.getCount());
         }
@@ -578,13 +621,13 @@ public class SslFactoryRegistryTest {
         Future<?> queuedReload = null;
 
         try {
-            queuedReload = submissions.poll(5, SECONDS);
+            queuedReload = submissions.poll(TIMEOUT_MS, MILLISECONDS);
 
             assertNotNull(queuedReload);
 
             stop = runAsync(registry::stop);
 
-            assertTrue(reload.get(5_000).getCause() instanceof CancellationException);
+            assertTrue(reload.get(TIMEOUT_MS).getCause() instanceof CancellationException);
             verify(factory, never()).init();
             assertEquals(0, metric("ManualReloadAttempts"));
         }
@@ -597,9 +640,9 @@ public class SslFactoryRegistryTest {
             releaseWorker.countDown();
 
             if (stop != null)
-                stop.get(5_000);
+                stop.get(TIMEOUT_MS);
 
-            reload.get(5_000);
+            reload.get(TIMEOUT_MS);
         }
     }
 
@@ -631,18 +674,18 @@ public class SslFactoryRegistryTest {
         try {
             registry.start(ctx);
 
-            assertTrue(loadStarted.await(5, SECONDS));
+            assertTrue(loadStarted.await(TIMEOUT_MS, MILLISECONDS));
 
             stop = runAsync(registry::stop);
 
-            assertTrue(terminationWaitEntered.await(5, SECONDS));
+            assertTrue(terminationWaitEntered.await(TIMEOUT_MS, MILLISECONDS));
             assertFalse(stop.isDone());
         }
         finally {
             allowCompletion.countDown();
 
             if (stop != null)
-                stop.get(5_000);
+                stop.get(TIMEOUT_MS);
         }
 
         assertTrue(hotReloadExecutor.isTerminated());

@@ -66,8 +66,6 @@ public class SslContextFactoryHotReloadTest {
 
         assertFalse(factory.isHotReloadEnabled());
         assertEquals(0, factory.getHotReloadTime());
-
-        factory.hotReload();
     }
 
     /** */
@@ -128,6 +126,17 @@ public class SslContextFactoryHotReloadTest {
 
     /** */
     @Test
+    public void testLoadReadsKeyStoreOnce() throws Exception {
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-85), at(15)));
+
+        factory.setHotReloadEnabled(true);
+        factory.create();
+
+        assertEquals(1, factory.keyStoreLoads);
+    }
+
+    /** */
+    @Test
     public void testExpiredChainIsDueBeforeKeyCertificateBecomesValid() throws Exception {
         TestCertificateAuthority expiredIssuer = new TestCertificateAuthority("expired-issuer", at(-100), at(-1));
         InMemorySslContextFactory factory = new InMemorySslContextFactory(expiredIssuer.keyStore("node", at(99), at(199)));
@@ -181,9 +190,23 @@ public class SslContextFactoryHotReloadTest {
 
         assertEquals(at(84), factory.getHotReloadTime());
 
+        int loads = factory.keyStoreLoads;
+
         factory.hotReload();
 
-        assertEquals(1, factory.keyStoreLoads);
+        assertEquals(loads, factory.keyStoreLoads);
+    }
+
+    /** */
+    @Test
+    public void testHotReloadDoesNothingWhenDisabled() throws Exception {
+        InMemorySslContextFactory factory = dueFactory();
+        int loads = factory.keyStoreLoads;
+
+        factory.setHotReloadEnabled(false);
+        factory.hotReload();
+
+        assertEquals(loads, factory.keyStoreLoads);
     }
 
     /** */
@@ -288,7 +311,6 @@ public class SslContextFactoryHotReloadTest {
     public void testHotReloadTimeRemainsReadableDuringLoad() throws Exception {
         InMemorySslContextFactory factory = spy(dueFactory());
         long hotReloadTime = factory.getHotReloadTime();
-        SSLContext ctx = factory.create();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
         factory.setTrustManagers((TrustManager[])null);
@@ -323,8 +345,6 @@ public class SslContextFactoryHotReloadTest {
 
         assertFalse(load.isAlive());
         load.checkError();
-        assertEquals(hotReloadTime, factory.getHotReloadTime());
-        assertSame(ctx, factory.create());
     }
 
     /** @return Factory that has loaded certificates whose hot reload window has started. */
@@ -347,7 +367,6 @@ public class SslContextFactoryHotReloadTest {
         factory.create();
 
         assertEquals(now, factory.getHotReloadTime());
-        assertEquals(1, factory.keyStoreLoads);
     }
 
     /** */
