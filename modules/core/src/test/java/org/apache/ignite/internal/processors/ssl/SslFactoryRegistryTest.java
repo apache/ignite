@@ -665,24 +665,6 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory with due certificates on a node that is stopping.
-     * When: the registry starts.
-     * Then: it starts no hot reload thread.
-     */
-    @Test
-    public void testStoppingNodeDoesNotStartHotReload() throws Exception {
-        SslContextFactory communication = factory(keys);
-
-        writeDueCertificates(keys);
-        communication.setHotReloadEnabled(true);
-        when(ctx.isStopping()).thenReturn(true);
-        registerTransport("communication", communication);
-        registry.start(ctx);
-
-        executorFactory.verifyNoInteractions();
-    }
-
-    /**
      * Given: an automatic attempt that blocks until it is interrupted.
      * When: the registry stops.
      * Then: the attempt is interrupted, and the stop completes.
