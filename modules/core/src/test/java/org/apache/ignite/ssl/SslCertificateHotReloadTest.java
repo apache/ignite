@@ -46,8 +46,8 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
     /**
      * A node replaces its certificates when the hot reload window opens, and new connections use the replacement.
-     * The factory loads due certificates of one CA, then the files get certificates of another CA.
-     * The client trusts and presents only the new certificates.
+     * The factory loads due certificates of one CA, and then the files get certificates of another CA.
+     * The test waits for the new context and connects a client that trusts and presents only the new certificates.
      */
     @Test
     public void testNodeHotReloadsCertificatesForNewConnections() throws Exception {
@@ -96,7 +96,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
     /**
      * A node keeps retrying while its source holds certificates that are still due, and it reports each failure.
-     * The certificates have expired, so the window stays open after every attempt.
+     * The node starts with expired certificates, so the window stays open after every attempt.
      * The test checks the failure metric and the log line with the transport and the reason.
      */
     @Test
