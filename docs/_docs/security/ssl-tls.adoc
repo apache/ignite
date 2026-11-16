@@ -288,7 +288,7 @@ For automatic hot reload, custom sources require a subclass of javadoc:org.apach
 Factories extending only `AbstractSslContextFactory` support manual reload only.
 The key store requirements described above apply to `SslContextFactory`.
 Factories extending only the base class retain their own loading behavior.
-Limit request duration in custom sources: a blocked load can delay other hot reloads, manual reload and node shutdown.
+Limit request duration in custom sources: a blocked load delays other hot reloads and manual reload.
 
 == SslContextFactory Properties
 

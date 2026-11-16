@@ -126,20 +126,6 @@ public class SslFactoryRegistry {
             if (task instanceof Future<?> fut)
                 fut.cancel(false);
         }
-
-        boolean interrupted = false;
-
-        while (!executor.isTerminated()) {
-            try {
-                executor.awaitTermination(Long.MAX_VALUE, MILLISECONDS);
-            }
-            catch (InterruptedException ignored) {
-                interrupted = true;
-            }
-        }
-
-        if (interrupted)
-            Thread.currentThread().interrupt();
     }
 
     /**

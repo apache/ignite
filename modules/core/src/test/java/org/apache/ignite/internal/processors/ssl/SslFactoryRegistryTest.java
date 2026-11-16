@@ -69,7 +69,6 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
@@ -138,9 +137,8 @@ public class SslFactoryRegistryTest {
 
     /**
      * Each test gets a registry whose hot reload executor records scheduled attempts instead of running them.
-     * The executor is a mock that runs other tasks at once in the calling thread and reports termination,
-     * so stopping does not wait. The setup also writes the trust store of a test CA to a temporary directory
-     * and stubs the node metrics and logger.
+     * The executor is a mock that runs other tasks at once in the calling thread.
+     * The setup also writes the trust store of a test CA to a temporary directory and stubs the node metrics and logger.
      */
     @Before
     public void setUp() throws Exception {
@@ -156,7 +154,6 @@ public class SslFactoryRegistryTest {
         when(ctx.metric()).thenReturn(metricMgr);
         when(metricMgr.registry("ssl")).thenReturn(metrics);
         when(ctx.log(SslFactoryRegistry.class)).thenReturn(new NullLogger());
-        when(executor.isTerminated()).thenReturn(true);
 
         doAnswer(call -> {
             call.<Runnable>getArgument(0).run();
@@ -185,14 +182,11 @@ public class SslFactoryRegistryTest {
             .thenReturn(executor);
     }
 
-    /**
-     * After each test, the registry stops, and the static executor mock and the temporary directory are released.
-     * The stop runs in another thread with a timeout, so a test that leaves an attempt blocked fails instead of hanging.
-     */
+    /** After each test, the registry stops, and the static executor mock and the temporary directory are released. */
     @After
     public void tearDown() throws Exception {
         try {
-            runAsync(registry::stop).get(TIMEOUT_MS);
+            registry.stop();
         }
         finally {
             executorFactory.close();
@@ -710,7 +704,7 @@ public class SslFactoryRegistryTest {
     /**
      * Given: an automatic attempt that blocks until it is interrupted.
      * When: the registry stops.
-     * Then: the attempt is interrupted, and the stop completes.
+     * Then: the attempt is interrupted.
      */
     @Test
     public void testStopInterruptsActiveAttempt() throws Exception {
@@ -741,9 +735,9 @@ public class SslFactoryRegistryTest {
 
             assertTrue(attemptStarted.await(TIMEOUT_MS, MILLISECONDS));
 
-            runAsync(registry::stop).get(TIMEOUT_MS);
+            registry.stop();
 
-            assertEquals(0, attemptInterrupted.getCount());
+            assertTrue(attemptInterrupted.await(TIMEOUT_MS, MILLISECONDS));
         }
         finally {
             allowCompletion.countDown();
@@ -780,7 +774,6 @@ public class SslFactoryRegistryTest {
         registry.register("communication", factory);
 
         IgniteInternalFuture<IgniteCheckedException> reload = null;
-        IgniteInternalFuture<?> stop = null;
         Future<?> queuedReload = null;
 
         try {
@@ -793,7 +786,7 @@ public class SslFactoryRegistryTest {
 
             assertNotNull(queuedReload);
 
-            stop = runAsync(registry::stop);
+            registry.stop();
 
             assertTrue(reload.get(TIMEOUT_MS).getCause() instanceof CancellationException);
             verify(factory, never()).init();
@@ -807,61 +800,9 @@ public class SslFactoryRegistryTest {
 
             releaseLoad.countDown();
 
-            if (stop != null)
-                stop.get(TIMEOUT_MS);
-
             if (reload != null)
                 reload.get(TIMEOUT_MS);
         }
-    }
-
-    /**
-     * Given: an automatic attempt that ignores the interrupt and blocks until the test releases it.
-     * When: the registry stops.
-     * Then: the stop waits until the attempt is released and the executor terminates.
-     */
-    @Test
-    public void testStopWaitsForActiveLoad() throws Exception {
-        ScheduledExecutorService hotReloadExecutor = useRealExecutor();
-        CountDownLatch loadStarted = new CountDownLatch(1);
-        CountDownLatch allowCompletion = new CountDownLatch(1);
-        CountDownLatch terminationWaitEntered = new CountDownLatch(1);
-
-        enableHotReload(factory, due());
-        doAnswer(call -> {
-            loadStarted.countDown();
-            U.awaitQuiet(allowCompletion);
-
-            return null;
-        }).when(factory).hotReload();
-        doAnswer(call -> {
-            terminationWaitEntered.countDown();
-
-            return call.callRealMethod();
-        }).when(hotReloadExecutor).awaitTermination(anyLong(), eq(MILLISECONDS));
-
-        registry.register("communication", factory);
-
-        IgniteInternalFuture<?> stop = null;
-
-        try {
-            registry.start(ctx);
-
-            assertTrue(loadStarted.await(TIMEOUT_MS, MILLISECONDS));
-
-            stop = runAsync(registry::stop);
-
-            assertTrue(terminationWaitEntered.await(TIMEOUT_MS, MILLISECONDS));
-            assertFalse(stop.isDone());
-        }
-        finally {
-            allowCompletion.countDown();
-
-            if (stop != null)
-                stop.get(TIMEOUT_MS);
-        }
-
-        assertTrue(hotReloadExecutor.isTerminated());
     }
 
     /**
