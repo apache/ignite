@@ -191,11 +191,11 @@ public class SslContextFactoryHotReloadTest {
 
     /**
      * Given: the issuer expired an hour ago, and the key certificate becomes valid in 99 hours.
-     * When: the factory loads the chain with hot reload enabled.
+     * When: the factory loads the chain for the first time with hot reload enabled.
      * Then: the load succeeds, and hot reload has been due since 15 hours before the issuer expired.
      */
     @Test
-    public void testExpiredChainIsDueBeforeKeyCertificateBecomesValid() throws Exception {
+    public void testFirstLoadAcceptsChainOutsideValidityPeriod() throws Exception {
         TestCertificateAuthority expiredIssuer = new TestCertificateAuthority("expired-issuer", at(-100), at(-1));
         InMemorySslContextFactory factory = new InMemorySslContextFactory(expiredIssuer.keyStore("node", at(99), at(199)));
 
