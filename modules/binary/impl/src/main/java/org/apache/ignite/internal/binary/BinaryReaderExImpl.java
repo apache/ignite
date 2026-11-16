@@ -3386,7 +3386,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      */
     @Nullable static Object unmarshal(BinaryInputStream in, BinaryContext ctx, @Nullable ClassLoader ldr)
         throws BinaryObjectException {
-        return unmarshal(in, ctx, ctx.resolveClassLoader(ldr), new BinaryReaderHandlesHolder(null), false, false);
+        return unmarshal(in, ctx, ctx.resolveClassLoader(ldr), new BinaryReaderHandlesHolder(null));
     }
 
     /**
