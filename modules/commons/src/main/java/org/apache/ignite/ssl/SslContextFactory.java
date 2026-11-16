@@ -21,6 +21,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
@@ -65,7 +66,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
-    /** Default time before certificate expiry when hot reload starts: 7 days. */
+    /** Default lead time for certificate hot reload: 7 days. */
     public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
 
     /** Key manager algorithm. */
@@ -96,7 +97,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
-    private long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
     private transient volatile long hotReloadTime;
@@ -366,7 +367,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
         long earliestExpiry = Long.MAX_VALUE;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
-            Certificate[] chain = store.getCertificateChain(aliases.nextElement());
+            String alias = aliases.nextElement();
+
+            if (!store.isKeyEntry(alias))
+                continue;
+
+            Certificate[] chain = store.getCertificateChain(alias);
 
             if (chain != null && Arrays.stream(chain).allMatch(X509Certificate.class::isInstance)) {
                 for (Certificate cert : chain)
@@ -481,6 +487,14 @@ public class SslContextFactory extends AbstractSslContextFactory {
         catch (IOException e) {
             throw new SSLException("Failed to initialize key store (I/O error occurred): " + storeFilePath, e);
         }
+    }
+
+    /** Restores the default lead time for factories serialized before the setting existed. */
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        in.defaultReadObject();
+
+        if (hotReloadBeforeExpiryMs == 0)
+            hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
     }
 
     /** {@inheritDoc} */

@@ -57,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
@@ -212,13 +213,18 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: hot reload is enabled, and the key store holds only a CA certificate.
+     * Given: the key store returns a certificate chain for an entry without a private key, as Windows-MY does.
      * When: the factory loads the key store.
      * Then: the load succeeds, and the factory has no hot reload date.
      */
     @Test
     public void testStoreWithoutPrivateKeyLoadsWithoutHotReloadDate() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
+        KeyStore store = spy(authority.trustStore());
+        String alias = store.aliases().nextElement();
+
+        doReturn(new Certificate[] {store.getCertificate(alias)}).when(store).getCertificateChain(alias);
+
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(store);
 
         factory.setHotReloadEnabled(true);
 
