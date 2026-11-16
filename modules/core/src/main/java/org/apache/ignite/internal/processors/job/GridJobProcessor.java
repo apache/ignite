@@ -1083,8 +1083,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * This method should be removed in Ignite 3.0.
-     *
      * @deprecated Metrics calculated via new subsystem.
      * @see #startedJobsMetric
      * @see #activeJobsMetric
@@ -1106,8 +1104,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * This method should be removed in Ignite 3.0.
-     *
      * @deprecated Metrics calculated via new subsystem.
      * @see #startedJobsMetric
      * @see #activeJobsMetric

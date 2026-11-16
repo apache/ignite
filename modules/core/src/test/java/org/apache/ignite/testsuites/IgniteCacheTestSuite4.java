@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheConnectionLeakStoreTxTes
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerializableSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticReadCommittedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticSerializableSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheLockWaitTimeoutTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOperationContextTransactionalLockTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughReplicatedAtomicRestartSelfTest;
@@ -165,6 +166,8 @@ public class IgniteCacheTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, CacheReadThroughReplicatedAtomicRestartSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheVersionedEntryPartitionedAtomicSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheVersionedEntryReplicatedTransactionalSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheLockWaitTimeoutTest.class, ignoredTests);
+
         GridTestUtils.addTestIfNeeded(suite, CacheVersionedEntryTransactionalLockTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, LockTxEntryOneNodeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheOperationContextTransactionalLockTest.class, ignoredTests);

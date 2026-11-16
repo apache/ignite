@@ -47,6 +47,9 @@ public class SqlKeyword {
     /** Keyword: CLIENT. */
     public static final String CLIENT = "CLIENT";
 
+    /** Keyword: LOCK. */
+    public static final String LOCK = "LOCK";
+
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 

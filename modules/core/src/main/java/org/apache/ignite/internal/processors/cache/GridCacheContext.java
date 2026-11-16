@@ -145,9 +145,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
     };
 
-    /** Empty cache version array. */
-    private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
-
     /** @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING */
     public static final boolean DFLT_READ_LOAD_BALANCING = true;
 
@@ -1199,13 +1196,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public CacheEntryPredicate equalsVal(V val) {
         return new CacheEntryPredicateAdapter(toCacheObject(val));
-    }
-
-    /**
-     * @return Empty cache version array.
-     */
-    public GridCacheVersion[] emptyVersion() {
-        return EMPTY_VERSION;
     }
 
     /**

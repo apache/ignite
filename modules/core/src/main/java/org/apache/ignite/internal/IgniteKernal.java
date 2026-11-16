@@ -1977,32 +1977,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean eventUserRecordable(int type) {
-        guard();
-
-        try {
-            return ctx.event().isUserRecordable(type);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allEventsUserRecordable(int[] types) {
-        A.notNull(types, "types");
-
-        guard();
-
-        try {
-            return ctx.event().isAllUserRecordable(types);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
         guard();
 

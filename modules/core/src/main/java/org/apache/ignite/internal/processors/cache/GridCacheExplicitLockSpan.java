@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.LongConsumer;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -325,14 +325,30 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
         }
     }
 
+    /** @param c Consumer of the time each acquired key of the span has been locked for, in milliseconds. */
+    public void holdTimes(LongConsumer c) {
+        lock();
+
+        try {
+            long now = U.currentTimeMillis();
+
+            for (KeyCandidates keyCands : cands.values()) {
+                if (keyCands.acquireTime != 0)
+                    c.accept(keyCands.holdTime(now));
+            }
+        }
+        finally {
+            unlock();
+        }
+    }
+
     /**
      * Gets explicit lock candidate for given key.
      *
      * @param key Key to lookup.
-     * @param ver Version to lookup (if {@code null} - return any).
      * @return Last added explicit lock candidate, if any, or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key, @Nullable final GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key) {
         lock();
 
         try {
@@ -343,11 +359,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
                 assert !deque.isEmpty();
 
-                return ver == null ? deque.peekFirst() : F.find(deque, null, new P1<GridCacheMvccCandidate>() {
-                    @Override public boolean apply(GridCacheMvccCandidate cand) {
-                        return cand.version().equals(ver);
-                    }
-                });
+                return deque.peekFirst();
             }
 
             return null;

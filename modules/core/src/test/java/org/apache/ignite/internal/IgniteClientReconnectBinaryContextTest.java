@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  *
  */
-public class IgniteClientReconnectBinaryContexTest extends IgniteClientReconnectAbstractTest {
+public class IgniteClientReconnectBinaryContextTest extends IgniteClientReconnectAbstractTest {
     /** {@inheritDoc} */
     @Override protected int serverCount() {
         return 1;

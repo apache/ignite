@@ -2105,6 +2105,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         registerMBean(igniteInstanceName, new TcpDiscoverySpiMBeanImpl(this), TcpDiscoverySpiMBean.class);
 
         impl.spiStart(igniteInstanceName);
+
+        if (isSslEnabled())
+            ignite.context().ssl().register("discovery", sslCtxFactory);
     }
 
     /** */

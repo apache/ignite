@@ -149,8 +149,6 @@ public class IgniteCommonsSystemProperties {
     /**
      * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
      * the natural order is used.
-     * <p>
-     * NOTICE: Should be the default in Apache Ignite 3.0
      */
     @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
         "By default, the natural order is used")

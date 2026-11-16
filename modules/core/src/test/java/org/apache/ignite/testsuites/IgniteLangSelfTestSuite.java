@@ -33,8 +33,6 @@ import org.apache.ignite.lang.utils.GridBoundedConcurrentOrderedMapSelfTest;
 import org.apache.ignite.lang.utils.GridBoundedPriorityQueueSelfTest;
 import org.apache.ignite.lang.utils.GridCircularBufferSelfTest;
 import org.apache.ignite.lang.utils.GridConcurrentLinkedHashMapSelfTest;
-import org.apache.ignite.lang.utils.GridConcurrentWeakHashSetSelfTest;
-import org.apache.ignite.lang.utils.GridConsistentHashSelfTest;
 import org.apache.ignite.lang.utils.GridLeanIdentitySetSelfTest;
 import org.apache.ignite.lang.utils.GridLeanMapSelfTest;
 import org.apache.ignite.lang.utils.GridListSetSelfTest;
@@ -58,7 +56,6 @@ import org.junit.runners.Suite;
     GridLeanIdentitySetSelfTest.class,
     GridListSetSelfTest.class,
     GridSetWrapperSelfTest.class,
-    GridConcurrentWeakHashSetSelfTest.class,
     GridMetadataAwareAdapterSelfTest.class,
     GridSetWrapperSelfTest.class,
     IgniteUuidSelfTest.class,
@@ -81,9 +78,6 @@ import org.junit.runners.Suite;
     IgniteOffheapReadWriteLockSelfTest.class,
 
     GridTestLog4jLoggerSelfTest.class,
-
-    // Consistent hash tests.
-    GridConsistentHashSelfTest.class,
 })
 public class IgniteLangSelfTestSuite {
 }

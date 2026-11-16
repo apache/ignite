@@ -36,12 +36,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.ReaderArguments;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,12 +77,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
 
     /** Reserved partitions. */
     private int part = -1;
-
-    /** Future ID. */
-    private IgniteUuid futId;
-
-    /** Version. */
-    private GridCacheVersion ver;
 
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
@@ -150,10 +142,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         this.recovery = recovery;
         this.txLbl = txLbl;
 
-        futId = IgniteUuid.randomUuid();
-
-        ver = cctx.cache().nextVersion();
-
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtGetSingleFuture.class);
     }
@@ -163,20 +151,6 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      */
     void init() {
         map();
-    }
-
-    /**
-     * @return Future ID.
-     */
-    public IgniteUuid futureId() {
-        return futId;
-    }
-
-    /**
-     * @return Future version.
-     */
-    public GridCacheVersion version() {
-        return ver;
     }
 
     /** {@inheritDoc} */

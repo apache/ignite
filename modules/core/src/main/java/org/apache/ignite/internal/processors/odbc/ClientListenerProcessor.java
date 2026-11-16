@@ -271,6 +271,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 distrThinCfg = new DistributedThinClientConfiguration(ctx);
 
                 srv.start();
+
+                if (cliConnCfg.isSslEnabled())
+                    ctx.ssl().register("client connector", sslContextFactory(cliConnCfg));
             }
             catch (Exception e) {
                 throw new IgniteCheckedException("Failed to start client connector processor.", e);
@@ -530,8 +533,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerNioMessageParser(log), log, true);
 
         if (cliConnCfg.isSslEnabled()) {
-            Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
-                ctx.config().getSslContextFactory() : cliConnCfg.getSslContextFactory();
+            Factory<SSLContext> sslCtxFactory = sslContextFactory(cliConnCfg);
 
             if (sslCtxFactory == null)
                 throw new IgniteCheckedException("Failed to create client listener " +
@@ -559,6 +561,11 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 codecFilter
             };
         }
+    }
+
+    /** */
+    private Factory<SSLContext> sslContextFactory(ClientConnectorConfiguration cfg) {
+        return cfg.isUseIgniteSslContextFactory() ? ctx.config().getSslContextFactory() : cfg.getSslContextFactory();
     }
 
     /** {@inheritDoc} */

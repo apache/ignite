@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import org.apache.ignite.client.thin.ExtraColumnInH2RowsTest;
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
+import org.apache.ignite.internal.client.thin.BinaryMetadataChannelFailureTest;
 import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.CacheConfigurationTest;
@@ -117,6 +118,7 @@ import org.junit.runners.Suite;
     ReliableChannelDuplicationTest.class,
     CacheExceptionsTest.class,
     CacheConfigurationTest.class,
+    BinaryMetadataChannelFailureTest.class,
 })
 public class ClientTestSuite {
     // No-op.

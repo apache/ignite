@@ -182,7 +182,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      *
      * @throws IgniteException If the context cannot be initialized.
      */
-    protected final void init() {
+    public final synchronized void init() {
         try {
             sslCtx.set(createSslContext());
         }
@@ -195,18 +195,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
+        if (ctx != null)
+            return ctx;
 
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
-            }
+        synchronized (this) {
+            if (sslCtx.get() == null)
+                init();
+
+            return sslCtx.get();
         }
-
-        return ctx;
     }
 }
