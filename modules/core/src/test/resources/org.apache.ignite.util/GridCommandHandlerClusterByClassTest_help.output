@@ -430,6 +430,13 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     Parameters:
       --caches cache1,...,cacheN  - specifies a comma-separated list of cache names.
 
+  Clear CDC directory: delete WAL segment links and CDC application state:
+    control.(sh|bat) --cdc clear [--node-id node_id] [--reset-mode] [--yes]
+
+    Parameters:
+      --node-id node_id  - ID of the node to clear CDC directory from. If not set, the command will affect all server nodes.
+      --reset-mode       - Also delete the CDC mode state. The CDC application will not capture changes until CDC is enabled and Ignite nodes are restarted.
+
   [EXPERIMENTAL]
   Check/Repair cache consistency using Read Repair approach:
     control.(sh|bat) --consistency repair --cache cache --partitions partition --strategy LWW|PRIMARY|RELATIVE_MAJORITY|REMOVE|CHECK_ONLY [--parallel]
