@@ -30,6 +30,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -66,8 +67,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
-    /** Fraction of a certificate lifetime reserved for hot reload. */
-    private static final double HOT_RELOAD_WINDOW_FRACTION = 0.15;
+    /** Default time before certificate expiry when hot reload starts: 7 days. */
+    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY = TimeUnit.DAYS.toMillis(7);
 
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
@@ -97,6 +98,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
+    private long hotReloadBeforeExpiry = DFLT_HOT_RELOAD_BEFORE_EXPIRY;
+
+    /** */
     private transient volatile long hotReloadTime;
 
     /** */
@@ -117,13 +121,30 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
+     * @return How long before the certificates expire hot reload starts, in milliseconds.
+     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY}.
+     */
+    public long getHotReloadBeforeExpiry() {
+        return hotReloadBeforeExpiry;
+    }
+
+    /**
+     * @param millis How long before the certificates expire hot reload starts, in milliseconds. Must be positive.
+     *     The factory applies a change at its next load.
+     */
+    public void setHotReloadBeforeExpiry(long millis) {
+        A.ensure(millis > 0, "millis > 0");
+
+        hotReloadBeforeExpiry = millis;
+    }
+
+    /**
      * The hot reload time is calculated from the certificates loaded with hot reload enabled.
-     * The chain that expires first determines the window, which starts with 15% of its lifetime remaining.
-     * Its lifetime runs from the key certificate's {@code notBefore} to the earliest {@code notAfter} in its chain.
-     * The window never starts after the chain expires.
-     * For chains with the same expiry, the longest lifetime is used.
+     * It comes {@link #getHotReloadBeforeExpiry()} before the earliest expiry among the chains of the private keys.
+     * A chain expires when any certificate in it expires.
+     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
-     * @return Start of the hot reload window in milliseconds since the epoch, or {@code 0} if the current certificates
+     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the current certificates
      *     were loaded with hot reload disabled or have not been loaded yet.
      */
     public long getHotReloadTime() {
@@ -131,8 +152,8 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * Replaces the current SSL context when the hot reload window has started.
-     * Does nothing when hot reload is disabled, no hot reload date has been loaded, or the window has not started.
+     * Replaces the current SSL context when the hot reload time has come.
+     * Does nothing when hot reload is disabled, no hot reload date has been loaded, or the time has not come.
      * A failed replacement leaves the current context and hot reload time unchanged.
      *
      * @throws IgniteException If the replacement cannot be loaded or accepted.
@@ -356,14 +377,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param store Loaded key store.
-     * @return Start of the hot reload window of the chain that expires first.
-     * @throws GeneralSecurityException If a key or certificate cannot be read.
-     * @throws SSLException If there are no private keys or a private key has no X.509 certificate chain.
+     * @return Hot reload time of the chain that expires first.
+     * @throws GeneralSecurityException If a key cannot be read.
+     * @throws SSLException If the store has no private key with an X.509 certificate chain.
      */
     private long hotReloadTime(KeyStore store) throws GeneralSecurityException, SSLException {
         long earliestExpiry = Long.MAX_VALUE;
-        long selectedStart = Long.MAX_VALUE;
-        boolean hasPrivateKeys = false;
+        boolean hasChains = false;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
             String alias = aliases.nextElement();
@@ -371,34 +391,21 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (!store.isKeyEntry(alias) || !(store.getKey(alias, keyStorePwd) instanceof PrivateKey))
                 continue;
 
-            hasPrivateKeys = true;
-
             Certificate[] chain = store.getCertificateChain(alias);
 
-            if (chain == null || chain.length == 0)
-                throw new SSLException("Certificate chain is unavailable [alias=" + alias + "]. Remove the key or add its X.509 chain.");
+            if (chain == null || chain.length == 0 || !Arrays.stream(chain).allMatch(X509Certificate.class::isInstance))
+                continue;
 
-            long chainExpiry = Long.MAX_VALUE;
+            hasChains = true;
 
-            for (Certificate certificate : chain) {
-                if (!(certificate instanceof X509Certificate cert))
-                    throw new SSLException("Certificate chain is not X.509 [alias=" + alias + "]. Remove the key or add its X.509 chain.");
-
-                chainExpiry = Math.min(chainExpiry, cert.getNotAfter().getTime());
-            }
-
-            long chainStart = ((X509Certificate)chain[0]).getNotBefore().getTime();
-
-            if (chainExpiry < earliestExpiry || chainExpiry == earliestExpiry && chainStart < selectedStart) {
-                earliestExpiry = chainExpiry;
-                selectedStart = chainStart;
-            }
+            for (Certificate cert : chain)
+                earliestExpiry = Math.min(earliestExpiry, ((X509Certificate)cert).getNotAfter().getTime());
         }
 
-        if (!hasPrivateKeys)
+        if (!hasChains)
             throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
 
-        long time = earliestExpiry - (long)(Math.max(0, earliestExpiry - selectedStart) * HOT_RELOAD_WINDOW_FRACTION);
+        long time = earliestExpiry - hotReloadBeforeExpiry;
 
         // Zero is reserved for an absent hot reload date.
         return time == 0 ? -1 : time;

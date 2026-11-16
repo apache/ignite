@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.ssl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CancellationException;
@@ -29,7 +32,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -52,6 +54,7 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
+import org.apache.ignite.testframework.ListeningTestLogger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +64,8 @@ import org.mockito.MockedStatic;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.stream.Collectors.toList;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -265,7 +269,7 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: certificates from 1970 whose window opens exactly at 0 ms, the value that also means no date.
+     * Given: certificates from 1970 that are due for hot reload exactly at 0 ms, the value that also means no date.
      * When: the registry starts, and the source then gets new certificates.
      * Then: the registry schedules an attempt at once, and the attempt loads the new certificates.
      */
@@ -273,7 +277,7 @@ public class SslFactoryRegistryTest {
     public void testHotReloadAtEpochLoadsReplacement() throws Exception {
         SslContextFactory communication = factory(keys);
 
-        save(authority.keyStore("node", -HOURS.toMillis(85), HOURS.toMillis(15)), keys);
+        save(authority.keyStore("node", -DAYS.toMillis(1), DFLT_HOT_RELOAD_BEFORE_EXPIRY), keys);
         communication.setHotReloadEnabled(true);
         registerTransport("communication", communication);
         registry.start(ctx);
@@ -334,11 +338,11 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: hot reload is enabled, and the key store file is deleted after start.
-     * When: eight attempts fail in a row and the random addition alternates between its maximum and zero.
-     * Then: each retry waits 1, 2, 4 ... up to 60 minutes, plus up to half of that at random.
+     * When: three attempts fail in a row.
+     * Then: each retry waits one hour.
      */
     @Test
-    public void testFailedAttemptsRetryWithDoublingDelayUpToOneHour() throws Exception {
+    public void testFailedAttemptsRetryEveryHour() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeDueCertificates(keys);
@@ -347,26 +351,52 @@ public class SslFactoryRegistryTest {
         registry.start(ctx);
         Files.delete(keys);
 
-        ThreadLocalRandom random = mock(ThreadLocalRandom.class);
+        for (int failure = 1; failure <= 3; failure++) {
+            long before = System.currentTimeMillis();
 
-        try (MockedStatic<ThreadLocalRandom> source = mockStatic(ThreadLocalRandom.class)) {
-            source.when(ThreadLocalRandom::current).thenReturn(random);
+            scheduled.run();
 
-            for (int failure = 1; failure <= 8; failure++) {
-                long base = MINUTES.toMillis(Math.min(1L << (failure - 1), 60));
-                long jitter = failure % 2 == 0 ? 0 : base / 2;
-
-                when(random.nextLong(base / 2 + 1)).thenReturn(jitter);
-
-                long before = System.currentTimeMillis();
-
-                scheduled.run();
-
-                assertEquals(failure, failures());
-                assertTrue(delay >= base + jitter - (System.currentTimeMillis() - before));
-                assertTrue(delay <= base + jitter);
-            }
+            assertEquals(failure, failures());
+            assertTrue(delay >= HOURS.toMillis(1) - (System.currentTimeMillis() - before));
+            assertTrue(delay <= HOURS.toMillis(1));
         }
+    }
+
+    /**
+     * Given: hot reload is enabled for due certificates, and the key store file is deleted after start.
+     * When: one automatic attempt fails, and the next one loads fresh certificates.
+     * Then: the log shows each scheduled attempt with its time, and the start and result of each attempt.
+     */
+    @Test
+    public void testLogShowsScheduleStartAndResultOfAttempts() throws Exception {
+        ListeningTestLogger log = new ListeningTestLogger();
+        List<String> logged = new ArrayList<>();
+
+        log.registerListener(line -> {
+            if (line.startsWith("TLS hot reload "))
+                logged.add(line);
+        });
+        when(ctx.log(SslFactoryRegistry.class)).thenReturn(log);
+
+        SslContextFactory communication = factory(keys);
+
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registerTransport("communication", communication);
+        registry.start(ctx);
+
+        long due = communication.getHotReloadTime();
+
+        Files.delete(keys);
+        scheduled.run();
+        writeFreshCertificates(keys);
+        scheduled.run();
+
+        assertEquals(List.of("scheduled", "started", "failed", "scheduled", "started", "succeeded", "scheduled"),
+            logged.stream().map(e -> e.substring("TLS hot reload ".length(), e.indexOf(" ["))).collect(toList()));
+        assertTrue(logged.toString(), logged.stream().allMatch(e -> e.contains("[transports=communication")));
+        assertTrue(logged.get(0), logged.get(0).endsWith("nextAttempt=" + new Date(due) + ']'));
+        assertTrue(logged.get(6), logged.get(6).endsWith("nextAttempt=" + new Date(communication.getHotReloadTime()) + ']'));
     }
 
     /**
@@ -397,8 +427,8 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: an automatic attempt has failed on a missing key store file.
-     * When: the source gets certificates with the window in 84 hours, and the next attempt succeeds.
-     * Then: the failure count resets, and the next attempt waits for the new window.
+     * When: the source gets certificates due for hot reload in 23 days, and the next attempt succeeds.
+     * Then: the failure count resets, and the next attempt waits for the new hot reload time.
      */
     @Test
     public void testSuccessfulAttemptResetsFailuresAndSchedulesNextHotReload() throws Exception {
@@ -422,10 +452,10 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: an automatic attempt has failed on a missing key store file, and a retry is pending.
-     * When: the operator reloads certificates whose window is open and the immediate automatic attempt runs.
+     * When: the operator reloads certificates that are already due and the immediate automatic attempt runs.
      *     The operator then installs fresh certificates and reloads them.
      * Then: the first reload cancels the retry and schedules an attempt at once.
-     *     The second reload schedules the attempt for the new window.
+     *     The second reload schedules the attempt for the new hot reload time.
      */
     @Test
     public void testManualReloadReplacesRetryWithLoadedHotReloadTime() throws Exception {
@@ -921,19 +951,19 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Writes a key store whose hot reload window has already opened.
-     * Its certificate has 10 of its 100 hours left, and the window opens with 15 hours left.
+     * Writes a key store that is already due for hot reload with the default lead time.
+     * Its certificate expires in 10 hours.
      */
     private void writeDueCertificates(Path keyStore) throws Exception {
         save(authority.keyStore("node", at(-90), at(10)), keyStore);
     }
 
     /**
-     * Writes a key store whose hot reload window opens in 84 hours.
-     * Its certificate became valid an hour ago and expires in 99 hours.
+     * Writes a key store that is due for hot reload in 23 days with the default lead time.
+     * Its certificate became valid an hour ago and expires in 30 days.
      */
     private void writeFreshCertificates(Path keyStore) throws Exception {
-        save(authority.keyStore("node", at(-1), at(99)), keyStore);
+        save(authority.keyStore("node", at(-1), at(DAYS.toHours(30))), keyStore);
     }
 
     /** */

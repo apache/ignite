@@ -26,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
@@ -42,13 +41,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry {
+    /** */
+    private static final long RETRY_DELAY = HOURS.toMillis(1);
+
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
 
@@ -210,6 +212,9 @@ public class SslFactoryRegistry {
 
             automaticHotReloadAttempts.incrementAndGet();
 
+            if (log.isInfoEnabled())
+                log.info("TLS hot reload started [transports=" + transports + ']');
+
             try {
                 factory.hotReload();
             }
@@ -224,8 +229,12 @@ public class SslFactoryRegistry {
             if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
                 retry(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
                     + new Date(hotReloadTime) + ']'));
-            else
+            else {
+                if (log.isInfoEnabled())
+                    log.info("TLS hot reload succeeded [transports=" + transports + ']');
+
                 scheduleHotReload();
+            }
         }
 
         /** */
@@ -233,8 +242,9 @@ public class SslFactoryRegistry {
             if (executor.isShutdown())
                 return;
 
-            long delay = Math.min(MINUTES.toMillis(1) << Math.min(failures.incrementAndGet() - 1, 6), MINUTES.toMillis(60));
-            long nextAttempt = System.currentTimeMillis() + delay + ThreadLocalRandom.current().nextLong(delay / 2 + 1);
+            failures.incrementAndGet();
+
+            long nextAttempt = System.currentTimeMillis() + RETRY_DELAY;
 
             log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', cause);
 

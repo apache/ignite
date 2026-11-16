@@ -70,7 +70,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
             assertTrue("Hot reload must be due at startup", serverFactory.getHotReloadTime() < now);
 
-            save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(1)), keys);
+            save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(10)), keys);
             save(ca2.trustStore(), trust);
 
             IgniteEx node = startGrid(0, cfg -> {
@@ -95,7 +95,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a node with hot reload enabled starts with expired certificates, so their window stays open.
+     * Given: a node with hot reload enabled starts with expired certificates, so hot reload stays due.
      * When: the automatic attempt reloads the same certificates.
      * Then: the node counts the failure and logs the transport and the reason.
      */

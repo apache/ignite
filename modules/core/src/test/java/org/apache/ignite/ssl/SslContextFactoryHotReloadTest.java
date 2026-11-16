@@ -20,6 +20,8 @@ package org.apache.ignite.ssl;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
+import java.security.PublicKey;
+import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
@@ -35,6 +37,7 @@ import org.junit.rules.TemporaryFolder;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
@@ -89,6 +92,42 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
+     * Given: a factory with hot reload enabled and the default lead time, which reads its key store from a file.
+     * When: it loads a certificate that expires in 10 days.
+     * Then: hot reload is due 7 days before the expiry.
+     */
+    @Test
+    public void testHotReloadIsDueSevenDaysBeforeExpiryByDefault() throws Exception {
+        Path keys = tmp.newFile("keys.jks").toPath();
+
+        save(authority.keyStore("node", at(-1), at(DAYS.toHours(10))), keys);
+
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreFilePath(keys.toString());
+        factory.setKeyStorePassword(PASSWORD);
+        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+        factory.setHotReloadEnabled(true);
+        factory.create();
+
+        assertEquals(at(DAYS.toHours(3)), factory.getHotReloadTime());
+    }
+
+    /**
+     * Given: a factory with the default lead time.
+     * When: the application sets a zero or negative lead time.
+     * Then: the setter rejects it and keeps the default.
+     */
+    @Test
+    public void testNonPositiveHotReloadBeforeExpiryIsRejected() {
+        SslContextFactory factory = new SslContextFactory();
+
+        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiry(0));
+        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiry(-1));
+        assertEquals(DFLT_HOT_RELOAD_BEFORE_EXPIRY, factory.getHotReloadBeforeExpiry());
+    }
+
+    /**
      * Given: an application reuses a factory across node starts with different hot reload settings.
      * When: it reloads the keys with hot reload off, then enables hot reload for the next start.
      * Then: the factory reports no hot reload date for the keys loaded while hot reload was off.
@@ -110,34 +149,29 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: key stores in which the chain that expires first has 15 of its 100 hours left.
+     * Given: key stores in which the chain that expires first has 15 hours left.
      *     In one of them, that chain gets its expiry from an issuer that expires before the key certificate.
-     *     Other entries are a chain that expires later, a chain with the same expiry and a shorter lifetime,
-     *     a chain whose window opened earlier, and a secret key.
+     *     Other entries are a chain that expires later, a secret key and a key with a certificate chain that is not X.509.
      * When: the factory loads each key store with hot reload enabled.
-     * Then: the window opens now, when the chain that expires first has 15% of its lifetime left.
+     * Then: hot reload is due now, 15 hours before the chain that expires first.
      */
     @Test
-    public void testHotReloadTimeIsWindowStartOfEarliestExpiringChain() throws Exception {
+    public void testHotReloadTimeComesFromEarliestExpiringChain() throws Exception {
         TestCertificateAuthority shortIssuer = new TestCertificateAuthority("short-issuer", now - DAYS.toMillis(365), at(15));
         KeyStore node = authority.keyStore("node", at(-85), at(15));
-        KeyStore withSecretKey = KeyStore.getInstance("JCEKS");
+        KeyStore withUnusableKeys = KeyStore.getInstance("JCEKS");
 
-        withSecretKey.load(null, PASSWORD);
-        withSecretKey.setKeyEntry("node", node.getKey("node", PASSWORD), PASSWORD, node.getCertificateChain("node"));
-        withSecretKey.setKeyEntry("secret", new SecretKeySpec(new byte[16], "AES"), PASSWORD, null);
+        withUnusableKeys.load(null, PASSWORD);
+        withUnusableKeys.setKeyEntry("node", node.getKey("node", PASSWORD), PASSWORD, node.getCertificateChain("node"));
+        withUnusableKeys.setKeyEntry("secret", new SecretKeySpec(new byte[16], "AES"), PASSWORD, null);
+        withUnusableKeys.setKeyEntry("other", node.getKey("node", PASSWORD), PASSWORD,
+            new Certificate[] {new OtherCertificate(node.getCertificate("node").getPublicKey())});
 
-        assertHotReloadWindowStartsNow(node);
-        assertHotReloadWindowStartsNow(shortIssuer.keyStore("node", at(-85), at(100)));
-        assertHotReloadWindowStartsNow(
-            merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-200), at(100))));
-        assertHotReloadWindowStartsNow(
-            merge(authority.keyStore("first", at(-200), at(100)), authority.keyStore("second", at(-85), at(15))));
-        assertHotReloadWindowStartsNow(merge(authority.keyStore("first", at(-5), at(15)), authority.keyStore("second", at(-85), at(15))));
-        assertHotReloadWindowStartsNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-5), at(15))));
-        assertHotReloadWindowStartsNow(
-            merge(authority.keyStore("first", at(-1980), at(20)), authority.keyStore("second", at(-85), at(15))));
-        assertHotReloadWindowStartsNow(withSecretKey);
+        assertHotReloadIsDueNow(node);
+        assertHotReloadIsDueNow(shortIssuer.keyStore("node", at(-85), at(100)));
+        assertHotReloadIsDueNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-200), at(100))));
+        assertHotReloadIsDueNow(merge(authority.keyStore("first", at(-200), at(100)), authority.keyStore("second", at(-85), at(15))));
+        assertHotReloadIsDueNow(withUnusableKeys);
     }
 
     /**
@@ -158,7 +192,7 @@ public class SslContextFactoryHotReloadTest {
     /**
      * Given: the issuer expired an hour ago, and the key certificate becomes valid in 99 hours.
      * When: the factory loads the chain with hot reload enabled.
-     * Then: the window opens at the moment the issuer expired.
+     * Then: the load succeeds, and hot reload has been due since 15 hours before the issuer expired.
      */
     @Test
     public void testExpiredChainIsDueBeforeKeyCertificateBecomesValid() throws Exception {
@@ -168,7 +202,7 @@ public class SslContextFactoryHotReloadTest {
         factory.setHotReloadEnabled(true);
         factory.create();
 
-        assertEquals(at(-1), factory.getHotReloadTime());
+        assertEquals(at(-16), factory.getHotReloadTime());
     }
 
     /**
@@ -207,12 +241,12 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: the factory has loaded certificates whose window opens in 84 hours.
+     * Given: the factory has loaded certificates that are due for hot reload in 84 hours.
      * When: {@link SslContextFactory#hotReload()} runs.
      * Then: the factory does not read its key store.
      */
     @Test
-    public void testHotReloadBeforeWindowDoesNotLoad() throws Exception {
+    public void testHotReloadBeforeDueTimeDoesNotLoad() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-1), at(99)));
 
         factory.setHotReloadEnabled(true);
@@ -420,8 +454,8 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Creates a factory with hot reload enabled that has loaded certificates whose window opened 5 hours ago.
-     * It reads both stores from memory. The certificates have 10 of their 100 hours left.
+     * Creates a factory with hot reload enabled that has loaded certificates due for hot reload 5 hours ago.
+     * It reads both stores from memory. The certificates expire in 10 hours.
      */
     private InMemorySslContextFactory dueFactory() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
@@ -437,7 +471,7 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /** */
-    private void assertHotReloadWindowStartsNow(KeyStore keys) {
+    private void assertHotReloadIsDueNow(KeyStore keys) {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(keys);
 
         factory.setHotReloadEnabled(true);
@@ -455,6 +489,7 @@ public class SslContextFactoryHotReloadTest {
      * A factory that reads its key store from a field instead of a file and counts the reads.
      * Tests change the field to put new certificates into the source.
      * By default the factory trusts all peers. Tests can configure a trust store from memory or a file.
+     * Hot reload is due 15 hours before expiry, so the tests count certificate dates in hours.
      */
     private static class InMemorySslContextFactory extends SslContextFactory {
         /** */
@@ -476,6 +511,7 @@ public class SslContextFactoryHotReloadTest {
             setKeyStoreFilePath("memory");
             setKeyStorePassword(PASSWORD);
             setTrustManagers(getDisabledTrustManager());
+            setHotReloadBeforeExpiry(HOURS.toMillis(15));
         }
 
         /** Selects the trust store that supplies the factory's trust managers. */
@@ -496,6 +532,47 @@ public class SslContextFactoryHotReloadTest {
             keyStoreLoads++;
 
             return keyStore;
+        }
+    }
+
+    /** A certificate of a type other than X.509, which TLS key managers skip. */
+    private static class OtherCertificate extends Certificate {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final PublicKey key;
+
+        /** */
+        private OtherCertificate(PublicKey key) {
+            super("Other");
+
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte[] getEncoded() {
+            return new byte[0];
+        }
+
+        /** {@inheritDoc} */
+        @Override public void verify(PublicKey key) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void verify(PublicKey key, String sigProvider) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "OtherCertificate";
+        }
+
+        /** {@inheritDoc} */
+        @Override public PublicKey getPublicKey() {
+            return key;
         }
     }
 }
