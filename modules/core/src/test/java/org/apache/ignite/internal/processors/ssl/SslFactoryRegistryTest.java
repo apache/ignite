@@ -68,13 +68,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * A manual reload is {@link SslFactoryRegistry#reload}, which the TLS reload command calls.
- * An attempt is an automatic hot reload attempt that the registry schedules.
+ * An attempt is an automatic hot reload attempt that the hourly check makes.
  */
 public class SslFactoryRegistryTest {
     /** Upper bound for waiting for an event that must happen. */
@@ -572,7 +571,8 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testStopInterruptsActiveAttempt() throws Exception {
-        useRealExecutor();
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
+            .thenReturn(new IgniteScheduledThreadPoolExecutor("ssl-hot-reload", null, 1));
 
         CountDownLatch attemptStarted = new CountDownLatch(1);
         CountDownLatch attemptInterrupted = new CountDownLatch(1);
@@ -676,11 +676,6 @@ public class SslFactoryRegistryTest {
         return System.currentTimeMillis();
     }
 
-    /** @return Hot reload time two hours ahead. */
-    private static long later() {
-        return System.currentTimeMillis() + HOURS.toMillis(2);
-    }
-
     /**
      * Creates a factory with hot reload disabled that reads its key store from the given file.
      * The factory trusts the test CA through the trust store file from the setup.
@@ -715,18 +710,5 @@ public class SslFactoryRegistryTest {
     /** */
     private static long at(long hours) {
         return System.currentTimeMillis() + HOURS.toMillis(hours);
-    }
-
-    /**
-     * Makes the registry use a real single-thread executor and returns a spy on it.
-     * Tests use the spy to see when the registry submits a task or waits for termination.
-     */
-    private ScheduledExecutorService useRealExecutor() {
-        ScheduledExecutorService hotReloadExecutor = spy(new IgniteScheduledThreadPoolExecutor("ssl-hot-reload", null, 1));
-
-        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
-            .thenReturn(hotReloadExecutor);
-
-        return hotReloadExecutor;
     }
 }
