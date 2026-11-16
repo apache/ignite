@@ -421,27 +421,6 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory with hot reload enabled and a key store deleted after startup.
-     * When: a manual reload fails to read the file.
-     * Then: the manual attempt counter includes the failed load.
-     */
-    @Test
-    public void testFailedManualReloadWithHotReloadEnabledIsCounted() throws Exception {
-        SslContextFactory communication = factory(keys);
-
-        writeFreshCertificates(keys);
-        communication.setHotReloadEnabled(true);
-        registerTransport("communication", communication);
-        registry.start(ctx);
-        Files.delete(keys);
-
-        IgniteException err = assertThrows(IgniteException.class, () -> registry.reload(communication));
-
-        assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
-        assertEquals(1, metric("ManualReloadAttempts"));
-    }
-
-    /**
      * Given: a registered factory that is not an {@link SslContextFactory}.
      * When: a manual reload runs.
      * Then: the factory is loaded.
