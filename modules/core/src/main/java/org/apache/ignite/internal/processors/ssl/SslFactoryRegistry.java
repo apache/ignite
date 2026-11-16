@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.ssl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -49,7 +48,7 @@ public class SslFactoryRegistry {
     private final List<Entry<Factory<SSLContext>, String>> factories = new ArrayList<>();
 
     /** */
-    private volatile Map<Factory<SSLContext>, HotReload> hotReloads = Collections.emptyMap();
+    private volatile List<SslFactoryWrapper> hotReloads = Collections.emptyList();
 
     /** */
     private volatile ScheduledExecutorService executor;
@@ -87,7 +86,7 @@ public class SslFactoryRegistry {
     public synchronized void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveHotReloadFailures", () -> hotReloads.values().stream().mapToLong(r -> r.failures.get()).sum(),
+        metrics.register("ConsecutiveHotReloadFailures", () -> hotReloads.stream().mapToLong(w -> w.failures.get()).sum(),
             "Sum of consecutive automatic certificate hot reload failures across SSL factories.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
@@ -95,14 +94,14 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
+        List<SslFactoryWrapper> hotReloads = new ArrayList<>();
 
         for (Entry<Factory<SSLContext>, String> entry : factories) {
             if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
-                HotReload hotReload = new HotReload(sslFactory, entry.getValue());
+                SslFactoryWrapper wrapper = new SslFactoryWrapper(sslFactory, entry.getValue());
 
-                hotReload.logHotReloadTime(sslFactory.getHotReloadTime());
-                hotReloads.put(sslFactory, hotReload);
+                wrapper.logHotReloadTime(sslFactory.getHotReloadTime());
+                hotReloads.add(wrapper);
             }
         }
 
@@ -113,7 +112,7 @@ public class SslFactoryRegistry {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(() -> hotReloads.values().forEach(HotReload::check), 0, CHECK_PERIOD, MILLISECONDS);
+        executor.scheduleWithFixedDelay(() -> hotReloads.forEach(SslFactoryWrapper::check), 0, CHECK_PERIOD, MILLISECONDS);
     }
 
     /** */
@@ -128,12 +127,15 @@ public class SslFactoryRegistry {
      * @param factory Factory to reload.
      */
     public void reload(AbstractSslContextFactory factory) {
-        HotReload hotReload = hotReloads.get(factory);
+        for (SslFactoryWrapper wrapper : hotReloads) {
+            if (wrapper.factory == factory) {
+                wrapper.reload();
 
-        if (hotReload == null)
-            reloadFactory(factory);
-        else
-            hotReload.reload();
+                return;
+            }
+        }
+
+        reloadFactory(factory);
     }
 
     /** */
@@ -143,8 +145,8 @@ public class SslFactoryRegistry {
         factory.init();
     }
 
-    /** Hot reload state of one factory. Its check and manual reload hold its monitor. */
-    private class HotReload {
+    /** Factory with hot reload enabled and its hot reload state. Its check and manual reload hold its monitor. */
+    private class SslFactoryWrapper {
         /** */
         private final SslContextFactory factory;
 
@@ -155,7 +157,7 @@ public class SslFactoryRegistry {
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private HotReload(SslContextFactory factory, String transports) {
+        private SslFactoryWrapper(SslContextFactory factory, String transports) {
             this.factory = factory;
             this.transports = transports;
         }

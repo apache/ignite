@@ -211,6 +211,32 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: communication and the client connector use equal but separate factories for the same key store file.
+     * When: the key store is replaced, and the client connector's factory is reloaded manually.
+     * Then: the client connector's factory loads the new certificates, and the communication factory keeps its own.
+     */
+    @Test
+    public void testManualReloadLoadsOnlyItsFactoryInstance() throws Exception {
+        SslContextFactory communication = factory(keys, new KeyStorePathFactory());
+        SslContextFactory clientConnector = factory(keys, new KeyStorePathFactory());
+
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        clientConnector.setHotReloadEnabled(true);
+        registerTransport("communication", communication);
+        registerTransport("client connector", clientConnector);
+        registry.start(ctx);
+
+        long prevTime = communication.getHotReloadTime();
+
+        writeFreshCertificates(keys);
+        registry.reload(clientConnector);
+
+        assertTrue(clientConnector.getHotReloadTime() > prevTime);
+        assertEquals(prevTime, communication.getHotReloadTime());
+    }
+
+    /**
      * Given: hot reload is enabled, and the key store holds only a CA certificate.
      * When: the registry starts and the hourly check runs, then the operator puts a key store with a private key in place
      *     and reloads it.
