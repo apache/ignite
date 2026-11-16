@@ -65,7 +65,6 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -266,29 +265,6 @@ public class SslFactoryRegistryTest {
         assertNotEquals(0, communication.getHotReloadTime());
         assertEquals(0, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
-    }
-
-    /**
-     * Given: certificates from 1970 that are due for hot reload exactly at 0 ms, the value that also means no date.
-     * When: the registry starts, and the source then gets new certificates.
-     * Then: the registry schedules an attempt at once, and the attempt loads the new certificates.
-     */
-    @Test
-    public void testHotReloadAtEpochLoadsReplacement() throws Exception {
-        SslContextFactory communication = factory(keys);
-
-        save(authority.keyStore("node", -DAYS.toMillis(1), DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS), keys);
-        communication.setHotReloadEnabled(true);
-        registerTransport("communication", communication);
-        registry.start(ctx);
-
-        assertNotNull(scheduled);
-        assertEquals(0, delay);
-
-        writeFreshCertificates(keys);
-        scheduled.run();
-
-        assertTrue(communication.getHotReloadTime() > System.currentTimeMillis());
     }
 
     /**

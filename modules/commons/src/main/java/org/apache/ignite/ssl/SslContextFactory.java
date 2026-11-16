@@ -405,10 +405,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         if (!hasChains)
             return 0;
 
-        long time = earliestExpiry - hotReloadBeforeExpiryMs;
-
-        // Zero is reserved for an absent hot reload date.
-        return time == 0 ? -1 : time;
+        return earliestExpiry - hotReloadBeforeExpiryMs;
     }
 
     /** {@inheritDoc} */
