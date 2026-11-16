@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,13 +49,6 @@ public class GridReflectionCache implements Externalizable {
         }
     };
 
-    /** Compares methods by name. */
-    private static final Comparator<Method> METHOD_NAME_COMPARATOR = new Comparator<Method>() {
-        @Override public int compare(Method m1, Method m2) {
-            return m1.getName().compareTo(m2.getName());
-        }
-    };
-
     /** @see IgniteSystemProperties#IGNITE_REFLECTION_CACHE_SIZE */
     public static final int DFLT_REFLECTION_CACHE_SIZE = 128;
 
@@ -65,10 +57,6 @@ public class GridReflectionCache implements Externalizable {
 
     /** Fields cache. */
     private ConcurrentMap<Class, List<Field>> fields = new GridBoundedConcurrentLinkedHashMap<>(
-        CACHE_SIZE, CACHE_SIZE);
-
-    /** Methods cache. */
-    private ConcurrentMap<Class, List<Method>> mtds = new GridBoundedConcurrentLinkedHashMap<>(
         CACHE_SIZE, CACHE_SIZE);
 
     /** Field predicate. */
@@ -119,30 +107,6 @@ public class GridReflectionCache implements Externalizable {
     }
 
     /**
-     * Gets method return value for object.
-     *
-     * @param o Key to get affinity key for.
-     * @return Method return value for given object or {@code null} if method was not found.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public Object firstMethodValue(Object o) throws IgniteCheckedException {
-        assert o != null;
-
-        Method m = firstMethod(o.getClass());
-
-        if (m != null) {
-            try {
-                return m.invoke(o);
-            }
-            catch (IllegalAccessException | InvocationTargetException e) {
-                throw new IgniteCheckedException("Failed to invoke method for object [mtd=" + m + ", obj=" + o + ']', e);
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Gets first field in the class list of fields.
      *
      * @param cls Class.
@@ -152,20 +116,6 @@ public class GridReflectionCache implements Externalizable {
         assert cls != null;
 
         List<Field> l = fields(cls);
-
-        return l.isEmpty() ? null : l.get(0);
-    }
-
-    /**
-     * Gets first method in the class list of methods.
-     *
-     * @param cls Class.
-     * @return First method.
-     */
-    @Nullable public Method firstMethod(Class<?> cls) {
-        assert cls != null;
-
-        List<Method> l = methods(cls);
 
         return l.isEmpty() ? null : l.get(0);
     }
@@ -206,44 +156,6 @@ public class GridReflectionCache implements Externalizable {
         }
 
         return fieldsList;
-    }
-
-    /**
-     * Gets methods.
-     *
-     * @param cls Class.
-     * @return Annotated method.
-     */
-    public List<Method> methods(Class<?> cls) {
-        assert cls != null;
-
-        List<Method> mtdsList = mtds.get(cls);
-
-        if (mtdsList == null) {
-            mtdsList = new ArrayList<>();
-
-            for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                List<Method> l = new ArrayList<>();
-
-                for (Method m : c.getDeclaredMethods()) {
-                    if (mp == null || mp.apply(m)) {
-                        m.setAccessible(true);
-
-                        l.add(m);
-                    }
-                }
-
-                if (!l.isEmpty()) {
-                    Collections.sort(l, METHOD_NAME_COMPARATOR);
-
-                    mtdsList.addAll(l);
-                }
-            }
-
-            mtds.putIfAbsent(cls, mtdsList);
-        }
-
-        return mtdsList;
     }
 
     /** {@inheritDoc} */
