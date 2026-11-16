@@ -137,6 +137,47 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Given: a node with hot reload enabled runs its hot reload thread.
+     * When: the node stops.
+     * Then: the hot reload thread ends.
+     */
+    @Test
+    public void testNodeStopEndsHotReloadThread() throws Exception {
+        long now = System.currentTimeMillis();
+        TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
+        Path dir = Files.createTempDirectory("ssl-hot-reload");
+        Path keys = dir.resolve("keys.jks");
+        Path trust = dir.resolve("trust.jks");
+
+        try {
+            save(ca.keyStore("node", now - DAYS.toMillis(1), now + DAYS.toMillis(10)), keys);
+            save(ca.trustStore(), trust);
+
+            SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
+
+            serverFactory.setHotReloadEnabled(true);
+
+            IgniteEx node = startGrid(0, cfg -> {
+                cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));
+            });
+
+            Thread hotReload = Thread.getAllStackTraces().keySet().stream()
+                .filter(thread -> thread.getName().startsWith("ssl-hot-reload") && thread.getName().contains(node.name()))
+                .findAny()
+                .orElseThrow();
+
+            stopAllGrids();
+            hotReload.join(TIMEOUT_MS);
+
+            assertFalse("The hot reload thread is still running", hotReload.isAlive());
+        }
+        finally {
+            stopAllGrids();
+            U.delete(dir);
+        }
+    }
+
+    /**
      * Creates a client connector configuration that uses the given factory and requires client certificates.
      * The connector uses this factory instead of the node factory.
      */
