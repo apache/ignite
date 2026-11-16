@@ -156,6 +156,45 @@ IMPORTANT: `ignite-cdc.sh` implements the fail-fast approach. It just fails in c
  5. Infinitely wait for the newly available segment and process it.
  6. Stop the consumer in case of a failure or a received stop signal.
 
+== Disabling CDC
+
+CDC can be disabled in the whole cluster with the `cdc.disabled` distributed property. While CDC is disabled, Ignite nodes
+do not create WAL segment links in the CDC directory, so all cache changes made during this period will not be captured.
+The CDC application is not stopped automatically and keeps processing the segment links created before.
+
+To disable or enable CDC, you can run the following link:tools/control-script[Control Script] commands:
+
+[source,shell]
+----
+# Disable CDC in the cluster.
+control.sh|bat --property set --name cdc.disabled --val true
+
+# Enable CDC in the cluster.
+control.sh|bat --property set --name cdc.disabled --val false
+----
+
+To ensure CDC is disabled, get the current property value:
+
+[source,shell]
+----
+control.sh|bat --property get --name cdc.disabled
+----
+
+CDC is disabled if the command prints `cdc.disabled = true`. The property change is also logged on every node with CDC configured:
+
+[source,text]
+----
+Distributed property 'cdc.disabled' was changed from 'false' to 'true'.
+CDC was disabled.
+----
+
+Each WAL segment archived while CDC is disabled produces the following log message:
+
+[source,text]
+----
+Creation of segment CDC link skipped. 'cdc.disabled' distributed property is 'true'.
+----
+
 == Handling skipped segments
 
 The CDC can be disabled manually or by configured directory maximum size. In this case a hard link creation will be skipped.
@@ -206,6 +245,53 @@ control.sh|bat --cdc resend --caches cache1,...,cacheN
 The command will iterate over caches and writes primary copies of data entries to the WAL to get captured by the CDC application.
 
 NOTE: There are no guarantees of notifying the CDC consumer on concurrent cache updates: use the `CdcEvent#version` to resolve version.
+
+== Clear CDC directory
+
+Sometimes the CDC application has to start from scratch, for example, after a long CDC outage or when replication
+is being set up again. In this case you can delete all WAL segment links and the CDC application state from the CDC directory.
+
+WARNING: All changes in deleted segment links will be lost!
+
+Before running the command:
+
+ 1. Ensure CDC is disabled by the `cdc.disabled` distributed property. See link:#disabling-cdc[Disabling CDC].
+ 2. Shut down the CDC application. The command fails if the CDC directory is locked by the running application.
+
+To clear the CDC directory you can run the following link:tools/control-script[Control Script] command:
+
+[source,shell]
+----
+# Clear CDC directories on all server nodes.
+control.sh|bat --cdc clear
+
+# Clear CDC directory on a node.
+control.sh|bat --cdc clear --node-id node_id
+----
+
+NOTE: The command clears CDC directories only on the server nodes that are in the topology. CDC directories of offline
+nodes are not cleared. After such a node joins the cluster, clear its CDC directory with the `--node-id` argument.
+
+By default, the command keeps the CDC mode, which defines where changes are captured: by the CDC application
+(`CDC_UTILITY_ACTIVE`) or within the Ignite node (`IGNITE_NODE_ACTIVE`). To reset the CDC mode as well, add the `--reset-mode` argument:
+
+[source,shell]
+----
+control.sh|bat --cdc clear --reset-mode
+----
+
+WARNING: With `--reset-mode`, the saved CDC mode is removed. If changes are captured by the CDC application
+(`CDC_UTILITY_ACTIVE`), this mode is saved again only after an Ignite node restart with CDC enabled. So enable CDC first
+(set the `cdc.disabled` distributed property to `false`), and then restart Ignite nodes. If CDC is enabled again without
+restarting Ignite nodes, the CDC application ignores WAL segments, because it treats the removed mode as
+`IGNITE_NODE_ACTIVE`. After CDC is enabled and Ignite nodes are restarted, the CDC application processes all accumulated WAL segments.
+
+NOTE: Changes made while CDC was disabled and changes in the cleared segment links are not transmitted to the destination
+(e.g. a remote cluster). To synchronize data after clearing, you should enable CDC first, and then use the
+link:#forcefully-resend-all-cache-data-to-cdc[resend command], a snapshot or other methods.
+Data resent while CDC is disabled is not captured.
+
+IMPORTANT: Do not start the CDC application until the command succeeds. If the command fails, fix the reported error and run it again.
 
 == cdc-ext
 

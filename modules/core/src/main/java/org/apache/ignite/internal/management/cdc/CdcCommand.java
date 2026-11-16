@@ -25,7 +25,8 @@ public class CdcCommand extends CommandRegistryImpl {
     public CdcCommand() {
         super(
             new CdcDeleteLostSegmentLinksCommand(),
-            new CdcResendCommand()
+            new CdcResendCommand(),
+            new CdcClearCommand()
         );
     }
 }
