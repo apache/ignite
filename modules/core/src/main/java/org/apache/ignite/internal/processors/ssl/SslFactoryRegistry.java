@@ -100,12 +100,17 @@ public class SslFactoryRegistry {
 
         for (Entry<Factory<SSLContext>, String> entry : factories) {
             if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
-                if (sslFactory.getHotReloadTime() == 0)
+                long hotReloadTime = sslFactory.getHotReloadTime();
+
+                if (hotReloadTime == 0) {
                     sslFactory.init();
+
+                    hotReloadTime = sslFactory.getHotReloadTime();
+                }
 
                 HotReload hotReload = new HotReload(sslFactory, entry.getValue());
 
-                hotReload.logHotReloadTime();
+                hotReload.logHotReloadTime(hotReloadTime);
                 hotReloads.put(sslFactory, hotReload);
             }
         }
@@ -170,7 +175,7 @@ public class SslFactoryRegistry {
             if (executor.isShutdown())
                 return;
 
-            if (!due()) {
+            if (!due(factory.getHotReloadTime())) {
                 failures.set(0);
 
                 return;
@@ -190,9 +195,11 @@ public class SslFactoryRegistry {
                 return;
             }
 
-            if (due()) {
+            long hotReloadTime = factory.getHotReloadTime();
+
+            if (due(hotReloadTime)) {
                 fail(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
-                    + new Date(factory.getHotReloadTime()) + ']'));
+                    + new Date(hotReloadTime) + ']'));
             }
             else {
                 failures.set(0);
@@ -200,14 +207,12 @@ public class SslFactoryRegistry {
                 if (log.isInfoEnabled())
                     log.info("TLS hot reload succeeded [transports=" + transports + ']');
 
-                logHotReloadTime();
+                logHotReloadTime(hotReloadTime);
             }
         }
 
         /** @return Whether the loaded certificates have a hot reload time, and it has come. */
-        private boolean due() {
-            long hotReloadTime = factory.getHotReloadTime();
-
+        private static boolean due(long hotReloadTime) {
             return hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis();
         }
 
@@ -228,13 +233,11 @@ public class SslFactoryRegistry {
 
             failures.set(0);
 
-            logHotReloadTime();
+            logHotReloadTime(factory.getHotReloadTime());
         }
 
         /** */
-        private void logHotReloadTime() {
-            long hotReloadTime = factory.getHotReloadTime();
-
+        private void logHotReloadTime(long hotReloadTime) {
             if (hotReloadTime == 0) {
                 log.warning("TLS hot reload will not run: no private key with an X.509 certificate chain was found [transports="
                     + transports + ']');

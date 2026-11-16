@@ -233,20 +233,27 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: due certificates that expire in 10 hours, and a replacement that expires in 10 or 5 hours.
-     * When: the factory reloads.
-     * Then: the factory installs a new context.
+     * Given: the server certificate expires in 10 hours, and the client trusts only the issuer of its replacement.
+     * When: the server reloads a certificate that expires in 10 or 5 hours.
+     * Then: the client accepts the server's replacement certificate and completes the TLS handshake.
      */
     @Test
     public void testReloadAcceptsSameOrEarlierExpiry() throws Exception {
+        TestCertificateAuthority replacementIssuer = new TestCertificateAuthority("replacement-issuer", at(-24), at(24));
+        InMemorySslContextFactory client = new InMemorySslContextFactory(authority.keyStore("client", at(-24), at(24)));
+
+        client.trustStore = replacementIssuer.trustStore();
+        client.useTrustStore("memory-trust");
+
+        SSLContext clientCtx = client.create();
+
         for (long expiry : new long[] {at(10), at(5)}) {
             InMemorySslContextFactory factory = dueFactory();
-            SSLContext ctx = factory.create();
 
-            factory.keyStore = authority.keyStore("node", at(-1), expiry);
+            factory.keyStore = replacementIssuer.keyStore("node", at(-1), expiry);
             factory.init();
 
-            assertNotSame(ctx, factory.create());
+            assertTrue(serverAccepts(factory.create(), clientCtx));
         }
     }
 

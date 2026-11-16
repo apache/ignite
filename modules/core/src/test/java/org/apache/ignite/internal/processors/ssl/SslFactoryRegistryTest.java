@@ -59,6 +59,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
+import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
@@ -606,12 +607,12 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: an automatic attempt that blocks until it is interrupted.
+     * Given: an automatic load stays blocked even after it receives an interrupt.
      * When: the registry stops.
-     * Then: the attempt is interrupted.
+     * Then: it interrupts the load and returns while the load is still blocked.
      */
     @Test
-    public void testStopInterruptsActiveAttempt() throws Exception {
+    public void testStopInterruptsActiveAttemptWithoutWaitingForIt() throws Exception {
         executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
             .thenReturn(new IgniteScheduledThreadPoolExecutor("ssl-hot-reload", null, 1));
 
@@ -628,6 +629,8 @@ public class SslFactoryRegistryTest {
             }
             catch (InterruptedException e) {
                 attemptInterrupted.countDown();
+
+                U.awaitQuiet(allowCompletion);
             }
 
             return null;
@@ -640,7 +643,7 @@ public class SslFactoryRegistryTest {
 
             assertTrue(attemptStarted.await(TIMEOUT_MS, MILLISECONDS));
 
-            registry.stop();
+            runAsync(registry::stop).get(TIMEOUT_MS);
 
             assertTrue(attemptInterrupted.await(TIMEOUT_MS, MILLISECONDS));
         }
