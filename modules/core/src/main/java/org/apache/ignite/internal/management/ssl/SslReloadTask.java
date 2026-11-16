@@ -23,14 +23,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry.RegisteredFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -117,7 +116,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(NoArg arg) {
-            Map<Factory<SSLContext>, String> factories = ignite.context().ssl().factories();
+            List<RegisteredFactory> factories = ignite.context().ssl().factories();
             UUID nodeId = ignite.localNode().id();
             String initiator = "";
 
@@ -135,9 +134,9 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                 return report;
             }
 
-            for (Map.Entry<Factory<SSLContext>, String> entry : factories.entrySet()) {
-                if (!(entry.getKey() instanceof AbstractSslContextFactory)) {
-                    String report = entry.getValue() + ": unsupported: " + entry.getKey().getClass().getName();
+            for (RegisteredFactory registered : factories) {
+                if (!(registered.factory() instanceof AbstractSslContextFactory)) {
+                    String report = registered.transports() + ": unsupported: " + registered.factory().getClass().getName();
 
                     ignite.log().warning("TLS reload: " + nodeId + ": " + report + initiator);
 
@@ -147,11 +146,11 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
 
             List<String> reports = new ArrayList<>();
 
-            for (Map.Entry<Factory<SSLContext>, String> entry : factories.entrySet()) {
-                String transports = entry.getValue();
+            for (RegisteredFactory registered : factories) {
+                String transports = registered.transports();
 
                 try {
-                    ignite.context().ssl().reload((AbstractSslContextFactory)entry.getKey());
+                    ignite.context().ssl().reload((AbstractSslContextFactory)registered.factory());
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);

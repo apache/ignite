@@ -103,8 +103,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
     }
 
     /**
-     * Given: a node whose factory has hot reload enabled, so the command reloads it on the hot reload thread.
-     *     The test certificates expire only in November 2039, so no automatic attempt interferes.
+     * Given: a node with hot reload enabled and certificates that are not yet due for reload.
      * When: the key and trust store files are replaced, and {@code --ssl reload} runs.
      * Then: new connections use the new certificates.
      */

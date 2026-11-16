@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +46,7 @@ public class SslFactoryRegistry {
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
-    private final Map<Factory<SSLContext>, String> factories = new LinkedHashMap<>();
+    private final List<RegisteredFactory> factories = new ArrayList<>();
 
     /** */
     private volatile Map<Factory<SSLContext>, HotReload> hotReloads = Collections.emptyMap();
@@ -64,12 +65,22 @@ public class SslFactoryRegistry {
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
-        factories.merge(factory, transport, (names, name) -> names + ", " + name);
+        for (int i = 0; i < factories.size(); i++) {
+            RegisteredFactory registered = factories.get(i);
+
+            if (registered.factory() == factory) {
+                factories.set(i, new RegisteredFactory(factory, registered.transports() + ", " + transport));
+
+                return;
+            }
+        }
+
+        factories.add(new RegisteredFactory(factory, transport));
     }
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
-    public synchronized Map<Factory<SSLContext>, String> factories() {
-        return new LinkedHashMap<>(factories);
+    public synchronized List<RegisteredFactory> factories() {
+        return List.copyOf(factories);
     }
 
     /** */
@@ -84,14 +95,14 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        Map<Factory<SSLContext>, HotReload> hotReloads = new HashMap<>();
+        Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
 
-        for (Map.Entry<Factory<SSLContext>, String> entry : factories.entrySet()) {
-            if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
+        for (RegisteredFactory registered : factories) {
+            if (registered.factory() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
                 if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
 
-                HotReload hotReload = new HotReload(sslFactory, entry.getValue());
+                HotReload hotReload = new HotReload(sslFactory, registered.transports());
 
                 hotReload.logHotReloadTime();
                 hotReloads.put(sslFactory, hotReload);
@@ -135,6 +146,9 @@ public class SslFactoryRegistry {
 
         factory.init();
     }
+
+    /** A factory and the transports that share this instance. */
+    public record RegisteredFactory(Factory<SSLContext> factory, String transports) {}
 
     /** Hot reload state of one factory. Its check and manual reload hold its monitor. */
     private class HotReload {
@@ -206,7 +220,7 @@ public class SslFactoryRegistry {
 
             failures.incrementAndGet();
 
-            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttemptNotBefore="
                 + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', cause);
         }
 

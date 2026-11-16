@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry.RegisteredFactory;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -156,7 +157,7 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: communication and discovery share one factory, and the client connector registers its own factory after them.
+     * Given: communication and discovery register the same factory, with a different factory registered in between.
      * When: the registry lists its factories.
      * Then: each factory appears once under its transports, in the order of first registration.
      */
@@ -165,12 +166,11 @@ public class SslFactoryRegistryTest {
         SslContextFactory clientConnector = new SslContextFactory();
 
         registry.register("communication", factory);
-        registry.register("discovery", factory);
         registry.register("client connector", clientConnector);
+        registry.register("discovery", factory);
 
-        assertEquals(List.of(factory, clientConnector), new ArrayList<>(registry.factories().keySet()));
-        assertEquals("communication, discovery", registry.factories().get(factory));
-        assertEquals("client connector", registry.factories().get(clientConnector));
+        assertEquals(List.of(new RegisteredFactory(factory, "communication, discovery"),
+            new RegisteredFactory(clientConnector, "client connector")), registry.factories());
     }
 
     /**
@@ -189,24 +189,31 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: communication and discovery share a factory with hot reload enabled and due certificates.
-     * When: the registry starts, and the hourly check runs.
-     * Then: the check makes one attempt for the shared factory, and the log names both transports.
+     * Given: communication and discovery share a factory, and the client connector has an equal factory for the same file.
+     * When: the key store is replaced and the hourly check runs.
+     * Then: each factory instance loads the new certificates once.
      */
     @Test
-    public void testSharedFactoryIsCheckedOnce() throws Exception {
-        List<String> logged = captureLog();
-        SslContextFactory communication = factory(keys);
+    public void testEachFactoryInstanceReloadsOnce() throws Exception {
+        SslContextFactory communication = factory(keys, new KeyStorePathFactory());
+        SslContextFactory clientConnector = factory(keys, new KeyStorePathFactory());
 
         writeDueCertificates(keys);
         communication.setHotReloadEnabled(true);
+        clientConnector.setHotReloadEnabled(true);
         registerTransport("communication", communication);
         registerTransport("discovery", communication);
+        registerTransport("client connector", clientConnector);
         registry.start(ctx);
+
+        long prevTime = communication.getHotReloadTime();
+
+        writeFreshCertificates(keys);
         check.run();
 
-        assertEquals(1, metric("AutomaticHotReloadAttempts"));
-        assertTrue(logged.toString(), logged.contains("TLS hot reload started [transports=communication, discovery]"));
+        assertEquals(2, metric("AutomaticHotReloadAttempts"));
+        assertTrue(communication.getHotReloadTime() > prevTime);
+        assertEquals(communication.getHotReloadTime(), clientConnector.getHotReloadTime());
     }
 
     /**
@@ -329,7 +336,7 @@ public class SslFactoryRegistryTest {
             logged.stream().map(e -> e.substring("TLS hot reload ".length(), e.indexOf(" ["))).collect(toList()));
         assertTrue(logged.toString(), logged.stream().allMatch(e -> e.contains("[transports=communication")));
         assertTrue(logged.get(0), logged.get(0).endsWith("hotReloadTime=" + new Date(due) + ']'));
-        assertTrue(logged.get(2), logged.get(2).contains("nextAttempt="));
+        assertTrue(logged.get(2), logged.get(2).contains("nextAttemptNotBefore="));
         assertTrue(logged.get(5), logged.get(5).endsWith("hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']'));
     }
 
@@ -480,7 +487,6 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testManualReloadWaitsForRunningAttempt() throws Exception {
-        List<String> logged = captureLog();
         SslContextFactory communication = factory(keys);
         CountDownLatch attemptFailed = new CountDownLatch(1);
         CountDownLatch resumeAttempt = new CountDownLatch(1);
@@ -492,7 +498,7 @@ public class SslFactoryRegistryTest {
         Files.delete(keys);
 
         when(executor.isShutdown()).thenAnswer(call -> {
-            if (logged.stream().anyMatch(line -> line.startsWith("TLS hot reload started"))) {
+            if (metric("AutomaticHotReloadAttempts") > 0) {
                 attemptFailed.countDown();
 
                 assertTrue(resumeAttempt.await(TIMEOUT_MS, MILLISECONDS));
@@ -746,8 +752,11 @@ public class SslFactoryRegistryTest {
      * The factory trusts the test CA through the trust store file from the setup.
      */
     private SslContextFactory factory(Path keyStore) {
-        SslContextFactory sslFactory = new SslContextFactory();
+        return factory(keyStore, new SslContextFactory());
+    }
 
+    /** Points the factory at the supplied key store and the test trust store. */
+    private SslContextFactory factory(Path keyStore, SslContextFactory sslFactory) {
         sslFactory.setKeyStoreFilePath(keyStore.toString());
         sslFactory.setKeyStorePassword(PASSWORD);
         sslFactory.setTrustStoreFilePath(trust.toString());
@@ -775,5 +784,21 @@ public class SslFactoryRegistryTest {
     /** */
     private static long at(long hours) {
         return System.currentTimeMillis() + HOURS.toMillis(hours);
+    }
+
+    /** Factories with the same key store path compare equal and cache their own SSL contexts. */
+    private static class KeyStorePathFactory extends SslContextFactory {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj instanceof KeyStorePathFactory other && getKeyStoreFilePath().equals(other.getKeyStoreFilePath());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return getKeyStoreFilePath().hashCode();
+        }
     }
 }
