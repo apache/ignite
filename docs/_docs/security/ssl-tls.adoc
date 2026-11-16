@@ -214,8 +214,8 @@ Changing this setting requires a node restart.
 The key store must contain a private key with an X.509 certificate chain.
 A chain contains the key's certificate and the certificates of its issuers.
 Ignite ignores keys without such a chain, as TLS does.
-If the key store has no such key, the node logs a warning and does not schedule hot reload.
-A manual reload of a key store with such a key schedules it.
+If the key store has no such key, the node logs a warning and skips hot reload.
+After a manual reload of a key store with such a key, hot reload works again.
 
 Before replacing key stores, prepare peers' trust stores as described in <<Upgrading Certificates>>.
 Once every affected peer trusts the replacement certificates, put the replacement key stores in the configured source.
@@ -226,9 +226,10 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 === When Hot Reload Runs
 
+Ignite checks the loaded certificates when the node starts and then every hour.
 A chain expires when any certificate in it expires, including an issuing certificate.
 Ignite selects the chain that expires first and starts hot reload attempts `hotReloadBeforeExpiryMs` before it expires, 7 days by default.
-If this point has already passed when the node starts, Ignite schedules an attempt immediately.
+If this point has already passed when the node starts, the first attempt runs at startup.
 Set `hotReloadBeforeExpiryMs` shorter than the lifetime of your certificates.
 Otherwise new certificates are due for hot reload as soon as they are loaded, and every attempt fails.
 See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
@@ -237,8 +238,7 @@ If the loaded certificates are still due for hot reload, Ignite records a failed
 This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.
 The loaded context remains in use while Ignite retries every hour.
 
-After a manual reload, Ignite schedules the next automatic attempt from the loaded certificates.
-If they are already due for hot reload, the attempt runs immediately.
+After a manual reload, the next hourly check uses the loaded certificates.
 
 New connections use the loaded certificates; established connections remain open.
 To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.
@@ -249,14 +249,13 @@ If loading the stores or creating the TLS context fails, Ignite keeps the curren
 Keeping expired certificates does not extend their validity, so new connections may fail until a valid replacement is available.
 If the replacements appear after hot reload is due, the next retry loads them.
 
-The node log shows the affected transports and the time of each scheduled attempt.
-At `INFO` level it shows when an attempt starts and when it succeeds.
+The node log shows the affected transports.
+At `INFO` level it shows when the loaded certificates are due for hot reload, when an attempt starts and when it succeeds.
 At `WARN` level it shows a failed attempt with the reason and the time of the retry.
 The `ssl.ConsecutiveHotReloadFailures` metric sums consecutive failed automatic attempts across the node's factories.
 Each factory's count resets after a successful manual reload or an automatic attempt after which hot reload is no longer due.
 
-`ssl.ManualReloadAttempts` and `ssl.AutomaticHotReloadAttempts` count the node's calls to reload each factory.
-They include errors and automatic attempts that find hot reload is no longer due.
+`ssl.ManualReloadAttempts` and `ssl.AutomaticHotReloadAttempts` count the node's calls to reload each factory, including errors.
 A factory shared by several transports is counted once per attempt.
 Startup loading and direct application calls to the factory are not counted.
 A manual reload that a starting node rejects before hot reload starts is not counted either.

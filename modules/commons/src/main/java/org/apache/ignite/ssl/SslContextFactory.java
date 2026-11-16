@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -38,7 +37,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.systemview.SensitiveProperty;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -149,23 +147,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
      */
     public long getHotReloadTime() {
         return hotReloadTime;
-    }
-
-    /**
-     * Replaces the current SSL context when the hot reload time has come.
-     * Does nothing when hot reload is disabled, no hot reload date has been loaded, or the time has not come.
-     * A failed replacement leaves the current context and hot reload time unchanged.
-     *
-     * @throws IgniteException If the replacement cannot be loaded or accepted.
-     */
-    public void hotReload() {
-        if (!hotReloadEnabled)
-            return;
-
-        long hotReloadTime = getHotReloadTime();
-
-        if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
-            init();
     }
 
     /** {@inheritDoc} */
@@ -379,33 +360,21 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * @param store Loaded key store.
      * @return Hot reload time of the chain that expires first, or {@code 0} if the store has no private key
      *     with an X.509 certificate chain.
-     * @throws GeneralSecurityException If a key cannot be read.
+     * @throws GeneralSecurityException If the key store cannot be read.
      */
     private long hotReloadTime(KeyStore store) throws GeneralSecurityException {
         long earliestExpiry = Long.MAX_VALUE;
-        boolean hasChains = false;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
-            String alias = aliases.nextElement();
+            Certificate[] chain = store.getCertificateChain(aliases.nextElement());
 
-            if (!store.isKeyEntry(alias) || !(store.getKey(alias, keyStorePwd) instanceof PrivateKey))
-                continue;
-
-            Certificate[] chain = store.getCertificateChain(alias);
-
-            if (chain == null || chain.length == 0 || !Arrays.stream(chain).allMatch(X509Certificate.class::isInstance))
-                continue;
-
-            hasChains = true;
-
-            for (Certificate cert : chain)
-                earliestExpiry = Math.min(earliestExpiry, ((X509Certificate)cert).getNotAfter().getTime());
+            if (chain != null && Arrays.stream(chain).allMatch(X509Certificate.class::isInstance)) {
+                for (Certificate cert : chain)
+                    earliestExpiry = Math.min(earliestExpiry, ((X509Certificate)cert).getNotAfter().getTime());
+            }
         }
 
-        if (!hasChains)
-            return 0;
-
-        return earliestExpiry - hotReloadBeforeExpiryMs;
+        return earliestExpiry == Long.MAX_VALUE ? 0 : earliestExpiry - hotReloadBeforeExpiryMs;
     }
 
     /** {@inheritDoc} */

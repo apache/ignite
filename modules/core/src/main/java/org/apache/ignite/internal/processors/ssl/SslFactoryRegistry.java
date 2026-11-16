@@ -23,9 +23,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
@@ -48,7 +46,7 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry {
     /** */
-    private static final long RETRY_DELAY = HOURS.toMillis(1);
+    private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
     private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
@@ -58,6 +56,9 @@ public class SslFactoryRegistry {
 
     /** */
     private volatile ScheduledExecutorService executor;
+
+    /** */
+    private volatile IgniteLogger log;
 
     /** */
     private final AtomicLong manualReloadAttempts = new AtomicLong();
@@ -86,19 +87,23 @@ public class SslFactoryRegistry {
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic SSL factory hot reload attempts.");
 
+        log = ctx.log(getClass());
+
         Map<Factory<SSLContext>, String> transports = new IdentityHashMap<>();
 
         factories().forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
 
         Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
-        IgniteLogger log = ctx.log(getClass());
 
         for (Map.Entry<Factory<SSLContext>, String> entry : transports.entrySet()) {
             if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
                 if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
 
-                hotReloads.put(sslFactory, new HotReload(sslFactory, entry.getValue(), log));
+                HotReload hotReload = new HotReload(sslFactory, entry.getValue());
+
+                hotReload.logHotReloadTime();
+                hotReloads.put(sslFactory, hotReload);
             }
         }
 
@@ -107,7 +112,8 @@ public class SslFactoryRegistry {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.execute(() -> hotReloads.values().forEach(HotReload::scheduleHotReload));
+        executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(() -> hotReloads.values().forEach(HotReload::check), null),
+            0, CHECK_PERIOD, MILLISECONDS);
 
         this.hotReloads = hotReloads;
     }
@@ -126,7 +132,7 @@ public class SslFactoryRegistry {
     }
 
     /**
-     * Reloads the factory and resets its automatic hot reload schedule and failure count.
+     * Reloads the factory and resets its hot reload failure count.
      *
      * @param factory Factory to reload.
      * @throws IgniteCheckedException If hot reload has not started, or an asynchronous reload fails or is interrupted.
@@ -164,8 +170,8 @@ public class SslFactoryRegistry {
         factory.init();
     }
 
-    /** */
-    private class HotReload implements Runnable {
+    /** Hot reload state of one factory. */
+    private class HotReload {
         /** */
         private final SslContextFactory factory;
 
@@ -173,24 +179,19 @@ public class SslFactoryRegistry {
         private final String transports;
 
         /** */
-        private final IgniteLogger log;
-
-        /** */
-        private ScheduledFuture<?> pending;
-
-        /** */
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private HotReload(SslContextFactory factory, String transports, IgniteLogger log) {
+        private HotReload(SslContextFactory factory, String transports) {
             this.factory = factory;
             this.transports = transports;
-            this.log = log;
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            if (executor.isShutdown())
+        /** Reloads the factory if its hot reload time has come. */
+        private void check() {
+            long hotReloadTime = factory.getHotReloadTime();
+
+            if (hotReloadTime == 0 || hotReloadTime > System.currentTimeMillis())
                 return;
 
             automaticHotReloadAttempts.incrementAndGet();
@@ -199,81 +200,60 @@ public class SslFactoryRegistry {
                 log.info("TLS hot reload started [transports=" + transports + ']');
 
             try {
-                factory.hotReload();
+                factory.init();
             }
             catch (Exception e) {
-                retry(e);
+                fail(e);
 
                 return;
             }
 
-            long hotReloadTime = factory.getHotReloadTime();
+            hotReloadTime = factory.getHotReloadTime();
 
-            if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis())
-                retry(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
+            if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis()) {
+                fail(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
                     + new Date(hotReloadTime) + ']'));
+            }
             else {
+                failures.set(0);
+
                 if (log.isInfoEnabled())
                     log.info("TLS hot reload succeeded [transports=" + transports + ']');
 
-                scheduleHotReload();
+                logHotReloadTime();
             }
         }
 
         /** */
-        private void retry(Exception cause) {
+        private void fail(Exception cause) {
             if (executor.isShutdown())
                 return;
 
             failures.incrementAndGet();
 
-            long nextAttempt = System.currentTimeMillis() + RETRY_DELAY;
-
-            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt=" + new Date(nextAttempt) + ']', cause);
-
-            schedule(nextAttempt);
+            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', cause);
         }
 
         /** */
         private void reload() {
             reloadFactory(factory);
-            scheduleHotReload();
-        }
 
-        /** Ends the failure streak and schedules the next attempt at the hot reload time. */
-        private void scheduleHotReload() {
             failures.set(0);
-            schedule(factory.getHotReloadTime());
+
+            logHotReloadTime();
         }
 
         /** */
-        private void schedule(long time) {
-            if (pending != null)
-                pending.cancel(false);
+        private void logHotReloadTime() {
+            long hotReloadTime = factory.getHotReloadTime();
 
-            if (time == 0) {
-                log.warning("TLS hot reload is not scheduled: no private key with an X.509 certificate chain was found [transports="
+            if (hotReloadTime == 0) {
+                log.warning("TLS hot reload will not run: no private key with an X.509 certificate chain was found [transports="
                     + transports + ']');
-
-                return;
             }
-
-            try {
-                pending = executor.schedule(
-                    new OperationContextAwareRunnable(this, null),
-                    Math.max(0, time - System.currentTimeMillis()),
-                    MILLISECONDS
-                );
-            }
-            catch (RejectedExecutionException e) {
-                if (!executor.isShutdown())
-                    throw e;
-
-                return;
-            }
-
-            if (log.isInfoEnabled())
-                log.info("TLS hot reload scheduled [transports=" + transports + ", nextAttempt=" + new Date(time) + ']');
+            else if (log.isInfoEnabled())
+                log.info("TLS hot reload due [transports=" + transports + ", hotReloadTime=" + new Date(hotReloadTime) + ']');
         }
     }
 }

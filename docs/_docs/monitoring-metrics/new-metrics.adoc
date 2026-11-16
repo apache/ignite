@@ -441,7 +441,7 @@ Register name: `ssl`
 |Name | Type | Description
 |ConsecutiveHotReloadFailures | long | Sum of consecutive automatic hot reload failures across the node's SSL factories. Zero when hot reload is disabled.
 |ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads and manual reloads rejected before hot reload starts.
-|AutomaticHotReloadAttempts | long | Automatic factory hot reload calls, including errors and calls that find hot reload is no longer due.
+|AutomaticHotReloadAttempts | long | Automatic factory hot reload attempts, including errors.
 |===
 
 See link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload] for configuration and recovery.
