@@ -81,7 +81,7 @@ public class SslFactoryRegistry {
     }
 
     /** */
-    public synchronized void start(GridKernalContext ctx) {
+    public void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
         metrics.register("ConsecutiveHotReloadFailures", () -> factories.stream().mapToLong(r -> r.failures.get()).sum(),
@@ -113,7 +113,7 @@ public class SslFactoryRegistry {
     }
 
     /** */
-    public synchronized void stop() {
+    public void stop() {
         if (executor != null)
             executor.shutdownNow();
     }
