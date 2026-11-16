@@ -117,7 +117,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(NoArg arg) {
-            Map<String, Factory<SSLContext>> factories = ignite.context().ssl().factories();
+            Map<Factory<SSLContext>, String> factories = ignite.context().ssl().factories();
             UUID nodeId = ignite.localNode().id();
             String initiator = "";
 
@@ -135,9 +135,9 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                 return report;
             }
 
-            for (Map.Entry<String, Factory<SSLContext>> entry : factories.entrySet()) {
-                if (!(entry.getValue() instanceof AbstractSslContextFactory)) {
-                    String report = entry.getKey() + ": unsupported: " + entry.getValue().getClass().getName();
+            for (Map.Entry<Factory<SSLContext>, String> entry : factories.entrySet()) {
+                if (!(entry.getKey() instanceof AbstractSslContextFactory)) {
+                    String report = entry.getValue() + ": unsupported: " + entry.getKey().getClass().getName();
 
                     ignite.log().warning("TLS reload: " + nodeId + ": " + report + initiator);
 
@@ -147,11 +147,11 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
 
             List<String> reports = new ArrayList<>();
 
-            for (Map.Entry<String, Factory<SSLContext>> entry : factories.entrySet()) {
-                String transports = entry.getKey();
+            for (Map.Entry<Factory<SSLContext>, String> entry : factories.entrySet()) {
+                String transports = entry.getValue();
 
                 try {
-                    ignite.context().ssl().reload((AbstractSslContextFactory)entry.getValue());
+                    ignite.context().ssl().reload((AbstractSslContextFactory)entry.getKey());
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);

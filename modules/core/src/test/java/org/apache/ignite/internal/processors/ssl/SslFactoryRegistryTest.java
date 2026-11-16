@@ -59,7 +59,6 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -165,7 +164,8 @@ public class SslFactoryRegistryTest {
         registry.register("communication", factory);
 
         assertThrows(IllegalStateException.class, () -> registry.register("communication", new SslContextFactory()));
-        assertSame(factory, registry.factories().get("communication"));
+        assertEquals(1, registry.factories().size());
+        assertEquals("communication", registry.factories().get(factory));
     }
 
     /**
@@ -181,9 +181,9 @@ public class SslFactoryRegistryTest {
         registry.register("discovery", factory);
         registry.register("client connector", clientConnector);
 
-        assertEquals(List.of("communication, discovery", "client connector"), new ArrayList<>(registry.factories().keySet()));
-        assertSame(factory, registry.factories().get("communication, discovery"));
-        assertSame(clientConnector, registry.factories().get("client connector"));
+        assertEquals(List.of(factory, clientConnector), new ArrayList<>(registry.factories().keySet()));
+        assertEquals("communication, discovery", registry.factories().get(factory));
+        assertEquals("client connector", registry.factories().get(clientConnector));
     }
 
     /**

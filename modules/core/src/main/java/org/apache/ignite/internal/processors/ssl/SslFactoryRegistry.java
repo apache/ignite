@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.ssl;
 
 import java.util.Collections;
 import java.util.Date;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,15 +68,11 @@ public class SslFactoryRegistry {
             throw new IllegalStateException("SSL factory is already registered [transport=" + transport + ']');
     }
 
-    /** @return Registered factories in registration order, each under its transports joined by commas. */
-    public synchronized Map<String, Factory<SSLContext>> factories() {
-        Map<Factory<SSLContext>, String> names = new IdentityHashMap<>();
+    /** @return Registered factories in registration order, each with its transports joined by commas. */
+    public synchronized Map<Factory<SSLContext>, String> factories() {
+        Map<Factory<SSLContext>, String> transports = new LinkedHashMap<>();
 
-        factories.forEach((transport, factory) -> names.merge(factory, transport, (prev, next) -> prev + ", " + next));
-
-        Map<String, Factory<SSLContext>> transports = new LinkedHashMap<>();
-
-        factories.values().forEach(factory -> transports.putIfAbsent(names.get(factory), factory));
+        factories.forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
 
         return transports;
     }
@@ -93,14 +89,14 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
+        Map<Factory<SSLContext>, HotReload> hotReloads = new HashMap<>();
 
-        for (Map.Entry<String, Factory<SSLContext>> entry : factories().entrySet()) {
-            if (entry.getValue() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
+        for (Map.Entry<Factory<SSLContext>, String> entry : factories().entrySet()) {
+            if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
                 if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
 
-                HotReload hotReload = new HotReload(sslFactory, entry.getKey());
+                HotReload hotReload = new HotReload(sslFactory, entry.getValue());
 
                 hotReload.logHotReloadTime();
                 hotReloads.put(sslFactory, hotReload);
