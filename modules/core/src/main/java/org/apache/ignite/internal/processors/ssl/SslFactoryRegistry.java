@@ -46,7 +46,7 @@ public class SslFactoryRegistry {
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
-    private final List<SslFactoryWrapper> factories = new CopyOnWriteArrayList<>();
+    private final List<RegisteredFactory> factories = new CopyOnWriteArrayList<>();
 
     /** */
     private volatile ScheduledExecutorService executor;
@@ -63,28 +63,28 @@ public class SslFactoryRegistry {
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
         for (int i = 0; i < factories.size(); i++) {
-            SslFactoryWrapper wrapper = factories.get(i);
+            RegisteredFactory registered = factories.get(i);
 
-            if (wrapper.factory == factory) {
-                factories.set(i, new SslFactoryWrapper(factory, wrapper.transports + ", " + transport));
+            if (registered.factory == factory) {
+                factories.set(i, new RegisteredFactory(factory, registered.transports + ", " + transport));
 
                 return;
             }
         }
 
-        factories.add(new SslFactoryWrapper(factory, transport));
+        factories.add(new RegisteredFactory(factory, transport));
     }
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
     public List<Entry<Factory<SSLContext>, String>> factories() {
-        return factories.stream().map(wrapper -> Map.entry(wrapper.factory, wrapper.transports)).toList();
+        return factories.stream().map(registered -> Map.entry(registered.factory, registered.transports)).toList();
     }
 
     /** */
     public synchronized void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveHotReloadFailures", () -> factories.stream().mapToLong(w -> w.failures.get()).sum(),
+        metrics.register("ConsecutiveHotReloadFailures", () -> factories.stream().mapToLong(r -> r.failures.get()).sum(),
             "Sum of consecutive automatic certificate hot reload failures across SSL factories.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
@@ -94,11 +94,11 @@ public class SslFactoryRegistry {
 
         boolean hotReload = false;
 
-        for (SslFactoryWrapper wrapper : factories) {
-            SslContextFactory sslFactory = wrapper.hotReloadFactory();
+        for (RegisteredFactory registered : factories) {
+            SslContextFactory sslFactory = registered.hotReloadFactory();
 
             if (sslFactory != null) {
-                wrapper.logHotReloadTime(sslFactory.getHotReloadTime());
+                registered.logHotReloadTime(sslFactory.getHotReloadTime());
 
                 hotReload = true;
             }
@@ -109,7 +109,7 @@ public class SslFactoryRegistry {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(() -> factories.forEach(SslFactoryWrapper::check), 0, CHECK_PERIOD, MILLISECONDS);
+        executor.scheduleWithFixedDelay(() -> factories.forEach(RegisteredFactory::check), 0, CHECK_PERIOD, MILLISECONDS);
     }
 
     /** */
@@ -125,14 +125,14 @@ public class SslFactoryRegistry {
      * @param factory Registered factory to reload.
      */
     public void reload(AbstractSslContextFactory factory) {
-        for (SslFactoryWrapper wrapper : factories) {
-            if (wrapper.factory == factory)
-                wrapper.reload();
+        for (RegisteredFactory registered : factories) {
+            if (registered.factory == factory)
+                registered.reload();
         }
     }
 
     /** Registered factory with its transports and hot reload state. Its check and manual reload hold its monitor. */
-    private class SslFactoryWrapper {
+    private class RegisteredFactory {
         /** */
         private final Factory<SSLContext> factory;
 
@@ -143,7 +143,7 @@ public class SslFactoryRegistry {
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private SslFactoryWrapper(Factory<SSLContext> factory, String transports) {
+        private RegisteredFactory(Factory<SSLContext> factory, String transports) {
             this.factory = factory;
             this.transports = transports;
         }
