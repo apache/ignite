@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,7 +34,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry.RegisteredFactory;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -169,8 +169,8 @@ public class SslFactoryRegistryTest {
         registry.register("client connector", clientConnector);
         registry.register("discovery", factory);
 
-        assertEquals(List.of(new RegisteredFactory(factory, "communication, discovery"),
-            new RegisteredFactory(clientConnector, "client connector")), registry.factories());
+        assertEquals(List.of(Map.entry(factory, "communication, discovery"),
+            Map.entry(clientConnector, "client connector")), registry.factories());
     }
 
     /**
