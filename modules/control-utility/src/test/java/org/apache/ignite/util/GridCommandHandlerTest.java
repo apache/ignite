@@ -699,8 +699,18 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
     ) {
         deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
 
-        igniteEx.cluster().state(ACTIVE);
+        injectTestSystemIn(CONFIRM_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
         assertTrue(igniteEx.cluster().state().active());
+
+        if (cliCommandHandler()) {
+            assertContains(
+                log,
+                testOut.toString(),
+                "Warning: the command will change state of cluster with name \"" + clusterName + "\" to ACTIVE."
+            );
+        }
 
         deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
     }
@@ -725,26 +735,6 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 log,
                 testOut.toString(),
                 "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
-            );
-        }
-    }
-
-    /** Test the set-state command with checking the cluster name in confirmation. */
-    @Test
-    public void testSetStateWithCheckClusterNameInConfirmation() throws Exception {
-        IgniteEx ignite = startGrid(0);
-
-        autoConfirmation = false;
-        injectTestSystemOut();
-        injectTestSystemIn(CONFIRM_MSG);
-
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
-
-        if (cliCommandHandler()) {
-            assertContains(
-                log,
-                testOut.toString(),
-                "Warning: the command will change state of cluster with name \"" + ignite.cluster().id() + "\" to ACTIVE."
             );
         }
     }
