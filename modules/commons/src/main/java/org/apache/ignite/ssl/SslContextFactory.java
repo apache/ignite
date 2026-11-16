@@ -96,7 +96,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
-    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+    private long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
     private transient volatile long hotReloadTime;
@@ -128,7 +128,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
-     *     The factory applies a change at its next load.
      */
     public void setHotReloadBeforeExpiryMs(long millis) {
         A.ensure(millis > 0, "millis > 0");
@@ -137,13 +136,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * The hot reload time is calculated from the certificates loaded with hot reload enabled.
+     * The hot reload time is calculated from the loaded certificates.
      * It comes {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry among the chains of the private keys.
      * A chain expires when any certificate in it expires.
      * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
-     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the current certificates
-     *     were loaded with hot reload disabled, have not been loaded yet, or have no private key with an X.509 chain.
+     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
+     *     or have no private key with an X.509 chain.
      */
     public long getHotReloadTime() {
         return hotReloadTime;
@@ -332,23 +331,19 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** {@inheritDoc} */
     @Override protected final KeyManager[] createKeyManagers() throws SSLException {
-        KeyManagerFactory keyMgrFactory;
-
         try {
-            keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
+            KeyManagerFactory keyMgrFactory = KeyManagerFactory.getInstance(keyAlgorithm);
+
+            KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
+
+            keyMgrFactory.init(keyStore, keyStorePwd);
+
+            pendingHotReloadTime = hotReloadTime(keyStore);
+
+            return keyMgrFactory.getKeyManagers();
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
-        }
-
-        KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
-
-        try {
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            pendingHotReloadTime = hotReloadEnabled ? hotReloadTime(keyStore) : 0;
-
-            return keyMgrFactory.getKeyManagers();
         }
         catch (GeneralSecurityException e) {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +

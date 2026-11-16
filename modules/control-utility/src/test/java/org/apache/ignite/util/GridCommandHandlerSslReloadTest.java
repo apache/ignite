@@ -102,13 +102,9 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         }
     }
 
-    /**
-     * Given: a node with hot reload enabled and certificates that are not yet due for reload.
-     * When: the key and trust store files are replaced, and {@code --ssl reload} runs.
-     * Then: new connections use the new certificates.
-     */
+    /** */
     @Test
-    public void testReloadedFilesApplyToNewConnectionsWithHotReloadEnabled() throws Exception {
+    public void testReloadedFilesApplyToNewConnections() throws Exception {
         Path keys = stores.newFile("keys.jks").toPath();
         Path trust = stores.newFile("trust.jks").toPath();
 
@@ -121,7 +117,6 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
         factory.setKeyStorePassword(keyStorePassword().toCharArray());
         factory.setTrustStoreFilePath(trust.toString());
         factory.setTrustStorePassword(keyStorePassword().toCharArray());
-        factory.setHotReloadEnabled(true);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
 

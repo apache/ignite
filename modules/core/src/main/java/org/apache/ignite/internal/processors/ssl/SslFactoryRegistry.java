@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -100,17 +99,9 @@ public class SslFactoryRegistry {
 
         for (Entry<Factory<SSLContext>, String> entry : factories) {
             if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
-                long hotReloadTime = sslFactory.getHotReloadTime();
-
-                if (hotReloadTime == 0) {
-                    sslFactory.init();
-
-                    hotReloadTime = sslFactory.getHotReloadTime();
-                }
-
                 HotReload hotReload = new HotReload(sslFactory, entry.getValue());
 
-                hotReload.logHotReloadTime(hotReloadTime);
+                hotReload.logHotReloadTime(sslFactory.getHotReloadTime());
                 hotReloads.put(sslFactory, hotReload);
             }
         }
@@ -122,8 +113,7 @@ public class SslFactoryRegistry {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(() -> hotReloads.values().forEach(HotReload::check), null),
-            0, CHECK_PERIOD, MILLISECONDS);
+        executor.scheduleWithFixedDelay(() -> hotReloads.values().forEach(HotReload::check), 0, CHECK_PERIOD, MILLISECONDS);
     }
 
     /** */

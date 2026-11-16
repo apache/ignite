@@ -23,21 +23,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.thread.context.OperationContext;
-import org.apache.ignite.internal.thread.context.OperationContextAttribute;
-import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.thread.context.concurrent.OperationContextAwareScheduledExecutorService;
 import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +55,6 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -215,47 +208,6 @@ public class SslFactoryRegistryTest {
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
         assertTrue(communication.getHotReloadTime() > prevTime);
         assertEquals(communication.getHotReloadTime(), clientConnector.getHotReloadTime());
-    }
-
-    /**
-     * Given: the node reuses a factory that loaded its certificates with hot reload disabled.
-     * When: the node starts with hot reload enabled and the registry loads the certificates again.
-     * Then: neither the manual nor the automatic attempt counter grows.
-     */
-    @Test
-    public void testStartupLoadIsNotCounted() throws Exception {
-        SslContextFactory communication = factory(keys);
-
-        writeFreshCertificates(keys);
-        communication.create();
-        communication.setHotReloadEnabled(true);
-        registerTransport("communication", communication);
-        registry.start(ctx);
-
-        assertNotEquals(0, communication.getHotReloadTime());
-        assertEquals(0, metric("ManualReloadAttempts"));
-        assertEquals(0, metric("AutomaticHotReloadAttempts"));
-    }
-
-    /**
-     * Given: the node reuses a factory that loaded its certificates with hot reload disabled.
-     * When: the node starts with hot reload enabled and the key store file is missing.
-     * Then: the start fails, and the registry schedules nothing.
-     */
-    @Test
-    public void testStartFailsWithoutSchedulingWhenFactoryLoadFails() throws Exception {
-        SslContextFactory communication = factory(keys);
-
-        writeFreshCertificates(keys);
-        communication.create();
-        communication.setHotReloadEnabled(true);
-        Files.delete(keys);
-        registerTransport("communication", communication);
-
-        IgniteException err = assertThrows(IgniteException.class, () -> registry.start(ctx));
-
-        assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
-        executorFactory.verifyNoInteractions();
     }
 
     /**
@@ -574,36 +526,6 @@ public class SslFactoryRegistryTest {
         registry.reload(clientConnector);
 
         assertEquals(1, failures());
-    }
-
-    /**
-     * Given: an executor that passes the operation context to its tasks like the node executor.
-     * When: the registry starts under an operator context, and the hourly check runs.
-     * Then: the attempt sees no operation context.
-     */
-    @Test
-    public void testAttemptsDoNotInheritCallerContext() throws Exception {
-        OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
-        AtomicReference<Optional<String>> attemptCaller = new AtomicReference<>();
-
-        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any()))
-            .thenReturn(new OperationContextAwareScheduledExecutorService(executor) { });
-        enableHotReload(factory, due());
-        doAnswer(call -> {
-            attemptCaller.set(Optional.ofNullable(OperationContext.get(caller)));
-
-            return null;
-        }).when(factory).init();
-
-        registry.register("communication", factory);
-
-        try (Scope ignored = OperationContext.set(caller, "operator")) {
-            registry.start(ctx);
-        }
-
-        check.run();
-
-        assertEquals(Optional.empty(), attemptCaller.get());
     }
 
     /**

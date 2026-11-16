@@ -58,7 +58,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 
 /** */
@@ -132,27 +131,6 @@ public class SslContextFactoryHotReloadTest {
         assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiryMs(0));
         assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiryMs(-1));
         assertEquals(DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS, factory.getHotReloadBeforeExpiryMs());
-    }
-
-    /**
-     * Given: an application reuses a factory across node starts with different hot reload settings.
-     * When: it reloads the keys with hot reload off, then enables hot reload for the next start.
-     * Then: the factory reports no hot reload date for the keys loaded while hot reload was off.
-     */
-    @Test
-    public void testLoadWithHotReloadDisabledClearsHotReloadTime() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-85), at(15)));
-
-        factory.setHotReloadEnabled(true);
-        factory.create();
-
-        assertEquals(now, factory.getHotReloadTime());
-
-        factory.setHotReloadEnabled(false);
-        factory.init();
-        factory.setHotReloadEnabled(true);
-
-        assertEquals(0, factory.getHotReloadTime());
     }
 
     /**
@@ -341,44 +319,6 @@ public class SslContextFactoryHotReloadTest {
 
         assertNotSame(ctx, factory.create());
         assertEquals(at(84), factory.getHotReloadTime());
-    }
-
-    /**
-     * Given: replacement keys with a later hot reload date.
-     * When: the trust manager source throws an unchecked exception during a reload.
-     * Then: the factory keeps the previous context and date.
-     */
-    @Test
-    public void testUncheckedTrustManagerFailureKeepsContextAndDate() throws Exception {
-        InMemorySslContextFactory factory = spy(dueFactory());
-        SSLContext ctx = factory.create();
-        long hotReloadTime = factory.getHotReloadTime();
-
-        factory.keyStore = authority.keyStore("node", at(-1), at(99));
-        doThrow(new IllegalStateException("Trust source unavailable")).when(factory).loadKeyStore(any(), eq("memory-trust"), any());
-
-        assertThrows(IllegalStateException.class, factory::init);
-
-        assertSame(ctx, factory.create());
-        assertEquals(hotReloadTime, factory.getHotReloadTime());
-    }
-
-    /**
-     * Given: the configured keys have a hot reload date, but the configured TLS protocol is unsupported.
-     * When: the factory creates its first context.
-     * Then: it reports the invalid protocol and publishes no hot reload date.
-     */
-    @Test
-    public void testUnsupportedProtocolAtStartupLeavesHotReloadTimeUnset() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-1), at(99)));
-
-        factory.setHotReloadEnabled(true);
-        factory.setProtocol("UnsupportedProtocol");
-
-        IgniteException err = assertThrows(IgniteException.class, factory::create);
-
-        assertTrue(err.getCause().getMessage(), err.getCause().getMessage().contains("Unsupported SSL protocol"));
-        assertEquals(0, factory.getHotReloadTime());
     }
 
     /**
