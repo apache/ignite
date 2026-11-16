@@ -248,7 +248,8 @@ If the replacements appear after hot reload is due, the next retry loads them.
 
 The node log shows the affected transports.
 At `INFO` level it shows when the loaded certificates are due for hot reload, when an attempt starts and when it succeeds.
-At `WARN` level it shows why an attempt failed and the earliest time the node can retry automatically.
+At `WARN` level it shows why an attempt failed and when the node retries automatically.
+At `DEBUG` level it also shows the start of each check.
 The `ssl.ConsecutiveHotReloadFailures` metric sums consecutive failed automatic attempts across the node's factories.
 Each factory's count resets after a successful manual reload or when a check finds that the loaded certificates are no longer due for hot reload.
 

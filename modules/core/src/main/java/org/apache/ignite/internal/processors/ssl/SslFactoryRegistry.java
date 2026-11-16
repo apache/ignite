@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -77,14 +78,19 @@ public class SslFactoryRegistry {
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
     public List<Entry<Factory<SSLContext>, String>> factories() {
-        return factories.stream().map(registered -> Map.entry(registered.factory, registered.transports)).toList();
+        List<Entry<Factory<SSLContext>, String>> res = new ArrayList<>(factories.size());
+
+        for (RegisteredFactory registered : factories)
+            res.add(Map.entry(registered.factory, registered.transports));
+
+        return res;
     }
 
     /** */
     public void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveHotReloadFailures", () -> factories.stream().mapToLong(r -> r.failures.get()).sum(),
+        metrics.register("ConsecutiveHotReloadFailures", this::consecutiveHotReloadFailures,
             "Sum of consecutive automatic certificate hot reload failures across SSL factories.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
@@ -109,7 +115,41 @@ public class SslFactoryRegistry {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(() -> factories.forEach(RegisteredFactory::check), 0, CHECK_PERIOD, MILLISECONDS);
+        executor.scheduleWithFixedDelay(this::checkFactories, 0, CHECK_PERIOD, MILLISECONDS);
+    }
+
+    /** @return Sum of consecutive automatic hot reload failures across factories. */
+    private long consecutiveHotReloadFailures() {
+        long sum = 0;
+
+        for (RegisteredFactory registered : factories)
+            sum += registered.failures.get();
+
+        return sum;
+    }
+
+    /**
+     * Checks the factories one by one until the registry stops. Counts and logs any failure of a check,
+     * so one factory does not stop the others or the schedule.
+     */
+    private void checkFactories() {
+        if (log.isDebugEnabled())
+            log.debug("TLS hot reload check started");
+
+        for (RegisteredFactory registered : factories) {
+            synchronized (registered) {
+                if (executor.isShutdown())
+                    return;
+
+                try {
+                    registered.check();
+                }
+                catch (Throwable e) {
+                    if (!executor.isShutdown())
+                        registered.fail(e);
+                }
+            }
+        }
     }
 
     /** */
@@ -131,7 +171,7 @@ public class SslFactoryRegistry {
         }
     }
 
-    /** Registered factory with its transports and hot reload state. Its check and manual reload hold its monitor. */
+    /** Registered factory with its transports and hot reload state. The hourly check and manual reload hold its monitor. */
     private class RegisteredFactory {
         /** */
         private final Factory<SSLContext> factory;
@@ -153,11 +193,15 @@ public class SslFactoryRegistry {
             return factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled() ? sslFactory : null;
         }
 
-        /** Reloads the factory if its hot reload time has come, and ends the failure streak if it has not. */
-        private synchronized void check() {
+        /**
+         * Reloads the factory if its hot reload time has come, and ends the failure streak if it has not.
+         *
+         * @throws IgniteException If the reload fails or leaves certificates that are still due.
+         */
+        private void check() {
             SslContextFactory sslFactory = hotReloadFactory();
 
-            if (sslFactory == null || executor.isShutdown())
+            if (sslFactory == null)
                 return;
 
             if (!due(sslFactory.getHotReloadTime())) {
@@ -171,29 +215,21 @@ public class SslFactoryRegistry {
             if (log.isInfoEnabled())
                 log.info("TLS hot reload started [transports=" + transports + ']');
 
-            try {
-                sslFactory.init();
-            }
-            catch (Exception e) {
-                fail(e);
-
-                return;
-            }
+            sslFactory.init();
 
             long hotReloadTime = sslFactory.getHotReloadTime();
 
             if (due(hotReloadTime)) {
-                fail(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
-                    + new Date(hotReloadTime) + ']'));
+                throw new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
+                    + new Date(hotReloadTime) + ']');
             }
-            else {
-                failures.set(0);
 
-                if (log.isInfoEnabled())
-                    log.info("TLS hot reload succeeded [transports=" + transports + ']');
+            failures.set(0);
 
-                logHotReloadTime(hotReloadTime);
-            }
+            if (log.isInfoEnabled())
+                log.info("TLS hot reload succeeded [transports=" + transports + ']');
+
+            logHotReloadTime(hotReloadTime);
         }
 
         /** @return Whether the loaded certificates have a hot reload time, and it has come. */
@@ -202,13 +238,10 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private void fail(Exception cause) {
-            if (executor.isShutdown())
-                return;
-
+        private void fail(Throwable cause) {
             failures.incrementAndGet();
 
-            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttemptNotBefore="
+            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
                 + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', cause);
         }
 

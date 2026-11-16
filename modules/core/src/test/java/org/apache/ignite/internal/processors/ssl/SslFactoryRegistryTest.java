@@ -50,7 +50,6 @@ import org.mockito.MockedStatic;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -61,6 +60,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
@@ -290,6 +290,34 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: two factories with due certificates, and loading the first one throws an error,
+     *     as a missing class of a key store provider does.
+     * When: the hourly check runs.
+     * Then: the check completes normally, so the executor keeps the schedule. It counts and logs the error
+     *     and still reloads the second factory.
+     */
+    @Test
+    public void testErrorFromOneFactoryDoesNotStopCheck() throws Exception {
+        List<String> logged = captureLog();
+        SslContextFactory clientConnector = factory(keys);
+
+        enableHotReload(factory, due());
+        doThrow(new NoClassDefFoundError("Key store provider")).when(factory).init();
+        writeDueCertificates(keys);
+        clientConnector.setHotReloadEnabled(true);
+        registry.register("communication", factory);
+        registerTransport("client connector", clientConnector);
+        registry.start(ctx);
+        writeFreshCertificates(keys);
+        check.run();
+
+        assertEquals(1, failures());
+        assertEquals(2, metric("AutomaticHotReloadAttempts"));
+        assertTrue(logged.toString(), logged.contains("TLS hot reload succeeded [transports=client connector]"));
+        assertTrue(logged.toString(), logged.toString().contains("TLS hot reload failed [transports=communication, nextAttempt="));
+    }
+
+    /**
      * Given: hot reload is enabled for due certificates, and the key store file is deleted after start.
      * When: one automatic attempt fails, and the next one loads fresh certificates.
      * Then: the log shows when the loaded certificates are due for hot reload, and the start and result of each attempt.
@@ -311,11 +339,17 @@ public class SslFactoryRegistryTest {
         writeFreshCertificates(keys);
         check.run();
 
-        assertEquals(List.of("due", "started", "failed", "started", "succeeded", "due"),
-            logged.stream().map(e -> e.substring("TLS hot reload ".length(), e.indexOf(" ["))).collect(toList()));
-        assertTrue(logged.toString(), logged.stream().allMatch(e -> e.contains("[transports=communication")));
+        List<String> evts = new ArrayList<>();
+
+        for (String line : logged) {
+            assertTrue(line, line.contains("[transports=communication"));
+
+            evts.add(line.substring("TLS hot reload ".length(), line.indexOf(" [")));
+        }
+
+        assertEquals(List.of("due", "started", "failed", "started", "succeeded", "due"), evts);
         assertTrue(logged.get(0), logged.get(0).endsWith("hotReloadTime=" + new Date(due) + ']'));
-        assertTrue(logged.get(2), logged.get(2).contains("nextAttemptNotBefore="));
+        assertTrue(logged.get(2), logged.get(2).contains("nextAttempt="));
         assertTrue(logged.get(5), logged.get(5).endsWith("hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']'));
     }
 

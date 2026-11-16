@@ -161,10 +161,14 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
                 cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
 
-            Thread hotReload = Thread.getAllStackTraces().keySet().stream()
-                .filter(thread -> thread.getName().startsWith("ssl-hot-reload") && thread.getName().contains(node.name()))
-                .findAny()
-                .orElseThrow();
+            Thread hotReload = null;
+
+            for (Thread thread : Thread.getAllStackTraces().keySet()) {
+                if (thread.getName().startsWith("ssl-hot-reload") && thread.getName().contains(node.name()))
+                    hotReload = thread;
+            }
+
+            assertNotNull("The hot reload thread is not running", hotReload);
 
             stopAllGrids();
             hotReload.join(TIMEOUT_MS);
