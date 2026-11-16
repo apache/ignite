@@ -225,10 +225,19 @@ public class SslFactoryRegistryTest {
     /**
      * Given: communication and discovery share a factory with hot reload enabled and fresh certificates.
      * When: the registry starts.
-     * Then: the registry schedules one attempt for the shared factory's certificates.
+     * Then: the registry schedules one attempt for the shared factory's certificates and names both transports in the log.
      */
     @Test
     public void testStartSchedulesSharedFactoryOnce() throws Exception {
+        ListeningTestLogger log = new ListeningTestLogger();
+        List<String> scheduledLogged = new ArrayList<>();
+
+        log.registerListener(line -> {
+            if (line.startsWith("TLS hot reload scheduled"))
+                scheduledLogged.add(line);
+        });
+        when(ctx.log(SslFactoryRegistry.class)).thenReturn(log);
+
         SslContextFactory communication = factory(keys);
 
         writeFreshCertificates(keys);
@@ -239,6 +248,8 @@ public class SslFactoryRegistryTest {
 
         verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
         assertTrue(delay > HOURS.toMillis(1));
+        assertEquals(1, scheduledLogged.size());
+        assertTrue(scheduledLogged.get(0), scheduledLogged.get(0).contains("[transports=communication, discovery,"));
     }
 
     /**

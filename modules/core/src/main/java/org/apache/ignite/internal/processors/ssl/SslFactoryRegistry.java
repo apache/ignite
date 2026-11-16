@@ -43,7 +43,6 @@ import org.apache.ignite.ssl.SslContextFactory;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /** SSL factories used by running transports. */
@@ -87,21 +86,19 @@ public class SslFactoryRegistry {
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic SSL factory hot reload attempts.");
 
-        Map<String, Factory<SSLContext>> factories = factories();
+        Map<Factory<SSLContext>, String> transports = new IdentityHashMap<>();
+
+        factories().forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
+
         Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
         IgniteLogger log = ctx.log(getClass());
 
-        for (Factory<SSLContext> factory : factories.values()) {
-            if (factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled() && !hotReloads.containsKey(factory)) {
+        for (Map.Entry<Factory<SSLContext>, String> entry : transports.entrySet()) {
+            if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
                 if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
 
-                String transports = factories.entrySet().stream()
-                    .filter(entry -> entry.getValue() == factory)
-                    .map(Map.Entry::getKey)
-                    .collect(joining(", "));
-
-                hotReloads.put(factory, new HotReload(sslFactory, transports, log));
+                hotReloads.put(sslFactory, new HotReload(sslFactory, entry.getValue(), log));
             }
         }
 
