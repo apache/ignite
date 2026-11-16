@@ -117,9 +117,10 @@ public class SslFactoryRegistry {
     }
 
     /**
-     * Reloads the factory. For a factory with hot reload enabled, waits for its running check and resets its failure count.
+     * Reloads a registered factory. For a factory with hot reload enabled, waits for its running check and resets its failure
+     * count.
      *
-     * @param factory Factory to reload.
+     * @param factory Registered factory to reload.
      */
     public void reload(AbstractSslContextFactory factory) {
         for (SslFactoryWrapper wrapper : factories) {
