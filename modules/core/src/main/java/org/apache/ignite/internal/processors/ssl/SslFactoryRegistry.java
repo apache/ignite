@@ -268,8 +268,12 @@ public class SslFactoryRegistry {
             if (pending != null)
                 pending.cancel(false);
 
-            if (time == 0)
+            if (time == 0) {
+                log.warning("TLS hot reload is not scheduled: no private key with an X.509 certificate chain was found [transports="
+                    + transports + ']');
+
                 return;
+            }
 
             try {
                 pending = executor.schedule(

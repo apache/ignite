@@ -214,7 +214,8 @@ Changing this setting requires a node restart.
 The key store must contain a private key with an X.509 certificate chain.
 A chain contains the key's certificate and the certificates of its issuers.
 Ignite ignores keys without such a chain, as TLS does.
-With hot reload enabled, a store without such a key prevents node startup.
+If the key store has no such key, the node logs a warning and does not schedule hot reload.
+A manual reload of a key store with such a key schedules it.
 
 Before replacing key stores, prepare peers' trust stores as described in <<Upgrading Certificates>>.
 Once every affected peer trusts the replacement certificates, put the replacement key stores in the configured source.

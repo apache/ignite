@@ -337,6 +337,41 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: hot reload is enabled, and the key store holds only a CA certificate.
+     * When: the registry starts, and the operator then puts a key store with a private key in place and reloads it.
+     * Then: at start the registry logs that hot reload is not scheduled and schedules no attempt.
+     *     After the reload it schedules the attempt for the new certificates.
+     */
+    @Test
+    public void testStoreWithoutPrivateKeyIsReportedUntilKeysAreReloaded() throws Exception {
+        ListeningTestLogger log = new ListeningTestLogger();
+        List<String> warnings = new ArrayList<>();
+
+        log.registerListener(line -> {
+            if (line.startsWith("TLS hot reload is not scheduled"))
+                warnings.add(line);
+        });
+        when(ctx.log(SslFactoryRegistry.class)).thenReturn(log);
+
+        SslContextFactory communication = factory(keys);
+
+        save(authority.trustStore(), keys);
+        communication.setHotReloadEnabled(true);
+        registerTransport("communication", communication);
+        registry.start(ctx);
+
+        assertEquals(1, warnings.size());
+        assertTrue(warnings.get(0), warnings.get(0).contains("[transports=communication]"));
+        verify(executor, never()).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
+
+        writeFreshCertificates(keys);
+        registry.reload(communication);
+
+        verify(executor).schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS));
+        assertTrue(delay > HOURS.toMillis(1));
+    }
+
+    /**
      * Given: hot reload is enabled, and the key store file is deleted after start.
      * When: three attempts fail in a row.
      * Then: each retry waits one hour.

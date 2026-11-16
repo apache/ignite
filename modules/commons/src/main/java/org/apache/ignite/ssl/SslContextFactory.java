@@ -145,7 +145,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
      * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the current certificates
-     *     were loaded with hot reload disabled or have not been loaded yet.
+     *     were loaded with hot reload disabled, have not been loaded yet, or have no private key with an X.509 chain.
      */
     public long getHotReloadTime() {
         return hotReloadTime;
@@ -377,11 +377,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param store Loaded key store.
-     * @return Hot reload time of the chain that expires first.
+     * @return Hot reload time of the chain that expires first, or {@code 0} if the store has no private key
+     *     with an X.509 certificate chain.
      * @throws GeneralSecurityException If a key cannot be read.
-     * @throws SSLException If the store has no private key with an X.509 certificate chain.
      */
-    private long hotReloadTime(KeyStore store) throws GeneralSecurityException, SSLException {
+    private long hotReloadTime(KeyStore store) throws GeneralSecurityException {
         long earliestExpiry = Long.MAX_VALUE;
         boolean hasChains = false;
 
@@ -403,7 +403,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         }
 
         if (!hasChains)
-            throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
+            return 0;
 
         long time = earliestExpiry - hotReloadBeforeExpiryMs;
 

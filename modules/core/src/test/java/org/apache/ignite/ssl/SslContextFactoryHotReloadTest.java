@@ -208,17 +208,15 @@ public class SslContextFactoryHotReloadTest {
     /**
      * Given: hot reload is enabled, and the key store holds only a CA certificate.
      * When: the factory loads the key store.
-     * Then: the load fails and asks for a private key, and the factory has no hot reload date.
+     * Then: the load succeeds, and the factory has no hot reload date.
      */
     @Test
-    public void testEnabledHotReloadRequiresPrivateKey() throws Exception {
+    public void testStoreWithoutPrivateKeyLoadsWithoutHotReloadDate() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
 
         factory.setHotReloadEnabled(true);
 
-        IgniteException err = assertThrows(IgniteException.class, factory::create);
-
-        assertTrue(err.getCause().getMessage().contains("private key with an X.509 certificate chain"));
+        assertNotNull(factory.create());
         assertEquals(0, factory.getHotReloadTime());
     }
 
