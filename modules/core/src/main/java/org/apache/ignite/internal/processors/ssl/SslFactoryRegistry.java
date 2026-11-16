@@ -45,7 +45,7 @@ public class SslFactoryRegistry {
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
-    private final Map<String, Factory<SSLContext>> factories = new LinkedHashMap<>();
+    private final Map<String, Factory<SSLContext>> transports = new LinkedHashMap<>();
 
     /** */
     private volatile Map<Factory<SSLContext>, HotReload> hotReloads = Collections.emptyMap();
@@ -64,17 +64,17 @@ public class SslFactoryRegistry {
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
-        if (factories.putIfAbsent(transport, factory) != null)
+        if (transports.putIfAbsent(transport, factory) != null)
             throw new IllegalStateException("SSL factory is already registered [transport=" + transport + ']');
     }
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
     public synchronized Map<Factory<SSLContext>, String> factories() {
-        Map<Factory<SSLContext>, String> transports = new LinkedHashMap<>();
+        Map<Factory<SSLContext>, String> factories = new LinkedHashMap<>();
 
-        factories.forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
+        transports.forEach((transport, factory) -> factories.merge(factory, transport, (names, name) -> names + ", " + name));
 
-        return transports;
+        return factories;
     }
 
     /** */
