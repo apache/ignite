@@ -377,6 +377,27 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: a factory with hot reload enabled is registered, and the registry has not started yet.
+     * When: the key store is replaced, and a manual reload runs.
+     * Then: the factory loads the new certificates.
+     */
+    @Test
+    public void testManualReloadBeforeStartLoadsFactory() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registerTransport("communication", communication);
+
+        long prevTime = communication.getHotReloadTime();
+
+        writeFreshCertificates(keys);
+        registry.reload(communication);
+
+        assertTrue(communication.getHotReloadTime() > prevTime);
+    }
+
+    /**
      * Given: a factory with hot reload disabled.
      * When: a manual reload succeeds, and a second one fails because the key store file is deleted.
      * Then: both count as manual attempts, and none counts as automatic.

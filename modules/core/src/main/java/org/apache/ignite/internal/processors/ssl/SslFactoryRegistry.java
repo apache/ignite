@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -50,8 +51,8 @@ public class SslFactoryRegistry {
     /** */
     private volatile ScheduledExecutorService executor;
 
-    /** */
-    private volatile IgniteLogger log;
+    /** Logs nothing until the registry starts. */
+    private volatile IgniteLogger log = new NullLogger();
 
     /** */
     private final AtomicLong manualReloadAttempts = new AtomicLong();
@@ -94,8 +95,9 @@ public class SslFactoryRegistry {
         boolean hotReload = false;
 
         for (SslFactoryWrapper wrapper : factories) {
-            if (wrapper.factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
-                wrapper.hotReloadFactory = sslFactory;
+            SslContextFactory sslFactory = wrapper.hotReloadFactory();
+
+            if (sslFactory != null) {
                 wrapper.logHotReloadTime(sslFactory.getHotReloadTime());
 
                 hotReload = true;
@@ -137,9 +139,6 @@ public class SslFactoryRegistry {
         /** */
         private final String transports;
 
-        /** The factory if hot reload is enabled for it and the registry has started. */
-        @Nullable private volatile SslContextFactory hotReloadFactory;
-
         /** */
         private final AtomicInteger failures = new AtomicInteger();
 
@@ -149,9 +148,14 @@ public class SslFactoryRegistry {
             this.transports = transports;
         }
 
+        /** @return The factory if hot reload is enabled for it, {@code null} otherwise. */
+        @Nullable private SslContextFactory hotReloadFactory() {
+            return factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled() ? sslFactory : null;
+        }
+
         /** Reloads the factory if its hot reload time has come, and ends the failure streak if it has not. */
         private synchronized void check() {
-            SslContextFactory sslFactory = hotReloadFactory;
+            SslContextFactory sslFactory = hotReloadFactory();
 
             if (sslFactory == null || executor.isShutdown())
                 return;
@@ -214,7 +218,7 @@ public class SslFactoryRegistry {
 
             ((AbstractSslContextFactory)factory).init();
 
-            SslContextFactory sslFactory = hotReloadFactory;
+            SslContextFactory sslFactory = hotReloadFactory();
 
             if (sslFactory != null) {
                 failures.set(0);
