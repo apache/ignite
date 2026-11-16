@@ -440,7 +440,7 @@ Register name: `ssl`
 |===
 |Name | Type | Description
 |ConsecutiveHotReloadFailures | long | Sum of consecutive automatic hot reload failures across the node's SSL factories. Zero when hot reload is disabled.
-|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads and manual reloads rejected before hot reload starts.
+|ManualReloadAttempts | long | Factory reload attempts started by the node for manual commands, including errors. Excludes startup loads.
 |AutomaticHotReloadAttempts | long | Automatic factory hot reload attempts, including errors.
 |===
 

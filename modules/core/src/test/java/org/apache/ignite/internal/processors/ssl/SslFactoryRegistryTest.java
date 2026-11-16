@@ -23,23 +23,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
@@ -54,6 +44,7 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
+import org.apache.ignite.testframework.GridTestThread;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.junit.After;
 import org.junit.Before;
@@ -66,10 +57,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
-import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -77,7 +66,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.spy;
@@ -127,7 +115,7 @@ public class SslFactoryRegistryTest {
 
     /**
      * Each test gets a registry whose hot reload executor records the hourly check instead of running it.
-     * Tests run the check themselves. The executor is a mock that runs submitted tasks at once in the calling thread.
+     * Tests run the check themselves.
      * The setup also writes the trust store of a test CA to a temporary directory and stubs the node metrics and logger.
      */
     @Before
@@ -144,14 +132,6 @@ public class SslFactoryRegistryTest {
         when(ctx.metric()).thenReturn(metricMgr);
         when(metricMgr.registry("ssl")).thenReturn(metrics);
         when(ctx.log(SslFactoryRegistry.class)).thenReturn(new NullLogger());
-
-        when(executor.submit(any(Runnable.class))).thenAnswer(call -> {
-            FutureTask<?> task = new FutureTask<>(call.getArgument(0), null);
-
-            task.run();
-
-            return task;
-        });
 
         when(executor.scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), eq(MILLISECONDS))).thenAnswer(call -> {
             check = call.getArgument(0);
@@ -264,30 +244,6 @@ public class SslFactoryRegistryTest {
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         executorFactory.verifyNoInteractions();
-    }
-
-    /**
-     * Given: a transport is using a factory with hot reload enabled.
-     * When: a manual reload runs before the registry starts.
-     * Then: the reload is rejected, the transport keeps its context, and the manual attempt counter stays at zero.
-     */
-    @Test
-    public void testManualReloadBeforeStartKeepsActiveContextAndIsNotCounted() throws Exception {
-        SslContextFactory communication = factory(keys);
-
-        writeFreshCertificates(keys);
-        communication.setHotReloadEnabled(true);
-        SSLContext active = communication.create();
-        registry.register("communication", communication);
-
-        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
-
-        assertTrue(err.getMessage().contains("has not started"));
-        assertSame(active, communication.create());
-
-        registry.start(ctx);
-
-        assertEquals(0, metric("ManualReloadAttempts"));
     }
 
     /**
@@ -442,7 +398,7 @@ public class SslFactoryRegistryTest {
         registry.start(ctx);
         Files.delete(keys);
 
-        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
+        IgniteException err = assertThrows(IgniteException.class, () -> registry.reload(communication));
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, metric("ManualReloadAttempts"));
@@ -480,10 +436,65 @@ public class SslFactoryRegistryTest {
         Files.delete(keys);
         check.run();
 
-        IgniteCheckedException err = assertThrows(IgniteCheckedException.class, () -> registry.reload(communication));
+        IgniteException err = assertThrows(IgniteException.class, () -> registry.reload(communication));
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
+    }
+
+    /**
+     * Given: an automatic attempt has failed to load a missing key store file and pauses before it counts the failure.
+     * When: the operator puts fresh certificates in place and reloads them during the pause.
+     * Then: the manual reload waits until the attempt finishes, so the failure count ends at zero.
+     */
+    @Test
+    public void testManualReloadWaitsForRunningAttempt() throws Exception {
+        SslContextFactory communication = factory(keys);
+        CountDownLatch attemptFailed = new CountDownLatch(1);
+        CountDownLatch resumeAttempt = new CountDownLatch(1);
+
+        writeDueCertificates(keys);
+        communication.setHotReloadEnabled(true);
+        registerTransport("communication", communication);
+        registry.start(ctx);
+        Files.delete(keys);
+
+        when(executor.isShutdown()).thenAnswer(call -> {
+            attemptFailed.countDown();
+
+            assertTrue(resumeAttempt.await(TIMEOUT_MS, MILLISECONDS));
+
+            return false;
+        });
+
+        GridTestThread attempt = new GridTestThread(check);
+        GridTestThread manualReload = new GridTestThread(() -> registry.reload(communication));
+
+        attempt.start();
+
+        try {
+            assertTrue(attemptFailed.await(TIMEOUT_MS, MILLISECONDS));
+
+            writeFreshCertificates(keys);
+            manualReload.start();
+
+            long deadline = System.nanoTime() + MILLISECONDS.toNanos(TIMEOUT_MS);
+
+            while (manualReload.getState() != Thread.State.BLOCKED && manualReload.isAlive()) {
+                assertTrue(System.nanoTime() < deadline);
+
+                Thread.sleep(10);
+            }
+        }
+        finally {
+            resumeAttempt.countDown();
+            attempt.join(TIMEOUT_MS);
+            manualReload.join(TIMEOUT_MS);
+        }
+
+        attempt.checkError();
+        manualReload.checkError();
+        assertEquals(0, failures());
     }
 
     /**
@@ -522,36 +533,6 @@ public class SslFactoryRegistryTest {
         registry.reload(clientConnector);
 
         assertEquals(1, failures());
-    }
-
-    /**
-     * Given: the registry runs manual reloads on a dedicated hot reload thread.
-     * When: a manual reload runs under an operator context.
-     * Then: the worker sees the operator context, and the caller keeps it after the reload.
-     */
-    @Test
-    public void testManualReloadKeepsCallerContext() throws Exception {
-        OperationContextAttribute<String> caller = OperationContextAttribute.newInstance();
-        AtomicReference<String> loadCaller = new AtomicReference<>();
-
-        useRealExecutor();
-        enableHotReload(factory, later());
-        doAnswer(call -> {
-            loadCaller.set(OperationContext.get(caller));
-
-            return null;
-        }).when(factory).init();
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-
-        try (Scope ignored = OperationContext.set(caller, "operator")) {
-            registry.reload(factory);
-
-            assertEquals("operator", OperationContext.get(caller));
-        }
-
-        assertEquals("operator", loadCaller.get());
     }
 
     /**
@@ -625,91 +606,6 @@ public class SslFactoryRegistryTest {
         finally {
             allowCompletion.countDown();
         }
-    }
-
-    /**
-     * Given: an automatic attempt is loading certificates, and a manual reload waits in the queue.
-     * When: the registry stops.
-     * Then: the reload is cancelled, does not load the factory, and is not counted. Only the automatic attempt loads it.
-     */
-    @Test
-    public void testStopCancelsQueuedManualReload() throws Exception {
-        ScheduledExecutorService hotReloadExecutor = useRealExecutor();
-        CountDownLatch loadStarted = new CountDownLatch(1);
-        CountDownLatch releaseLoad = new CountDownLatch(1);
-        AtomicInteger loads = new AtomicInteger();
-        BlockingQueue<Future<?>> submissions = new LinkedBlockingQueue<>();
-
-        enableHotReload(factory, due());
-        doAnswer(call -> {
-            loads.incrementAndGet();
-            loadStarted.countDown();
-            U.awaitQuiet(releaseLoad);
-
-            return null;
-        }).when(factory).init();
-        doAnswer(call -> {
-            Future<?> task = (Future<?>)call.callRealMethod();
-
-            submissions.add(task);
-
-            return task;
-        }).when(hotReloadExecutor).submit(any(Runnable.class));
-
-        registry.register("communication", factory);
-
-        IgniteInternalFuture<IgniteCheckedException> reload = null;
-        Future<?> queuedReload = null;
-
-        try {
-            registry.start(ctx);
-
-            assertTrue(loadStarted.await(TIMEOUT_MS, MILLISECONDS));
-
-            reload = runAsync(() -> assertThrows(IgniteCheckedException.class, () -> registry.reload(factory)));
-            queuedReload = submissions.poll(TIMEOUT_MS, MILLISECONDS);
-
-            assertNotNull(queuedReload);
-
-            registry.stop();
-
-            assertTrue(reload.get(TIMEOUT_MS).getCause() instanceof CancellationException);
-            assertEquals(1, loads.get());
-            assertEquals(0, metric("ManualReloadAttempts"));
-        }
-        finally {
-            if (queuedReload != null)
-                queuedReload.cancel(true);
-            else if (reload != null)
-                reload.cancel();
-
-            releaseLoad.countDown();
-
-            if (reload != null)
-                reload.get(TIMEOUT_MS);
-        }
-    }
-
-    /**
-     * Given: a manual reload waits in the queue.
-     * When: the waiting caller is interrupted.
-     * Then: the caller gets an interrupted error and keeps the interrupt flag, and the queued reload is cancelled.
-     */
-    @Test
-    public void testInterruptedManualReloadCancelsQueuedReload() throws Exception {
-        enableHotReload(factory, later());
-
-        Future<?> queuedReload = mock(Future.class);
-
-        when(queuedReload.get()).thenThrow(new InterruptedException());
-        doReturn(queuedReload).when(executor).submit(any(Runnable.class));
-
-        registry.register("communication", factory);
-        registry.start(ctx);
-
-        assertThrows(IgniteInterruptedCheckedException.class, () -> registry.reload(factory));
-        assertTrue(Thread.interrupted());
-        verify(queuedReload).cancel(true);
     }
 
     /**

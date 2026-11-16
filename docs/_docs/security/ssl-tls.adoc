@@ -258,7 +258,6 @@ Each factory's count resets after a successful manual reload or an automatic att
 `ssl.ManualReloadAttempts` and `ssl.AutomaticHotReloadAttempts` count the node's calls to reload each factory, including errors.
 A factory shared by several transports is counted once per attempt.
 Startup loading and direct application calls to the factory are not counted.
-A manual reload that a starting node rejects before hot reload starts is not counted either.
 
 To recover without waiting for the next retry:
 

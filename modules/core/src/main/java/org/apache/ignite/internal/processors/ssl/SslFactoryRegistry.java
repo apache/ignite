@@ -22,20 +22,16 @@ import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
 
@@ -91,7 +87,7 @@ public class SslFactoryRegistry {
 
         Map<Factory<SSLContext>, String> transports = new IdentityHashMap<>();
 
-        factories().forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
+        factories.forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
 
         Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
 
@@ -110,57 +106,32 @@ public class SslFactoryRegistry {
         if (hotReloads.isEmpty())
             return;
 
+        this.hotReloads = hotReloads;
+
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
         executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(() -> hotReloads.values().forEach(HotReload::check), null),
             0, CHECK_PERIOD, MILLISECONDS);
-
-        this.hotReloads = hotReloads;
     }
 
     /** */
     public synchronized void stop() {
-        ScheduledExecutorService executor = this.executor;
-
-        if (executor == null)
-            return;
-
-        for (Runnable task : executor.shutdownNow()) {
-            if (task instanceof Future<?> fut)
-                fut.cancel(false);
-        }
+        if (executor != null)
+            executor.shutdownNow();
     }
 
     /**
-     * Reloads the factory and resets its hot reload failure count.
+     * Reloads the factory. For a factory with hot reload enabled, waits for its running check and resets its failure count.
      *
      * @param factory Factory to reload.
-     * @throws IgniteCheckedException If hot reload has not started, or an asynchronous reload fails or is interrupted.
      */
-    public void reload(AbstractSslContextFactory factory) throws IgniteCheckedException {
-        Future<?> reload;
+    public void reload(AbstractSslContextFactory factory) {
+        HotReload hotReload = hotReloads.get(factory);
 
-        synchronized (this) {
-            HotReload hotReload = hotReloads.get(factory);
-
-            if (hotReload == null && factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled())
-                throw new IgniteCheckedException("Automatic TLS hot reload has not started.");
-
-            reload = hotReload == null ? null : executor.submit(hotReload::reload);
-        }
-
-        if (reload == null)
+        if (hotReload == null)
             reloadFactory(factory);
-        else {
-            try {
-                U.get(reload);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                reload.cancel(true);
-
-                throw e;
-            }
-        }
+        else
+            hotReload.reload();
     }
 
     /** */
@@ -170,7 +141,7 @@ public class SslFactoryRegistry {
         factory.init();
     }
 
-    /** Hot reload state of one factory. */
+    /** Hot reload state of one factory. Its check and manual reload hold its monitor. */
     private class HotReload {
         /** */
         private final SslContextFactory factory;
@@ -188,10 +159,8 @@ public class SslFactoryRegistry {
         }
 
         /** Reloads the factory if its hot reload time has come. */
-        private void check() {
-            long hotReloadTime = factory.getHotReloadTime();
-
-            if (hotReloadTime == 0 || hotReloadTime > System.currentTimeMillis())
+        private synchronized void check() {
+            if (!due())
                 return;
 
             automaticHotReloadAttempts.incrementAndGet();
@@ -208,11 +177,9 @@ public class SslFactoryRegistry {
                 return;
             }
 
-            hotReloadTime = factory.getHotReloadTime();
-
-            if (hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis()) {
+            if (due()) {
                 fail(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
-                    + new Date(hotReloadTime) + ']'));
+                    + new Date(factory.getHotReloadTime()) + ']'));
             }
             else {
                 failures.set(0);
@@ -222,6 +189,13 @@ public class SslFactoryRegistry {
 
                 logHotReloadTime();
             }
+        }
+
+        /** @return Whether the loaded certificates have a hot reload time, and it has come. */
+        private boolean due() {
+            long hotReloadTime = factory.getHotReloadTime();
+
+            return hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis();
         }
 
         /** */
@@ -236,7 +210,7 @@ public class SslFactoryRegistry {
         }
 
         /** */
-        private void reload() {
+        private synchronized void reload() {
             reloadFactory(factory);
 
             failures.set(0);
