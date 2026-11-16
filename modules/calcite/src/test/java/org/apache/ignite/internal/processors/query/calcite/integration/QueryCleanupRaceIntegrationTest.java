@@ -22,18 +22,17 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartResponse;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests query cleanup when a fragment start response arrives after a DELETE failure. */
 public class QueryCleanupRaceIntegrationTest extends AbstractBasicIntegrationTest {
@@ -57,6 +56,8 @@ public class QueryCleanupRaceIntegrationTest extends AbstractBasicIntegrationTes
         // The second execution exercises the cached-plan path, which has no list of sibling queries.
         for (int i = 0; i < 2; i++)
             checkDeleteFailureWithDelayedQueryStartResponse();
+
+        assertNoRunningQueriesOnAllNodes();
     }
 
     /** */
@@ -90,16 +91,11 @@ public class QueryCleanupRaceIntegrationTest extends AbstractBasicIntegrationTes
         finally {
             spi.stopBlock();
         }
-
-        assertTrue("Failed DELETE is still registered on the server [queryId=" + qryId.get() + ']',
-            waitForCondition(() -> queryProcessor(grid(0)).queryRegistry().query(qryId.get()) == null, 5_000));
-        assertTrue("Failed DELETE is still registered on the client [queryId=" + qryId.get() + ']',
-            waitForCondition(() -> queryProcessor(client).queryRegistry().query(qryId.get()) == null, 5_000));
     }
 
     /** A propagated execution error must not be added back to its own cause as a suppressed exception. */
     @Test
-    void testExecutionFailureHasAcyclicExceptionGraph() {
+    void testExecutionFailureHasAcyclicExceptionGraph() throws Exception {
         sql("CREATE TABLE test (id INT PRIMARY KEY, val INT)");
         sql("INSERT INTO test (id, val) VALUES (1, 0)");
 
@@ -109,8 +105,9 @@ public class QueryCleanupRaceIntegrationTest extends AbstractBasicIntegrationTes
 
             assertTrue(X.hasCause(error, ArithmeticException.class));
             assertNoExceptionCycle(error, Collections.newSetFromMap(new IdentityHashMap<>()));
-            Assertions.assertDoesNotThrow(() -> new VisorExceptionWrapper(error));
         }
+
+        assertNoRunningQueriesOnAllNodes();
     }
 
     /** Check paths rather than all visited nodes: sharing a cause does not constitute a cycle. */
@@ -130,20 +127,27 @@ public class QueryCleanupRaceIntegrationTest extends AbstractBasicIntegrationTes
 
     /** Errors before creation of a root execution node must also unregister the query. */
     @Test
-    void testPlanningFailureClosesQuery() {
+    void testPlanningFailureClosesQuery() throws Exception {
         sql("CREATE TABLE test (id INT PRIMARY KEY, val INT)");
 
-        assertThrows("SELECT missing FROM test", IgniteSQLException.class, "not found");
-
-        assertTrue(queryProcessor(client).queryRegistry().runningQueries().isEmpty());
+        assertThrowsSqlException("SELECT missing FROM test", "not found");
+        assertNoRunningQueriesOnAllNodes();
     }
 
     /** A later statement's planning failure must close earlier statements in the same call. */
     @Test
-    void testPlanningFailureClosesEarlierStatement() {
+    void testPlanningFailureClosesEarlierStatement() throws Exception {
         sql("CREATE TABLE test (id INT PRIMARY KEY, val INT)");
         sql("INSERT INTO test (id, val) VALUES (1, 0)");
 
-        assertThrows("SELECT * FROM test; SELECT missing FROM test", IgniteSQLException.class, "not found");
+        assertThrowsSqlException("SELECT * FROM test; SELECT missing FROM test", "not found");
+        assertNoRunningQueriesOnAllNodes();
+    }
+
+    /** */
+    private static void assertNoRunningQueriesOnAllNodes() throws Exception {
+        // Query cleanup is asynchronous, so wait for it to complete on every node.
+        for (Ignite node : G.allGrids())
+            assertNoRunningQueries(node);
     }
 }

@@ -448,7 +448,7 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractWrapperTest 
     }
 
     /** */
-    private static void assertNoRunningQueries(Ignite n) throws Exception {
+    protected static void assertNoRunningQueries(Ignite n) throws Exception {
         AtomicReference<Collection<Query<?>>> runningQrysRef = new AtomicReference<>(List.of());
 
         if (waitForCondition(() -> isAbsentRunningQueries(n, runningQrysRef), 1_000L))
