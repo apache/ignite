@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -45,10 +45,7 @@ public class SslFactoryRegistry {
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
-    private final List<Entry<Factory<SSLContext>, String>> factories = new ArrayList<>();
-
-    /** */
-    private volatile List<SslFactoryWrapper> hotReloads = Collections.emptyList();
+    private final List<SslFactoryWrapper> factories = new CopyOnWriteArrayList<>();
 
     /** */
     private volatile ScheduledExecutorService executor;
@@ -65,28 +62,28 @@ public class SslFactoryRegistry {
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
         for (int i = 0; i < factories.size(); i++) {
-            Entry<Factory<SSLContext>, String> entry = factories.get(i);
+            SslFactoryWrapper wrapper = factories.get(i);
 
-            if (entry.getKey() == factory) {
-                factories.set(i, Map.entry(factory, entry.getValue() + ", " + transport));
+            if (wrapper.factory == factory) {
+                factories.set(i, new SslFactoryWrapper(factory, wrapper.transports + ", " + transport));
 
                 return;
             }
         }
 
-        factories.add(Map.entry(factory, transport));
+        factories.add(new SslFactoryWrapper(factory, transport));
     }
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
-    public synchronized List<Entry<Factory<SSLContext>, String>> factories() {
-        return List.copyOf(factories);
+    public List<Entry<Factory<SSLContext>, String>> factories() {
+        return factories.stream().map(wrapper -> Map.entry(wrapper.factory, wrapper.transports)).toList();
     }
 
     /** */
     public synchronized void start(GridKernalContext ctx) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveHotReloadFailures", () -> hotReloads.stream().mapToLong(w -> w.failures.get()).sum(),
+        metrics.register("ConsecutiveHotReloadFailures", () -> factories.stream().mapToLong(w -> w.failures.get()).sum(),
             "Sum of consecutive automatic certificate hot reload failures across SSL factories.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
@@ -94,25 +91,23 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        List<SslFactoryWrapper> hotReloads = new ArrayList<>();
+        boolean hotReload = false;
 
-        for (Entry<Factory<SSLContext>, String> entry : factories) {
-            if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
-                SslFactoryWrapper wrapper = new SslFactoryWrapper(sslFactory, entry.getValue());
-
+        for (SslFactoryWrapper wrapper : factories) {
+            if (wrapper.factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
+                wrapper.hotReloadFactory = sslFactory;
                 wrapper.logHotReloadTime(sslFactory.getHotReloadTime());
-                hotReloads.add(wrapper);
+
+                hotReload = true;
             }
         }
 
-        if (hotReloads.isEmpty())
+        if (!hotReload)
             return;
-
-        this.hotReloads = hotReloads;
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(() -> hotReloads.forEach(SslFactoryWrapper::check), 0, CHECK_PERIOD, MILLISECONDS);
+        executor.scheduleWithFixedDelay(() -> factories.forEach(SslFactoryWrapper::check), 0, CHECK_PERIOD, MILLISECONDS);
     }
 
     /** */
@@ -127,47 +122,40 @@ public class SslFactoryRegistry {
      * @param factory Factory to reload.
      */
     public void reload(AbstractSslContextFactory factory) {
-        for (SslFactoryWrapper wrapper : hotReloads) {
-            if (wrapper.factory == factory) {
+        for (SslFactoryWrapper wrapper : factories) {
+            if (wrapper.factory == factory)
                 wrapper.reload();
-
-                return;
-            }
         }
-
-        reloadFactory(factory);
     }
 
-    /** */
-    private void reloadFactory(AbstractSslContextFactory factory) {
-        manualReloadAttempts.incrementAndGet();
-
-        factory.init();
-    }
-
-    /** Factory with hot reload enabled and its hot reload state. Its check and manual reload hold its monitor. */
+    /** Registered factory with its transports and hot reload state. Its check and manual reload hold its monitor. */
     private class SslFactoryWrapper {
         /** */
-        private final SslContextFactory factory;
+        private final Factory<SSLContext> factory;
 
         /** */
         private final String transports;
+
+        /** The factory if hot reload is enabled for it and the registry has started. */
+        @Nullable private volatile SslContextFactory hotReloadFactory;
 
         /** */
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private SslFactoryWrapper(SslContextFactory factory, String transports) {
+        private SslFactoryWrapper(Factory<SSLContext> factory, String transports) {
             this.factory = factory;
             this.transports = transports;
         }
 
         /** Reloads the factory if its hot reload time has come, and ends the failure streak if it has not. */
         private synchronized void check() {
-            if (executor.isShutdown())
+            SslContextFactory sslFactory = hotReloadFactory;
+
+            if (sslFactory == null || executor.isShutdown())
                 return;
 
-            if (!due(factory.getHotReloadTime())) {
+            if (!due(sslFactory.getHotReloadTime())) {
                 failures.set(0);
 
                 return;
@@ -179,7 +167,7 @@ public class SslFactoryRegistry {
                 log.info("TLS hot reload started [transports=" + transports + ']');
 
             try {
-                factory.init();
+                sslFactory.init();
             }
             catch (Exception e) {
                 fail(e);
@@ -187,7 +175,7 @@ public class SslFactoryRegistry {
                 return;
             }
 
-            long hotReloadTime = factory.getHotReloadTime();
+            long hotReloadTime = sslFactory.getHotReloadTime();
 
             if (due(hotReloadTime)) {
                 fail(new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
@@ -221,11 +209,17 @@ public class SslFactoryRegistry {
 
         /** */
         private synchronized void reload() {
-            reloadFactory(factory);
+            manualReloadAttempts.incrementAndGet();
 
-            failures.set(0);
+            ((AbstractSslContextFactory)factory).init();
 
-            logHotReloadTime(factory.getHotReloadTime());
+            SslContextFactory sslFactory = hotReloadFactory;
+
+            if (sslFactory != null) {
+                failures.set(0);
+
+                logHotReloadTime(sslFactory.getHotReloadTime());
+            }
         }
 
         /** */
