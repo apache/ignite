@@ -228,9 +228,11 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 Ignite checks the loaded certificates when the node starts and then every hour.
 A chain expires when any certificate in it expires, including an issuing certificate.
-Ignite selects the chain that expires first and starts hot reload attempts `hotReloadBeforeExpiryMs` before it expires, 7 days by default.
+Hot reload becomes due `hotReloadBeforeExpiryMs` before the chain that expires first, 7 days by default.
+The first check after that point starts an attempt, so the attempt can start up to an hour later.
 If this point has already passed when the node starts, the first attempt runs at startup.
-Set `hotReloadBeforeExpiryMs` shorter than the lifetime of your certificates.
+Set `hotReloadBeforeExpiryMs` longer than an hour plus the time needed to put the replacements in place.
+Set it shorter than the lifetime of your certificates.
 Otherwise new certificates are due for hot reload as soon as they are loaded, and every attempt fails.
 See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
 
@@ -253,7 +255,7 @@ The node log shows the affected transports.
 At `INFO` level it shows when the loaded certificates are due for hot reload, when an attempt starts and when it succeeds.
 At `WARN` level it shows a failed attempt with the reason and the time of the retry.
 The `ssl.ConsecutiveHotReloadFailures` metric sums consecutive failed automatic attempts across the node's factories.
-Each factory's count resets after a successful manual reload or an automatic attempt after which hot reload is no longer due.
+Each factory's count resets after a successful manual reload or when a check finds that the loaded certificates are no longer due for hot reload.
 
 `ssl.ManualReloadAttempts` and `ssl.AutomaticHotReloadAttempts` count the node's calls to reload each factory, including errors.
 A factory shared by several transports is counted once per attempt.
@@ -321,7 +323,7 @@ Limit request duration in custom sources: a blocked load delays other hot reload
 |`false`
 
 |`hotReloadBeforeExpiryMs`
-|How long before the certificates expire hot reload starts, in milliseconds. See <<When Hot Reload Runs>>.
+|How long before the certificates expire hot reload becomes due, in milliseconds. See <<When Hot Reload Runs>>.
 |`604800000` (7 days)
 
 |`trustStoreFilePath`

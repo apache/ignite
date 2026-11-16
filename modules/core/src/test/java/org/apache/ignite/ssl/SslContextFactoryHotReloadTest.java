@@ -17,15 +17,21 @@
 
 package org.apache.ignite.ssl;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.FutureTask;
 import javax.crypto.spec.SecretKeySpec;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.testframework.GridTestThread;
@@ -239,21 +245,28 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: due key certificates that stay the same, and a trust store that gets a new issuer.
-     * When: the factory reloads.
-     * Then: the factory installs a new context.
+     * Given: a server keeps its keys, and a client presents a certificate from a CA that the server does not trust yet.
+     * When: only the trust store gets that CA, and the factory reloads.
+     * Then: the context loaded before the change rejects the client, and the reloaded context accepts it.
      */
     @Test
-    public void testReloadReplacesContextWhenOnlyTrustStoreChanges() throws Exception {
+    public void testReloadTrustsCaAddedToTrustStore() throws Exception {
         InMemorySslContextFactory factory = dueFactory();
         SSLContext ctx = factory.create();
-
         TestCertificateAuthority otherIssuer = new TestCertificateAuthority("other-issuer", now - DAYS.toMillis(1), now + DAYS.toMillis(1));
+        InMemorySslContextFactory client = new InMemorySslContextFactory(otherIssuer.keyStore("client", at(-1), at(23)));
+
+        client.trustStore = authority.trustStore();
+        client.useTrustStore("memory-trust");
+
+        SSLContext clientCtx = client.create();
+
+        assertFalse(serverAccepts(ctx, clientCtx));
 
         factory.trustStore.setCertificateEntry("other-issuer", otherIssuer.trustStore().getCertificate("CN=other-issuer"));
         factory.init();
 
-        assertNotSame(ctx, factory.create());
+        assertTrue(serverAccepts(factory.create(), clientCtx));
     }
 
     /**
@@ -421,6 +434,43 @@ public class SslContextFactoryHotReloadTest {
         factory.create();
 
         assertEquals(now, factory.getHotReloadTime());
+    }
+
+    /**
+     * Connects a client to a server that requires a client certificate and reports whether the server accepted it.
+     * The server side decides, because with TLS 1.3 the client can finish its part of the handshake first.
+     */
+    private static boolean serverAccepts(SSLContext server, SSLContext client) throws Exception {
+        InetAddress loopback = InetAddress.getLoopbackAddress();
+
+        try (SSLServerSocket srvSock = (SSLServerSocket)server.getServerSocketFactory().createServerSocket(0, 1, loopback)) {
+            srvSock.setNeedClientAuth(true);
+            srvSock.setSoTimeout((int)TIMEOUT_MS);
+
+            FutureTask<Boolean> accept = new FutureTask<>(() -> {
+                try (SSLSocket sock = (SSLSocket)srvSock.accept()) {
+                    sock.setSoTimeout((int)TIMEOUT_MS);
+                    sock.startHandshake();
+
+                    return true;
+                }
+                catch (SSLHandshakeException e) {
+                    return false;
+                }
+            });
+
+            new GridTestThread(accept).start();
+
+            try (SSLSocket sock = (SSLSocket)client.getSocketFactory().createSocket(loopback, srvSock.getLocalPort())) {
+                sock.setSoTimeout((int)TIMEOUT_MS);
+                sock.startHandshake();
+            }
+            catch (IOException ignored) {
+                // No-op.
+            }
+
+            return accept.get(TIMEOUT_MS, MILLISECONDS);
+        }
     }
 
     /** */

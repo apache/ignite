@@ -119,7 +119,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * @return How long before the certificates expire hot reload starts, in milliseconds.
+     * @return How long before the certificates expire hot reload becomes due, in milliseconds.
      *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
      */
     public long getHotReloadBeforeExpiryMs() {
@@ -127,7 +127,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     }
 
     /**
-     * @param millis How long before the certificates expire hot reload starts, in milliseconds. Must be positive.
+     * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
      *     The factory applies a change at its next load.
      */
     public void setHotReloadBeforeExpiryMs(long millis) {

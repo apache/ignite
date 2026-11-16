@@ -45,7 +45,7 @@ public class SslFactoryRegistry {
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
-    private final Map<String, Factory<SSLContext>> transports = new LinkedHashMap<>();
+    private final Map<Factory<SSLContext>, String> factories = new LinkedHashMap<>();
 
     /** */
     private volatile Map<Factory<SSLContext>, HotReload> hotReloads = Collections.emptyMap();
@@ -64,17 +64,12 @@ public class SslFactoryRegistry {
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
-        if (transports.putIfAbsent(transport, factory) != null)
-            throw new IllegalStateException("SSL factory is already registered [transport=" + transport + ']');
+        factories.merge(factory, transport, (names, name) -> names + ", " + name);
     }
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
     public synchronized Map<Factory<SSLContext>, String> factories() {
-        Map<Factory<SSLContext>, String> factories = new LinkedHashMap<>();
-
-        transports.forEach((transport, factory) -> factories.merge(factory, transport, (names, name) -> names + ", " + name));
-
-        return factories;
+        return new LinkedHashMap<>(factories);
     }
 
     /** */
@@ -91,7 +86,7 @@ public class SslFactoryRegistry {
 
         Map<Factory<SSLContext>, HotReload> hotReloads = new HashMap<>();
 
-        for (Map.Entry<Factory<SSLContext>, String> entry : factories().entrySet()) {
+        for (Map.Entry<Factory<SSLContext>, String> entry : factories.entrySet()) {
             if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
                 if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
@@ -158,10 +153,16 @@ public class SslFactoryRegistry {
             this.transports = transports;
         }
 
-        /** Reloads the factory if its hot reload time has come. */
+        /** Reloads the factory if its hot reload time has come, and ends the failure streak if it has not. */
         private synchronized void check() {
-            if (!due())
+            if (executor.isShutdown())
                 return;
+
+            if (!due()) {
+                failures.set(0);
+
+                return;
+            }
 
             automaticHotReloadAttempts.incrementAndGet();
 
