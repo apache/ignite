@@ -49,13 +49,6 @@ public class GridReflectionCache implements Externalizable {
         }
     };
 
-    /** Compares methods by name. */
-    private static final Comparator<Method> METHOD_NAME_COMPARATOR = new Comparator<Method>() {
-        @Override public int compare(Method m1, Method m2) {
-            return m1.getName().compareTo(m2.getName());
-        }
-    };
-
     /** @see IgniteSystemProperties#IGNITE_REFLECTION_CACHE_SIZE */
     public static final int DFLT_REFLECTION_CACHE_SIZE = 128;
 
@@ -64,10 +57,6 @@ public class GridReflectionCache implements Externalizable {
 
     /** Fields cache. */
     private ConcurrentMap<Class, List<Field>> fields = new GridBoundedConcurrentLinkedHashMap<>(
-        CACHE_SIZE, CACHE_SIZE);
-
-    /** Methods cache. */
-    private ConcurrentMap<Class, List<Method>> mtds = new GridBoundedConcurrentLinkedHashMap<>(
         CACHE_SIZE, CACHE_SIZE);
 
     /** Field predicate. */
@@ -132,20 +121,6 @@ public class GridReflectionCache implements Externalizable {
     }
 
     /**
-     * Gets first method in the class list of methods.
-     *
-     * @param cls Class.
-     * @return First method.
-     */
-    @Nullable public Method firstMethod(Class<?> cls) {
-        assert cls != null;
-
-        List<Method> l = methods(cls);
-
-        return l.isEmpty() ? null : l.get(0);
-    }
-
-    /**
      * Gets fields.
      *
      * @param cls Class.
@@ -181,44 +156,6 @@ public class GridReflectionCache implements Externalizable {
         }
 
         return fieldsList;
-    }
-
-    /**
-     * Gets methods.
-     *
-     * @param cls Class.
-     * @return Annotated method.
-     */
-    public List<Method> methods(Class<?> cls) {
-        assert cls != null;
-
-        List<Method> mtdsList = mtds.get(cls);
-
-        if (mtdsList == null) {
-            mtdsList = new ArrayList<>();
-
-            for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
-                List<Method> l = new ArrayList<>();
-
-                for (Method m : c.getDeclaredMethods()) {
-                    if (mp == null || mp.apply(m)) {
-                        m.setAccessible(true);
-
-                        l.add(m);
-                    }
-                }
-
-                if (!l.isEmpty()) {
-                    Collections.sort(l, METHOD_NAME_COMPARATOR);
-
-                    mtdsList.addAll(l);
-                }
-            }
-
-            mtds.putIfAbsent(cls, mtdsList);
-        }
-
-        return mtdsList;
     }
 
     /** {@inheritDoc} */
