@@ -65,7 +65,7 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -277,7 +277,7 @@ public class SslFactoryRegistryTest {
     public void testHotReloadAtEpochLoadsReplacement() throws Exception {
         SslContextFactory communication = factory(keys);
 
-        save(authority.keyStore("node", -DAYS.toMillis(1), DFLT_HOT_RELOAD_BEFORE_EXPIRY), keys);
+        save(authority.keyStore("node", -DAYS.toMillis(1), DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS), keys);
         communication.setHotReloadEnabled(true);
         registerTransport("communication", communication);
         registry.start(ctx);

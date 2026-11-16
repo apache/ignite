@@ -68,7 +68,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
     /** Default time before certificate expiry when hot reload starts: 7 days. */
-    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY = TimeUnit.DAYS.toMillis(7);
+    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
 
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
@@ -98,7 +98,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
-    private long hotReloadBeforeExpiry = DFLT_HOT_RELOAD_BEFORE_EXPIRY;
+    private long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
     private transient volatile long hotReloadTime;
@@ -122,25 +122,25 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @return How long before the certificates expire hot reload starts, in milliseconds.
-     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY}.
+     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
      */
-    public long getHotReloadBeforeExpiry() {
-        return hotReloadBeforeExpiry;
+    public long getHotReloadBeforeExpiryMs() {
+        return hotReloadBeforeExpiryMs;
     }
 
     /**
      * @param millis How long before the certificates expire hot reload starts, in milliseconds. Must be positive.
      *     The factory applies a change at its next load.
      */
-    public void setHotReloadBeforeExpiry(long millis) {
+    public void setHotReloadBeforeExpiryMs(long millis) {
         A.ensure(millis > 0, "millis > 0");
 
-        hotReloadBeforeExpiry = millis;
+        hotReloadBeforeExpiryMs = millis;
     }
 
     /**
      * The hot reload time is calculated from the certificates loaded with hot reload enabled.
-     * It comes {@link #getHotReloadBeforeExpiry()} before the earliest expiry among the chains of the private keys.
+     * It comes {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry among the chains of the private keys.
      * A chain expires when any certificate in it expires.
      * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
@@ -405,7 +405,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
         if (!hasChains)
             throw new SSLException("Certificate hot reload requires a private key with an X.509 certificate chain.");
 
-        long time = earliestExpiry - hotReloadBeforeExpiry;
+        long time = earliestExpiry - hotReloadBeforeExpiryMs;
 
         // Zero is reserved for an absent hot reload date.
         return time == 0 ? -1 : time;

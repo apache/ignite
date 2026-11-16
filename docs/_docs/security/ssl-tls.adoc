@@ -226,14 +226,14 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 === When Hot Reload Runs
 
 A chain expires when any certificate in it expires, including an issuing certificate.
-Ignite selects the chain that expires first and starts hot reload attempts `hotReloadBeforeExpiry` before it expires, 7 days by default.
+Ignite selects the chain that expires first and starts hot reload attempts `hotReloadBeforeExpiryMs` before it expires, 7 days by default.
 If this point has already passed when the node starts, Ignite schedules an attempt immediately.
-Set `hotReloadBeforeExpiry` shorter than the lifetime of your certificates.
+Set `hotReloadBeforeExpiryMs` shorter than the lifetime of your certificates.
 Otherwise new certificates are due for hot reload as soon as they are loaded, and every attempt fails.
 See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
 
 If the loaded certificates are still due for hot reload, Ignite records a failed hot reload attempt even though it installed them.
-This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiry`.
+This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.
 The loaded context remains in use while Ignite retries every hour.
 
 After a manual reload, Ignite schedules the next automatic attempt from the loaded certificates.
@@ -321,7 +321,7 @@ Limit request duration in custom sources: a blocked load can delay other hot rel
 |Enables automatic certificate hot reload. See <<Automatic Certificate Hot Reload>>.
 |`false`
 
-|`hotReloadBeforeExpiry`
+|`hotReloadBeforeExpiryMs`
 |How long before the certificates expire hot reload starts, in milliseconds. See <<When Hot Reload Runs>>.
 |`604800000` (7 days)
 

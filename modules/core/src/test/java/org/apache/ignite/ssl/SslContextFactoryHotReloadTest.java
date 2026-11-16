@@ -37,7 +37,7 @@ import org.junit.rules.TemporaryFolder;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
@@ -119,12 +119,12 @@ public class SslContextFactoryHotReloadTest {
      * Then: the setter rejects it and keeps the default.
      */
     @Test
-    public void testNonPositiveHotReloadBeforeExpiryIsRejected() {
+    public void testNonPositiveHotReloadBeforeExpiryMsIsRejected() {
         SslContextFactory factory = new SslContextFactory();
 
-        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiry(0));
-        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiry(-1));
-        assertEquals(DFLT_HOT_RELOAD_BEFORE_EXPIRY, factory.getHotReloadBeforeExpiry());
+        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiryMs(0));
+        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiryMs(-1));
+        assertEquals(DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS, factory.getHotReloadBeforeExpiryMs());
     }
 
     /**
@@ -511,7 +511,7 @@ public class SslContextFactoryHotReloadTest {
             setKeyStoreFilePath("memory");
             setKeyStorePassword(PASSWORD);
             setTrustManagers(getDisabledTrustManager());
-            setHotReloadBeforeExpiry(HOURS.toMillis(15));
+            setHotReloadBeforeExpiryMs(HOURS.toMillis(15));
         }
 
         /** Selects the trust store that supplies the factory's trust managers. */
