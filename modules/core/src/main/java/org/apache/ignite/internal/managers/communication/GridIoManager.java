@@ -3556,7 +3556,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         IgniteRunnable closure;
 
         /**
-         *
          * @param msg Received message.
          * @param c Message closure.
          */
