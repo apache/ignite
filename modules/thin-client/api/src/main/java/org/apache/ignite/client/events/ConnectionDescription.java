@@ -33,7 +33,7 @@ public class ConnectionDescription {
     private final UUID srvNodeId;
 
     /** Server-assigned connection ID. */
-    private final Long connId;
+    private final @Nullable Long connId;
 
     /** */
     private final String protocol;

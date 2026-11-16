@@ -126,7 +126,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     private volatile UUID srvNodeId;
 
     /** Server-assigned connection ID. */
-    private volatile Long connId;
+    private volatile @Nullable Long connId;
 
     /** Server topology version. */
     private volatile AffinityTopologyVersion srvTopVer;
