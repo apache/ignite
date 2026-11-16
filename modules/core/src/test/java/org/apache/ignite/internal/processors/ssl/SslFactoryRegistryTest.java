@@ -169,6 +169,24 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: communication and discovery share one factory, and the client connector registers its own factory after them.
+     * When: the registry lists its factories.
+     * Then: each factory appears once under its transports, in the order of first registration.
+     */
+    @Test
+    public void testFactoriesAreGroupedInRegistrationOrder() {
+        SslContextFactory clientConnector = new SslContextFactory();
+
+        registry.register("communication", factory);
+        registry.register("discovery", factory);
+        registry.register("client connector", clientConnector);
+
+        assertEquals(List.of("communication, discovery", "client connector"), new ArrayList<>(registry.factories().keySet()));
+        assertSame(factory, registry.factories().get("communication, discovery"));
+        assertSame(clientConnector, registry.factories().get("client connector"));
+    }
+
+    /**
      * Given: a factory with hot reload disabled and valid certificates.
      * When: the registry starts.
      * Then: no hot reload thread starts, and the failure metric reads zero.

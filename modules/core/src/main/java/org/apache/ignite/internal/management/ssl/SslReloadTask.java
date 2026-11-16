@@ -19,12 +19,9 @@ package org.apache.ignite.internal.management.ssl;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -148,20 +145,13 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                 }
             }
 
-            Set<Factory<SSLContext>> processed = Collections.newSetFromMap(new IdentityHashMap<>());
             List<String> reports = new ArrayList<>();
 
-            for (Factory<SSLContext> factory : factories.values()) {
-                if (!processed.add(factory))
-                    continue;
-
-                String transports = factories.entrySet().stream()
-                    .filter(entry -> entry.getValue() == factory)
-                    .map(Map.Entry::getKey)
-                    .collect(joining(", "));
+            for (Map.Entry<String, Factory<SSLContext>> entry : factories.entrySet()) {
+                String transports = entry.getKey();
 
                 try {
-                    ignite.context().ssl().reload((AbstractSslContextFactory)factory);
+                    ignite.context().ssl().reload((AbstractSslContextFactory)entry.getValue());
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);

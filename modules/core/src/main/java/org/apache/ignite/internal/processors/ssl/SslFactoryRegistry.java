@@ -68,9 +68,17 @@ public class SslFactoryRegistry {
             throw new IllegalStateException("SSL factory is already registered [transport=" + transport + ']');
     }
 
-    /** @return Snapshot of active transport factories. */
+    /** @return Registered factories in registration order, each under its transports joined by commas. */
     public synchronized Map<String, Factory<SSLContext>> factories() {
-        return new LinkedHashMap<>(factories);
+        Map<Factory<SSLContext>, String> names = new IdentityHashMap<>();
+
+        factories.forEach((transport, factory) -> names.merge(factory, transport, (prev, next) -> prev + ", " + next));
+
+        Map<String, Factory<SSLContext>> transports = new LinkedHashMap<>();
+
+        factories.values().forEach(factory -> transports.putIfAbsent(names.get(factory), factory));
+
+        return transports;
     }
 
     /** */
@@ -85,18 +93,14 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        Map<Factory<SSLContext>, String> transports = new IdentityHashMap<>();
-
-        factories.forEach((transport, factory) -> transports.merge(factory, transport, (names, name) -> names + ", " + name));
-
         Map<Factory<SSLContext>, HotReload> hotReloads = new IdentityHashMap<>();
 
-        for (Map.Entry<Factory<SSLContext>, String> entry : transports.entrySet()) {
-            if (entry.getKey() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
+        for (Map.Entry<String, Factory<SSLContext>> entry : factories().entrySet()) {
+            if (entry.getValue() instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled()) {
                 if (sslFactory.getHotReloadTime() == 0)
                     sslFactory.init();
 
-                HotReload hotReload = new HotReload(sslFactory, entry.getValue());
+                HotReload hotReload = new HotReload(sslFactory, entry.getKey());
 
                 hotReload.logHotReloadTime();
                 hotReloads.put(sslFactory, hotReload);
