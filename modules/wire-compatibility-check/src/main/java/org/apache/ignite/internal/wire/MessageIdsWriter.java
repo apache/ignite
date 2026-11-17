@@ -27,6 +27,8 @@ import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.zk.internal.ZkMessageFactory;
 
@@ -44,7 +46,7 @@ public class MessageIdsWriter {
     public static void main(String[] args) throws IOException, IgniteCheckedException {
         List<MessageFactoryProvider> providers = new ArrayList<>();
 
-        providers.add(new CoreMessagesProvider());
+        providers.add(new CoreMessagesProvider(new StandaloneGridKernalContext(new NullLogger(), null)));
 
         for (IgniteComponentType type : IgniteComponentType.values()) {
             MessageFactoryProvider provider = type.messageFactory();

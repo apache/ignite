@@ -20,6 +20,7 @@ package org.apache.ignite.marshaller;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.ObjectInputStreamFilteringTest.Holder;
@@ -27,12 +28,16 @@ import org.apache.ignite.marshaller.ObjectInputStreamFilteringTest.Holder;
 /** */
 public class HolderSerializer implements IgniteDataTransferObjectSerializer<Holder> {
     /** {@inheritDoc} */
-    @Override public void writeExternal(Holder instance, ObjectOutput out) throws IOException {
+    @Override public void writeExternal(Holder instance, ObjectOutput out, MessageSerializationContext ctx) throws IOException {
         U.writeMap(out, instance.map);
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(Holder instance, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(
+        Holder instance,
+        ObjectInput in,
+        MessageSerializationContext ctx
+    ) throws IOException, ClassNotFoundException {
         instance.map = U.readMap(in);
     }
 }

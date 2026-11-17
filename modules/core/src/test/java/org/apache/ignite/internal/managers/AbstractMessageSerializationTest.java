@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.thread.context.OperationContextSnapshotMessage;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.nio.MessageSerialization;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -110,6 +111,10 @@ public abstract class AbstractMessageSerializationTest {
         reader.reset();
 
         Message msg = msgFactory.create(msgType);
+
+        // OperationContextSnapshotMessage uses custom serialization that is incompatible with test reader and writer implementation.
+        if (msg instanceof OperationContextSnapshotMessage)
+            return;
 
         initializeMessage(msg);
 
