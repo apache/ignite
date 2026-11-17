@@ -108,14 +108,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     }
 
     /**
-     * The hot reload time is calculated from the key store last passed to
-     * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} in a successful load.
+     * The hot reload time is calculated from the key store passed to
+     * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during the last successful load.
      * It comes {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry among the chains of the private keys.
      * A chain expires when any certificate in it expires.
      * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
-     *     or that key store has no private key with an X.509 chain.
+     *     or the last successful load supplied no key store or no private key with an X.509 chain.
      */
     public final long getHotReloadTime() {
         long expiry = earliestExpiry;
@@ -187,6 +187,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      */
     private SSLContext createSslContext() throws SSLException {
         checkParameters();
+
+        pendingExpiry = 0;
 
         KeyManager[] keyMgrs = createKeyManagers();
 

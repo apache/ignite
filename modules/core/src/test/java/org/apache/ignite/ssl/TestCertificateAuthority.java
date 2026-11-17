@@ -70,11 +70,16 @@ public class TestCertificateAuthority {
      * The chain holds a leaf certificate with the given dates, signed by this CA, followed by the CA certificate.
      */
     public KeyStore keyStore(String alias, long notBefore, long notAfter) throws Exception {
+        return keyStore(alias, notBefore, notAfter, PASSWORD);
+    }
+
+    /** Creates the key store with the given password for its private key. */
+    public KeyStore keyStore(String alias, long notBefore, long notAfter, char[] pwd) throws Exception {
         KeyPair leafKeys = keyPair();
         X509Certificate leaf = certificate(new X500Principal("CN=" + alias), leafKeys, notBefore, notAfter, false);
         KeyStore store = emptyStore();
 
-        store.setKeyEntry(alias, leafKeys.getPrivate(), PASSWORD, new X509Certificate[] {leaf, cert});
+        store.setKeyEntry(alias, leafKeys.getPrivate(), pwd, new X509Certificate[] {leaf, cert});
 
         return store;
     }
