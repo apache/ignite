@@ -526,6 +526,32 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: hot reload is enabled for a custom factory that has loaded a key store with due certificates.
+     * When: a manual reload creates the context without a key store, and the scheduled check runs.
+     * Then: the factory has no hot reload date, and the check makes no attempt.
+     */
+    @Test
+    public void testLoadWithoutKeyStoreClearsHotReloadDate() throws Exception {
+        SourceSslContextFactory custom = new SourceSslContextFactory();
+
+        custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
+        custom.setHotReloadEnabled(true);
+        custom.create();
+
+        assertTrue(custom.getHotReloadTime() > 0);
+
+        registry.register("communication", custom);
+        registry.start(ctx);
+
+        custom.setKeys(null, null);
+        registry.reload(custom);
+        check.run();
+
+        assertEquals(0, custom.getHotReloadTime());
+        assertEquals(0, metric("AutomaticHotReloadAttempts"));
+    }
+
+    /**
      * Given: a registered factory that is not an {@link SslContextFactory}.
      * When: a manual reload runs.
      * Then: the factory is loaded.
@@ -922,7 +948,7 @@ public class SslFactoryRegistryTest {
         }
     }
 
-    /** Creates key managers from the key store and password supplied by the test. */
+    /** Creates key managers from the key store and password supplied by the test, or none without a key store. */
     private static class SourceSslContextFactory extends AbstractSslContextFactory {
         /** */
         private static final long serialVersionUID = 0L;
@@ -946,6 +972,9 @@ public class SslFactoryRegistryTest {
 
         /** {@inheritDoc} */
         @Override protected KeyManager[] createKeyManagers() throws SSLException {
+            if (store == null)
+                return null;
+
             try {
                 return createKeyManagers(KeyManagerFactory.getInstance("SunX509"), store, pwd);
             }
