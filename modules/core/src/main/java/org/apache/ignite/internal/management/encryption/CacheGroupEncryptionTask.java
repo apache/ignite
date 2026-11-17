@@ -38,6 +38,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class CacheGroupEncryptionTask<T> extends VisorMultiNodeTask<EncryptionCacheGroupArg,
     CacheGroupEncryptionTaskResult<T>, CacheGroupEncryptionTask.SingleFieldDto<T>> {
+    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = 2218298420727233447L;
+
     /** {@inheritDoc} */
     @Nullable @Override protected CacheGroupEncryptionTaskResult<T> reduce0(List<ComputeJobResult> results) {
         Map<UUID, T> jobResults = new HashMap<>();
@@ -73,6 +76,9 @@ public abstract class CacheGroupEncryptionTask<T> extends VisorMultiNodeTask<Enc
      */
     protected abstract static class ReencryptionBaseJob<T>
         extends VisorJob<EncryptionCacheGroupArg, SingleFieldDto<T>> {
+        /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = -7796840308165116912L;
+
         /**
          * @param arg Job argument.
          * @param debug Flag indicating whether debug information should be printed into node log.
