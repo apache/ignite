@@ -254,7 +254,7 @@ public class SslFactoryRegistryTest {
      * Given: hot reload is enabled, and the key store holds only a CA certificate.
      * When: the registry starts and the hourly check runs, then the operator puts a key store with a private key in place
      *     and reloads it.
-     * Then: the registry logs that hot reload will not run, and the check makes no attempt.
+     * Then: the registry logs that the factory has no scheduled date, and the check makes no attempt.
      *     After the reload, the log shows when hot reload is due.
      */
     @Test
@@ -268,8 +268,7 @@ public class SslFactoryRegistryTest {
         registry.start(ctx);
         check.run();
 
-        assertEquals(1, logged.size());
-        assertTrue(logged.get(0), logged.get(0).startsWith("TLS hot reload will not run"));
+        assertEquals(List.of("TLS hot reload has no scheduled date [transports=communication]"), logged);
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
@@ -356,6 +355,34 @@ public class SslFactoryRegistryTest {
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
         assertTrue(logged.toString(), logged.contains("TLS hot reload succeeded [transports=client connector]"));
         assertTrue(logged.toString(), logged.toString().contains("TLS hot reload failed [transports=communication,"));
+    }
+
+    /**
+     * Given: two factories are registered and the second has a replacement certificate.
+     * When: the hourly check cannot read the hot reload setting of the first factory.
+     * Then: the registry counts and logs the failure and reloads the second factory.
+     */
+    @Test
+    public void testHotReloadSettingFailureDoesNotStopCheck() throws Exception {
+        List<String> logged = captureLog();
+        AbstractSslContextFactory custom = mock(AbstractSslContextFactory.class);
+        SslContextFactory clientConnector = factory(keys);
+
+        when(custom.isHotReloadEnabled()).thenReturn(true);
+        registry.register("communication", custom);
+        writeDueCertificates(keys);
+        clientConnector.setHotReloadEnabled(true);
+        registerTransport("client connector", clientConnector);
+        registry.start(ctx);
+
+        when(custom.isHotReloadEnabled()).thenThrow(new IllegalStateException("Source configuration unavailable"));
+        writeFreshCertificates(keys);
+        check.run();
+
+        assertEquals(1, failures());
+        assertEquals(1, metric("AutomaticHotReloadAttempts"));
+        assertTrue(logged.toString(), logged.toString().contains("TLS hot reload failed [transports=communication,"));
+        assertTrue(logged.toString(), logged.contains("TLS hot reload succeeded [transports=client connector]"));
     }
 
     /**
