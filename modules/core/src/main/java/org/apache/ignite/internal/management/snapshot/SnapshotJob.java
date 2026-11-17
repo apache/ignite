@@ -26,7 +26,7 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
 
 /** */
 public abstract class SnapshotJob<A, R> extends VisorJob<A, R> {
-    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
     private static final long serialVersionUID = 1810351757519377950L;
 
     /** */

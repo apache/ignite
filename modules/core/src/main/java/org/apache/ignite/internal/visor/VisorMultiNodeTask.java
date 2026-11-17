@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.logStart;
  * @param <J> Job result type
  */
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, VisorTaskResult<R>> {
-    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
     private static final long serialVersionUID = 7060784081451397428L;
 
     /** Auto-injected grid instance. */

@@ -912,7 +912,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Wraps closure with CacheOperationContext awared of application attributes. */
     protected abstract class UpdateReplyClosureContextAware implements GridDhtAtomicCache.UpdateReplyClosure {
-        /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+        /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
         private static final long serialVersionUID = 4477554794302874132L;
 
         /** */

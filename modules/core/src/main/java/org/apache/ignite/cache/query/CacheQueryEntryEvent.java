@@ -27,7 +27,7 @@ import javax.cache.event.EventType;
  * @param <V> The type of value.
  */
 public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEventAdapter<K, V> {
-    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
     private static final long serialVersionUID = 3727209702108804209L;
 
     /**

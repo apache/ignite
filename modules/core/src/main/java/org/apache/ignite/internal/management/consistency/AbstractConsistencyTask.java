@@ -30,7 +30,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
  * @param <J> Job result type
  */
 public abstract class AbstractConsistencyTask<A, J> extends VisorMultiNodeTask<A, ConsistencyTaskResult, J> {
-    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
     private static final long serialVersionUID = 4702803362423514659L;
 
     /** {@inheritDoc} */

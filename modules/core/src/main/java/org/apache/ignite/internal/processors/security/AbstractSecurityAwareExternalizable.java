@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * Abstract security aware Externalizable.
  */
 public abstract class AbstractSecurityAwareExternalizable<T> implements Externalizable, IgniteInternalWrapper<T> {
-    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
     private static final long serialVersionUID = -453654879995400384L;
 
     /** Security subject id. */

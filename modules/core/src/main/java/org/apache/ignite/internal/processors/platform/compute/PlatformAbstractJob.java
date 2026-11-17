@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * Base interop job.
  */
 public abstract class PlatformAbstractJob implements PlatformJob, Externalizable {
-    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
     private static final long serialVersionUID = 6674471713790619930L;
 
     /** Marker object denoting the job execution result is stored in native platform. */
