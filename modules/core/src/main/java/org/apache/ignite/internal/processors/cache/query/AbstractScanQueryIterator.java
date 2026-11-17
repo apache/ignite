@@ -44,6 +44,9 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.secur
  * Abstract scan query iterator.
  */
 public abstract class AbstractScanQueryIterator<K, V, R> extends GridCloseableIteratorAdapter<R> {
+    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = -5655512557497915631L;
+
     /** */
     private final IgniteBiPredicate<K, V> filter;
 

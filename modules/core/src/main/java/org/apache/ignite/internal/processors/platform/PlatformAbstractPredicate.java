@@ -26,6 +26,9 @@ import java.io.ObjectOutput;
  * Base interop predicate. Delegates apply to native platform.
  */
 public abstract class PlatformAbstractPredicate implements Externalizable {
+    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = 4072632764674506346L;
+
     /** .Net binary predicate */
     protected Object pred;
 
