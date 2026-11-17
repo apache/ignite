@@ -57,8 +57,8 @@ import org.junit.runners.Suite;
     CompoundIndexCompatibilityTest.class,
     SnapshotCompatibilityTest.class,
     CheckpointMapSnapshotCompatibilityTest.class,
-    TcpDiscoveryDifferentClusterVersionsTest.class,
-    CdcEventSerializationCompatibilityTest.class
+    CdcEventSerializationCompatibilityTest.class,
+    TcpDiscoveryDifferentClusterVersionsTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {
 }
