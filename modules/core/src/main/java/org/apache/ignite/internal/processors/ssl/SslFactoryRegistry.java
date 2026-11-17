@@ -281,8 +281,10 @@ public class SslFactoryRegistry {
 
         /** */
         private void logHotReloadTime(long hotReloadTime) {
-            if (hotReloadTime == 0)
-                log.warning("TLS hot reload has no scheduled date [transports=" + transports + ']');
+            if (hotReloadTime == 0) {
+                log.warning("TLS hot reload will not run: no private key with an X.509 certificate chain was found [transports="
+                    + transports + ']');
+            }
             else if (log.isInfoEnabled())
                 log.info("TLS hot reload due [transports=" + transports + ", hotReloadTime=" + new Date(hotReloadTime) + ']');
         }
