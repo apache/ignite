@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.cache.index.H2RowExpireTimeIndexSel
 import org.apache.ignite.internal.processors.cache.index.H2TransactionAwareQueriesEnabledTest;
 import org.apache.ignite.internal.processors.cache.index.IgniteDecimalSelfTest;
 import org.apache.ignite.internal.processors.cache.index.IndexColumnTypeMismatchTest;
+import org.apache.ignite.internal.processors.cache.index.IndexRowCacheCrossTablePoisonTest;
 import org.apache.ignite.internal.processors.cache.index.LongIndexNameTest;
 import org.apache.ignite.internal.processors.cache.index.PojoIndexLocalQueryTest;
 import org.apache.ignite.internal.processors.cache.index.SqlPartitionEvictionTest;
@@ -370,6 +371,8 @@ import org.junit.runners.Suite;
     DumpCacheConfigTest.class,
 
     H2TransactionAwareQueriesEnabledTest.class,
+
+    IndexRowCacheCrossTablePoisonTest.class,
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
 }
