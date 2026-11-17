@@ -256,7 +256,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Key managers of the key store.
      * @throws GeneralSecurityException If the key managers cannot be created.
      */
-    protected final KeyManager[] createKeyManagers(KeyManagerFactory keyMgrFactory, KeyStore store, char[] pwd)
+    protected final synchronized KeyManager[] createKeyManagers(KeyManagerFactory keyMgrFactory, KeyStore store, char[] pwd)
         throws GeneralSecurityException {
         keyMgrFactory.init(store, pwd);
 
