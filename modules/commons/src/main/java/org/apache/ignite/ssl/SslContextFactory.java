@@ -96,13 +96,13 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private boolean hotReloadEnabled;
 
     /** */
-    private long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
-    private transient volatile long hotReloadTime;
+    private transient volatile Long earliestExpiry;
 
     /** */
-    private transient long pendingHotReloadTime;
+    private transient Long pendingExpiry;
 
     /**
      * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
@@ -145,14 +145,16 @@ public class SslContextFactory extends AbstractSslContextFactory {
      *     or have no private key with an X.509 chain.
      */
     public long getHotReloadTime() {
-        return hotReloadTime;
+        Long expiry = earliestExpiry;
+
+        return expiry == null ? 0 : expiry - hotReloadBeforeExpiryMs;
     }
 
     /** {@inheritDoc} */
     @Override SSLContext createSslContext() throws SSLException {
         SSLContext ctx = super.createSslContext();
 
-        hotReloadTime = pendingHotReloadTime;
+        earliestExpiry = pendingExpiry;
 
         return ctx;
     }
@@ -338,7 +340,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            pendingHotReloadTime = hotReloadTime(keyStore);
+            pendingExpiry = earliestExpiry(keyStore);
 
             return keyMgrFactory.getKeyManagers();
         }
@@ -353,11 +355,11 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param store Loaded key store.
-     * @return Hot reload time of the chain that expires first, or {@code 0} if the store has no private key
+     * @return Earliest certificate expiry in the private key chains, or {@code null} if the store has no private key
      *     with an X.509 certificate chain.
      * @throws GeneralSecurityException If the key store cannot be read.
      */
-    private long hotReloadTime(KeyStore store) throws GeneralSecurityException {
+    private static Long earliestExpiry(KeyStore store) throws GeneralSecurityException {
         long earliestExpiry = Long.MAX_VALUE;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
@@ -369,7 +371,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
             earliestExpiry = Math.min(earliestExpiry, chainExpiry(store.getCertificateChain(alias)));
         }
 
-        return earliestExpiry == Long.MAX_VALUE ? 0 : earliestExpiry - hotReloadBeforeExpiryMs;
+        return earliestExpiry == Long.MAX_VALUE ? null : earliestExpiry;
     }
 
     /**

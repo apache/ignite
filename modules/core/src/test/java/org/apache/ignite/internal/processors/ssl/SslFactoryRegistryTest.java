@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -30,8 +31,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.thread.context.OperationContext;
+import org.apache.ignite.internal.thread.context.OperationContextAttribute;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -54,6 +59,7 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -290,6 +296,33 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: the registry starts during an operation with a request ID.
+     * When: its worker reloads a factory with due certificates.
+     * Then: the factory sees no request ID from the operation that started the registry.
+     */
+    @Test
+    public void testHotReloadDoesNotInheritStartupContext() throws Exception {
+        executorFactory.when(() -> IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor(any(), any())).thenCallRealMethod();
+
+        OperationContextAttribute<String> reqId = OperationContextAttribute.newInstance();
+        CompletableFuture<String> reloadReqId = new CompletableFuture<>();
+
+        enableHotReload(factory, due());
+        doAnswer(call -> {
+            reloadReqId.complete(OperationContext.get(reqId));
+
+            return null;
+        }).when(factory).init();
+        registry.register("communication", factory);
+
+        try (Scope ignored = OperationContext.set(reqId, "startup")) {
+            registry.start(ctx);
+        }
+
+        assertNull(reloadReqId.get(TIMEOUT_MS, MILLISECONDS));
+    }
+
+    /**
      * Given: two factories with due certificates, and loading the first one throws an error,
      *     as a missing class of a key store provider does.
      * When: the hourly check runs.
@@ -314,7 +347,7 @@ public class SslFactoryRegistryTest {
         assertEquals(1, failures());
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
         assertTrue(logged.toString(), logged.contains("TLS hot reload succeeded [transports=client connector]"));
-        assertTrue(logged.toString(), logged.toString().contains("TLS hot reload failed [transports=communication, nextAttempt="));
+        assertTrue(logged.toString(), logged.toString().contains("TLS hot reload failed [transports=communication,"));
     }
 
     /**
@@ -349,7 +382,7 @@ public class SslFactoryRegistryTest {
 
         assertEquals(List.of("due", "started", "failed", "started", "succeeded", "due"), evts);
         assertTrue(logged.get(0), logged.get(0).endsWith("hotReloadTime=" + new Date(due) + ']'));
-        assertTrue(logged.get(2), logged.get(2).contains("nextAttempt="));
+        assertTrue(logged.get(2), logged.get(2).contains("nextAttemptNotBefore="));
         assertTrue(logged.get(5), logged.get(5).endsWith("hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']'));
     }
 
@@ -490,6 +523,48 @@ public class SslFactoryRegistryTest {
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
+    }
+
+    /**
+     * Given: communication only reloads manually, and the client connector is due for hot reload.
+     * When: the hourly check runs while communication is waiting for its certificate source.
+     * Then: the client connector loads its replacement before the manual reload finishes.
+     */
+    @Test
+    public void testManualOnlyFactoryDoesNotDelayHotReload() throws Exception {
+        SslContextFactory clientConnector = factory(keys);
+        CountDownLatch manualStarted = new CountDownLatch(1);
+        CountDownLatch finishManual = new CountDownLatch(1);
+
+        doAnswer(call -> {
+            manualStarted.countDown();
+            finishManual.await();
+
+            return null;
+        }).when(factory).init();
+
+        writeDueCertificates(keys);
+        clientConnector.setHotReloadEnabled(true);
+        registry.register("communication", factory);
+        registerTransport("client connector", clientConnector);
+        registry.start(ctx);
+
+        long prevTime = clientConnector.getHotReloadTime();
+
+        writeFreshCertificates(keys);
+
+        IgniteInternalFuture<?> manual = runAsync(() -> registry.reload(factory));
+
+        try {
+            assertTrue(manualStarted.await(TIMEOUT_MS, MILLISECONDS));
+            runAsync(check).get(TIMEOUT_MS);
+
+            assertTrue(clientConnector.getHotReloadTime() > prevTime);
+        }
+        finally {
+            finishManual.countDown();
+            manual.get(TIMEOUT_MS);
+        }
     }
 
     /**
@@ -734,7 +809,7 @@ public class SslFactoryRegistryTest {
      * The mock returns {@code true} from {@code isHotReloadEnabled()} and the date from {@code getHotReloadTime()}.
      *
      * @param factory Factory mock.
-     * @param hotReloadTime Hot reload time of the loaded certificates, or {@code 0} if they were loaded without hot reload.
+     * @param hotReloadTime Hot reload time of the loaded certificates.
      */
     private static void enableHotReload(SslContextFactory factory, long hotReloadTime) {
         when(factory.isHotReloadEnabled()).thenReturn(true);

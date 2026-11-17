@@ -98,12 +98,12 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: a factory with hot reload enabled and the default lead time, which reads its key store from a file.
-     * When: it loads a certificate that expires in 10 days.
-     * Then: hot reload is due 7 days before the expiry.
+     * Given: a factory has loaded a certificate that expires in 10 days.
+     * When: the application increases the lead time from the default of 7 days to 14 days before starting the node.
+     * Then: the same certificate is already due for hot reload.
      */
     @Test
-    public void testHotReloadIsDueSevenDaysBeforeExpiryByDefault() throws Exception {
+    public void testHotReloadTimeUsesCurrentLeadTime() throws Exception {
         Path keys = tmp.newFile("keys.jks").toPath();
 
         save(authority.keyStore("node", at(-1), at(DAYS.toHours(10))), keys);
@@ -113,10 +113,13 @@ public class SslContextFactoryHotReloadTest {
         factory.setKeyStoreFilePath(keys.toString());
         factory.setKeyStorePassword(PASSWORD);
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
-        factory.setHotReloadEnabled(true);
         factory.create();
 
         assertEquals(at(DAYS.toHours(3)), factory.getHotReloadTime());
+
+        factory.setHotReloadBeforeExpiryMs(DAYS.toMillis(14));
+
+        assertEquals(at(-DAYS.toHours(4)), factory.getHotReloadTime());
     }
 
     /**

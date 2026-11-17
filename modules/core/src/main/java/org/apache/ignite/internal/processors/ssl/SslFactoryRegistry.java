@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -98,7 +99,7 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        boolean hotReload = false;
+        List<RegisteredFactory> enabledFactories = new ArrayList<>();
 
         for (RegisteredFactory registered : factories) {
             SslContextFactory sslFactory = registered.hotReloadFactory();
@@ -106,16 +107,17 @@ public class SslFactoryRegistry {
             if (sslFactory != null) {
                 registered.logHotReloadTime(sslFactory.getHotReloadTime());
 
-                hotReload = true;
+                enabledFactories.add(registered);
             }
         }
 
-        if (!hotReload)
+        if (enabledFactories.isEmpty())
             return;
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(this::checkFactories, 0, CHECK_PERIOD, MILLISECONDS);
+        executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(() -> checkFactories(enabledFactories), null),
+            0, CHECK_PERIOD, MILLISECONDS);
     }
 
     /** @return Sum of consecutive automatic hot reload failures across factories. */
@@ -128,12 +130,12 @@ public class SslFactoryRegistry {
         return sum;
     }
 
-    /** Runs the hourly check of each factory. */
-    private void checkFactories() {
+    /** Runs the hourly check of the factories with hot reload enabled. */
+    private void checkFactories(List<RegisteredFactory> enabledFactories) {
         if (log.isDebugEnabled())
             log.debug("TLS hot reload check started");
 
-        for (RegisteredFactory registered : factories)
+        for (RegisteredFactory registered : enabledFactories)
             registered.check();
     }
 
@@ -194,7 +196,7 @@ public class SslFactoryRegistry {
                 if (!executor.isShutdown()) {
                     failures.incrementAndGet();
 
-                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttemptNotBefore="
                         + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
                 }
                 else if (log.isDebugEnabled())
@@ -208,10 +210,7 @@ public class SslFactoryRegistry {
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private void reloadIfDue() {
-            SslContextFactory sslFactory = hotReloadFactory();
-
-            if (sslFactory == null)
-                return;
+            SslContextFactory sslFactory = (SslContextFactory)factory;
 
             if (!due(sslFactory.getHotReloadTime())) {
                 failures.set(0);
