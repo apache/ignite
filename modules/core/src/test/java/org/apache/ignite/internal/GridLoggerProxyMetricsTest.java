@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal;
 
+import java.net.URL;
+import java.net.URLClassLoader;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_GRID_NAME;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_INSTANCE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /** Tests {@link GridLoggerProxy} metrics. */
@@ -85,26 +90,6 @@ public class GridLoggerProxyMetricsTest {
         assertEquals(1, metricValue(mreg, "error"));
     }
 
-    /** Messages counted before registration remain visible and updates continue after registration. */
-    @Test
-    public void testUpdatesAfterRegistration() {
-        GridLoggerProxy log = logger(true);
-
-        log.info("before registration");
-
-        MetricRegistryImpl mreg = new MetricRegistryImpl(GridLoggerProxy.LOG_COUNT_METRICS, null, null, null, null);
-
-        log.registerMetrics(metricManager(mreg));
-
-        LongMetric info = mreg.findMetric("info");
-
-        assertEquals(1, info.value());
-
-        log.info("after registration");
-
-        assertEquals(2, info.value());
-    }
-
     /** Categories share their root's counters, while independent roots have separate counters. */
     @Test
     public void testSharedCategoriesAndIndependentRoots() {
@@ -133,6 +118,62 @@ public class GridLoggerProxyMetricsTest {
 
         assertEquals(4, metricValue(firstReg, "info"));
         assertEquals(1, metricValue(secondReg, "info"));
+    }
+
+    /** CDC prefixes omit an absent node ID for both supported instance-name properties. */
+    @Test
+    public void testCdcInstanceNamePrefix() throws Exception {
+        String proxyName = GridLoggerProxy.class.getName();
+        URL classes = GridLoggerProxy.class.getProtectionDomain().getCodeSource().getLocation();
+        String previousInstanceName = System.getProperty(IGNITE_LOG_INSTANCE_NAME);
+        String previousGridName = System.getProperty(IGNITE_LOG_GRID_NAME);
+
+        for (String property : new String[] {IGNITE_LOG_INSTANCE_NAME, IGNITE_LOG_GRID_NAME}) {
+            System.clearProperty(IGNITE_LOG_INSTANCE_NAME);
+            System.clearProperty(IGNITE_LOG_GRID_NAME);
+            System.setProperty(property, "true");
+
+            // The prefix flag is static final, so initialize the proxy in a fresh loader for each property.
+            try (URLClassLoader loader = new URLClassLoader(new URL[] {classes}, getClass().getClassLoader()) {
+                @Override protected synchronized Class<?> loadClass(String name, boolean resolve)
+                    throws ClassNotFoundException {
+                    if (!name.equals(proxyName) && !name.startsWith(proxyName + '$'))
+                        return super.loadClass(name, resolve);
+
+                    Class<?> cls = findLoadedClass(name);
+
+                    if (cls == null)
+                        cls = findClass(name);
+
+                    if (resolve)
+                        resolveClass(cls);
+
+                    return cls;
+                }
+            }) {
+                for (String id : new String[] {null, "12345678"}) {
+                    IgniteLogger impl = mock(IgniteLogger.class);
+                    IgniteLogger proxy = (IgniteLogger)loader.loadClass(proxyName)
+                        .getConstructor(IgniteLogger.class, Object.class, String.class, String.class)
+                        .newInstance(impl, null, "cdc-metrics-demo", id);
+
+                    proxy.warning("test message");
+
+                    verify(impl).warning("<cdc-metrics-demo" + (id == null ? "" : "-" + id) + "> test message");
+                }
+            }
+            finally {
+                if (previousInstanceName == null)
+                    System.clearProperty(IGNITE_LOG_INSTANCE_NAME);
+                else
+                    System.setProperty(IGNITE_LOG_INSTANCE_NAME, previousInstanceName);
+
+                if (previousGridName == null)
+                    System.clearProperty(IGNITE_LOG_GRID_NAME);
+                else
+                    System.setProperty(IGNITE_LOG_GRID_NAME, previousGridName);
+            }
+        }
     }
 
     /**

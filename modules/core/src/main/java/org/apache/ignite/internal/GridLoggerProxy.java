@@ -81,7 +81,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
      * No-arg constructor is required by externalization.
      */
     public GridLoggerProxy() {
-        metrics = new LogMetrics();
+        metrics = null;
     }
 
     /**

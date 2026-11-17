@@ -407,8 +407,7 @@ public class CdcMain implements Runnable {
             metricSpi.onContextInitialized(new StandaloneSpiContext());
         }
 
-        if (kctx.metric().enabled())
-            ((GridLoggerProxy)log).registerMetrics(kctx.metric());
+        ((GridLoggerProxy)log).registerMetrics(kctx.metric());
 
         mreg = kctx.metric().registry("cdc");
     }

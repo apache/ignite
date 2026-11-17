@@ -800,13 +800,13 @@ Register name: `failure.ignored`
 
 == Change Data Capture
 
-The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, through the exporters configured in `CdcConfiguration`.
+The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc`, `cdc.consumer`, and `log.count`, through the exporters configured in `CdcConfiguration`.
 See link:persistence/change-data-capture#metrics[Change Data Capture] for the list of metrics.
 
 == Logging
 
-Counters of log messages passed through the node's logger proxies, grouped by logging level.
-Counters are shared across all logger categories of the node and start accumulating when the node's logger proxy is created, before the metrics are registered.
+Counters of log messages passed to the node's logger, grouped by logging level.
+Counters are shared across all logger categories of the node and start accumulating before the metrics are registered.
 
 Register name: `log.count`
 

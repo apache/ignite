@@ -1204,9 +1204,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             ctx.pools().registerMetrics();
 
-            if (ctx.metric().enabled())
-                log.registerMetrics(ctx.metric());
-
             registerMetrics();
 
             registerConfigurationSystemView();
@@ -3434,6 +3431,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         reg.register("loadBalancingSpiFormatted", this::loadBalancingSpiFormatted, String.class,
             LOAD_BALANCING_SPI_FORMATTED_DESC);
+
+        log.registerMetrics(ctx.metric());
     }
 
     /**
