@@ -272,8 +272,6 @@ public class ClassesGenerator {
 
             if (Serializable.class.isAssignableFrom(cls) &&
                 !(cls.getName().endsWith("Future") || cls.getName().endsWith("FutureAdapter"))) {
-                // Abstract classes are checked, also: Java serialization checks serialVersionUID
-                // of each Serializable class in the hierarchy of the object.
                 if (!cls.isInterface() && !cls.isEnum() && !cls.getSimpleName().isEmpty()) {
                     try {
                         Field field = cls.getDeclaredField("serialVersionUID");
