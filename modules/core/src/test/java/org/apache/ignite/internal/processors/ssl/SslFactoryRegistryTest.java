@@ -637,10 +637,12 @@ public class SslFactoryRegistryTest {
     /**
      * Given: the node starts stopping during an automatic attempt.
      * When: the attempt fails.
-     * Then: the failure is not counted.
+     * Then: the failure is not counted, and the debug log shows the check and the failed attempt.
      */
     @Test
     public void testAttemptFailingDuringStopIsNotCounted() {
+        List<String> logged = captureLog(true);
+
         enableHotReload(factory, due());
         doAnswer(call -> {
             when(executor.isShutdown()).thenReturn(true);
@@ -653,6 +655,9 @@ public class SslFactoryRegistryTest {
         check.run();
 
         assertEquals(0, failures());
+        assertTrue(logged.toString(), logged.contains("TLS hot reload check started"));
+        assertTrue(logged.toString(),
+            logged.toString().contains("TLS hot reload failed during node stop [transports=communication, err="));
     }
 
     /**
@@ -685,9 +690,18 @@ public class SslFactoryRegistryTest {
         assertEquals(1, loads.get());
     }
 
-    /** Makes the registry log to a listener and returns the hot reload lines it logs, in order. */
+    /** Makes the registry log to a listener and returns the hot reload lines it logs at info level and above, in order. */
     private List<String> captureLog() {
-        ListeningTestLogger log = new ListeningTestLogger();
+        return captureLog(false);
+    }
+
+    /**
+     * Makes the registry log to a listener and returns the hot reload lines it logs, in order.
+     *
+     * @param debug Whether the registry logs debug lines too.
+     */
+    private List<String> captureLog(boolean debug) {
+        ListeningTestLogger log = new ListeningTestLogger(debug ? new DebugLogger() : null);
         List<String> logged = new ArrayList<>();
 
         log.registerListener(line -> {
@@ -769,6 +783,14 @@ public class SslFactoryRegistryTest {
     /** */
     private static long at(long hours) {
         return System.currentTimeMillis() + HOURS.toMillis(hours);
+    }
+
+    /** Logger with debug level enabled that drops all lines. */
+    private static class DebugLogger extends NullLogger {
+        /** {@inheritDoc} */
+        @Override public boolean isDebugEnabled() {
+            return true;
+        }
     }
 
     /** Factories with the same key store path compare equal and cache their own SSL contexts. */

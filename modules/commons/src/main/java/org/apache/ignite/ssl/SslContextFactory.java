@@ -366,15 +366,31 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (!store.isKeyEntry(alias))
                 continue;
 
-            Certificate[] chain = store.getCertificateChain(alias);
-
-            if (chain != null && Arrays.stream(chain).allMatch(X509Certificate.class::isInstance)) {
-                for (Certificate cert : chain)
-                    earliestExpiry = Math.min(earliestExpiry, ((X509Certificate)cert).getNotAfter().getTime());
-            }
+            earliestExpiry = Math.min(earliestExpiry, chainExpiry(store.getCertificateChain(alias)));
         }
 
         return earliestExpiry == Long.MAX_VALUE ? 0 : earliestExpiry - hotReloadBeforeExpiryMs;
+    }
+
+    /**
+     * @param chain Certificate chain of a key entry, or {@code null} if the entry has none.
+     * @return Earliest expiry in the chain, or {@link Long#MAX_VALUE} if there is no chain or it holds a certificate other
+     *     than X.509, as TLS ignores such keys.
+     */
+    private static long chainExpiry(Certificate[] chain) {
+        long expiry = Long.MAX_VALUE;
+
+        if (chain == null)
+            return expiry;
+
+        for (Certificate cert : chain) {
+            if (!(cert instanceof X509Certificate x509))
+                return Long.MAX_VALUE;
+
+            expiry = Math.min(expiry, x509.getNotAfter().getTime());
+        }
+
+        return expiry;
     }
 
     /** {@inheritDoc} */

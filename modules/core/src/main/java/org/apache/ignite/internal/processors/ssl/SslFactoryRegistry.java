@@ -130,7 +130,8 @@ public class SslFactoryRegistry {
 
     /**
      * Checks the factories one by one until the registry stops. Counts and logs any failure of a check,
-     * so one factory does not stop the others or the schedule.
+     * so one factory does not stop the others or the schedule. A check that fails while the registry stops
+     * is logged at debug level and not counted.
      */
     private void checkFactories() {
         if (log.isDebugEnabled())
@@ -147,6 +148,10 @@ public class SslFactoryRegistry {
                 catch (Throwable e) {
                     if (!executor.isShutdown())
                         registered.fail(e);
+                    else if (log.isDebugEnabled()) {
+                        log.debug("TLS hot reload failed during node stop [transports=" + registered.transports
+                            + ", err=" + e + ']');
+                    }
                 }
             }
         }
