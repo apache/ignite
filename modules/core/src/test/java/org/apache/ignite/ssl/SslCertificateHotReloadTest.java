@@ -19,12 +19,14 @@ package org.apache.ignite.ssl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.SslMode;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -178,6 +180,29 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
         finally {
             stopAllGrids();
             U.delete(dir);
+        }
+    }
+
+    /**
+     * Given: a node with the client connector and REST, which stop their servers in their own {@code onKernalStop}.
+     * When: the node starts its components.
+     * Then: the SSL factory registry comes after both, so the node, which stops components in reverse order,
+     *     stops hot reload before them.
+     */
+    @Test
+    public void testHotReloadStopsBeforeClientConnectorAndRest() throws Exception {
+        IgniteEx node = startGrid(0);
+
+        try {
+            List<GridComponent> comps = node.context().components();
+            int clientConnector = comps.indexOf(node.context().clientListener());
+            int rest = comps.indexOf(node.context().rest());
+
+            assertTrue(clientConnector >= 0 && rest >= 0);
+            assertTrue(comps.indexOf(node.context().ssl()) > Math.max(clientConnector, rest));
+        }
+        finally {
+            stopAllGrids();
         }
     }
 
