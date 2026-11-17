@@ -92,9 +92,9 @@ public class SslFactoryRegistry {
 
         metrics.register("ConsecutiveHotReloadFailures", this::consecutiveHotReloadFailures,
             "Number of consecutive automatic hot reload failures.");
-        metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
+        metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
-            "Number of automatic SSL factory hot reload attempts.");
+            "Number of automatic hot reload attempts.");
 
         log = ctx.log(getClass());
 
