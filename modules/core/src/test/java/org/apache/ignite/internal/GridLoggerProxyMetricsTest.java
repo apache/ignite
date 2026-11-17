@@ -128,10 +128,10 @@ public class GridLoggerProxyMetricsTest {
         String previousInstanceName = System.getProperty(IGNITE_LOG_INSTANCE_NAME);
         String previousGridName = System.getProperty(IGNITE_LOG_GRID_NAME);
 
-        for (String property : new String[] {IGNITE_LOG_INSTANCE_NAME, IGNITE_LOG_GRID_NAME}) {
+        for (String prop : new String[] {IGNITE_LOG_INSTANCE_NAME, IGNITE_LOG_GRID_NAME}) {
             System.clearProperty(IGNITE_LOG_INSTANCE_NAME);
             System.clearProperty(IGNITE_LOG_GRID_NAME);
-            System.setProperty(property, "true");
+            System.setProperty(prop, "true");
 
             // The prefix flag is static final, so initialize the proxy in a fresh loader for each property.
             try (URLClassLoader loader = new URLClassLoader(new URL[] {classes}, getClass().getClassLoader()) {
