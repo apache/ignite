@@ -21,12 +21,18 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PublicKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import javax.crypto.spec.SecretKeySpec;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLHandshakeException;
@@ -34,6 +40,7 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestThread;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +50,7 @@ import org.junit.rules.TemporaryFolder;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
@@ -325,6 +332,35 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
+     * Given: a factory that extends only {@link AbstractSslContextFactory} has loaded certificate A from its source.
+     *     The source returns a key store with the password of its keys.
+     * When: the source returns certificate B with A's password, then with B's own password.
+     * Then: the failed reload keeps A on new connections and keeps A's hot reload date.
+     *     The second reload serves B on new connections and takes the date from B.
+     */
+    @Test
+    public void testCustomFactoryReloadsKeyStoreWithItsPassword() throws Exception {
+        char[] pwdB = "654321".toCharArray();
+        SourceSslContextFactory factory = new SourceSslContextFactory(authority.keyStore("a", at(-1), at(10)), PASSWORD);
+        X509Certificate certA = serverCertificate(factory.create());
+        long hotReloadTime = factory.getHotReloadTime();
+
+        factory.keyStore = withKeyPassword(authority.keyStore("b", at(-1), at(99)), pwdB);
+
+        IgniteException err = assertThrows(IgniteException.class, factory::init);
+
+        assertTrue(X.hasCause(err, UnrecoverableKeyException.class));
+        assertEquals(certA, serverCertificate(factory.create()));
+        assertEquals(hotReloadTime, factory.getHotReloadTime());
+
+        factory.pwd = pwdB;
+        factory.init();
+
+        assertEquals("CN=b", serverCertificate(factory.create()).getSubjectX500Principal().getName());
+        assertEquals(at(99) - DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS, factory.getHotReloadTime());
+    }
+
+    /**
      * Given: a reload of certificates with a new date blocks on the trust store load.
      * When: another thread reads {@link SslContextFactory#getHotReloadTime()} during the reload.
      * Then: the read returns the current date without waiting for the reload.
@@ -429,6 +465,52 @@ public class SslContextFactoryHotReloadTest {
         }
     }
 
+    /** Connects a client that trusts all servers and returns the certificate that the server presents. */
+    private static X509Certificate serverCertificate(SSLContext server) throws Exception {
+        SSLContext client = SSLContext.getInstance("TLS");
+
+        client.init(null, new TrustManager[] {SslContextFactory.getDisabledTrustManager()}, null);
+
+        InetAddress loopback = InetAddress.getLoopbackAddress();
+
+        try (SSLServerSocket srvSock = (SSLServerSocket)server.getServerSocketFactory().createServerSocket(0, 1, loopback)) {
+            srvSock.setSoTimeout((int)TIMEOUT_MS);
+
+            FutureTask<Void> accept = new FutureTask<>(() -> {
+                try (SSLSocket sock = (SSLSocket)srvSock.accept()) {
+                    sock.setSoTimeout((int)TIMEOUT_MS);
+                    sock.startHandshake();
+                }
+
+                return null;
+            });
+
+            new GridTestThread(accept).start();
+
+            try (SSLSocket sock = (SSLSocket)client.getSocketFactory().createSocket(loopback, srvSock.getLocalPort())) {
+                sock.setSoTimeout((int)TIMEOUT_MS);
+                sock.startHandshake();
+
+                return (X509Certificate)sock.getSession().getPeerCertificates()[0];
+            }
+            finally {
+                accept.get(TIMEOUT_MS, MILLISECONDS);
+            }
+        }
+    }
+
+    /** Copies the key entries of the store into a new key store and protects each key with the given password. */
+    private static KeyStore withKeyPassword(KeyStore store, char[] pwd) throws Exception {
+        KeyStore res = KeyStore.getInstance("JKS");
+
+        res.load(null, pwd);
+
+        for (String alias : Collections.list(store.aliases()))
+            res.setKeyEntry(alias, store.getKey(alias, PASSWORD), pwd, store.getCertificateChain(alias));
+
+        return res;
+    }
+
     /** */
     private long at(long hours) {
         return now + HOURS.toMillis(hours);
@@ -481,6 +563,48 @@ public class SslContextFactoryHotReloadTest {
             keyStoreLoads++;
 
             return keyStore;
+        }
+    }
+
+    /**
+     * A factory that extends only {@link AbstractSslContextFactory}, as a factory of a custom certificate source does.
+     * On each load it takes a key store and the password of its keys from fields. It trusts all peers.
+     * Tests change the fields to put new certificates into the source.
+     */
+    private static class SourceSslContextFactory extends AbstractSslContextFactory {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private KeyStore keyStore;
+
+        /** */
+        private char[] pwd;
+
+        /** */
+        private SourceSslContextFactory(KeyStore keyStore, char[] pwd) {
+            this.keyStore = keyStore;
+            this.pwd = pwd;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void checkParameters() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected KeyManager[] createKeyManagers() throws SSLException {
+            try {
+                return createKeyManagers(KeyManagerFactory.getInstance("SunX509"), keyStore, pwd);
+            }
+            catch (GeneralSecurityException e) {
+                throw new SSLException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected TrustManager[] createTrustManagers() {
+            return new TrustManager[] {SslContextFactory.getDisabledTrustManager()};
         }
     }
 

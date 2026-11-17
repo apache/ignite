@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.HOURS;
@@ -102,7 +101,7 @@ public class SslFactoryRegistry {
         boolean hotReload = false;
 
         for (RegisteredFactory registered : factories) {
-            SslContextFactory sslFactory = registered.hotReloadFactory();
+            AbstractSslContextFactory sslFactory = registered.hotReloadFactory();
 
             if (sslFactory != null) {
                 registered.logHotReloadTime(sslFactory.getHotReloadTime());
@@ -178,8 +177,8 @@ public class SslFactoryRegistry {
         }
 
         /** @return The factory if hot reload is enabled for it, {@code null} otherwise. */
-        @Nullable private SslContextFactory hotReloadFactory() {
-            return factory instanceof SslContextFactory sslFactory && sslFactory.isHotReloadEnabled() ? sslFactory : null;
+        @Nullable private AbstractSslContextFactory hotReloadFactory() {
+            return factory instanceof AbstractSslContextFactory sslFactory && sslFactory.isHotReloadEnabled() ? sslFactory : null;
         }
 
         /**
@@ -212,7 +211,7 @@ public class SslFactoryRegistry {
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private void reloadIfDue() {
-            SslContextFactory sslFactory = (SslContextFactory)factory;
+            AbstractSslContextFactory sslFactory = (AbstractSslContextFactory)factory;
 
             if (!due(sslFactory.getHotReloadTime())) {
                 failures.set(0);
@@ -253,7 +252,7 @@ public class SslFactoryRegistry {
 
             ((AbstractSslContextFactory)factory).init();
 
-            SslContextFactory sslFactory = hotReloadFactory();
+            AbstractSslContextFactory sslFactory = hotReloadFactory();
 
             if (sslFactory != null) {
                 failures.set(0);
@@ -264,10 +263,8 @@ public class SslFactoryRegistry {
 
         /** */
         private void logHotReloadTime(long hotReloadTime) {
-            if (hotReloadTime == 0) {
-                log.warning("TLS hot reload will not run: no private key with an X.509 certificate chain was found [transports="
-                    + transports + ']');
-            }
+            if (hotReloadTime == 0)
+                log.warning("TLS hot reload has no scheduled date [transports=" + transports + ']');
             else if (log.isInfoEnabled())
                 log.info("TLS hot reload due [transports=" + transports + ", hotReloadTime=" + new Date(hotReloadTime) + ']');
         }

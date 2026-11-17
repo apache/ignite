@@ -17,8 +17,12 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,7 +32,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -246,7 +253,7 @@ public class SslFactoryRegistryTest {
      * Given: hot reload is enabled, and the key store holds only a CA certificate.
      * When: the registry starts and the hourly check runs, then the operator puts a key store with a private key in place
      *     and reloads it.
-     * Then: the registry logs that hot reload will not run, and the check makes no attempt.
+     * Then: the registry logs that hot reload has no scheduled date, and the check makes no attempt.
      *     After the reload, the log shows when hot reload is due.
      */
     @Test
@@ -261,7 +268,7 @@ public class SslFactoryRegistryTest {
         check.run();
 
         assertEquals(1, logged.size());
-        assertTrue(logged.get(0), logged.get(0).startsWith("TLS hot reload will not run"));
+        assertTrue(logged.get(0), logged.get(0).startsWith("TLS hot reload has no scheduled date"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
@@ -485,6 +492,28 @@ public class SslFactoryRegistryTest {
         assertThrows(IgniteException.class, () -> registry.reload(communication));
         assertEquals(2, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
+    }
+
+    /**
+     * Given: hot reload is enabled for a factory that extends only {@link AbstractSslContextFactory},
+     *     and the factory has loaded due certificates.
+     * When: its key store file is replaced, and the hourly check runs.
+     * Then: the check loads the replacement, and the factory is no longer due for hot reload.
+     */
+    @Test
+    public void testHotReloadSupportsCustomFactory() throws Exception {
+        KeyFileSslContextFactory custom = new KeyFileSslContextFactory(keys);
+
+        writeDueCertificates(keys);
+        custom.setHotReloadEnabled(true);
+        registerTransport("communication", custom);
+        registry.start(ctx);
+        writeFreshCertificates(keys);
+        check.run();
+
+        assertEquals(1, metric("AutomaticHotReloadAttempts"));
+        assertEquals(0, failures());
+        assertTrue(custom.getHotReloadTime() > System.currentTimeMillis());
     }
 
     /**
@@ -789,7 +818,7 @@ public class SslFactoryRegistryTest {
     }
 
     /** Loads a file-backed factory before registration, as the TCP transports do during startup. */
-    private void registerTransport(String transport, SslContextFactory factory) {
+    private void registerTransport(String transport, AbstractSslContextFactory factory) {
         factory.create();
         registry.register(transport, factory);
     }
@@ -881,6 +910,47 @@ public class SslFactoryRegistryTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return getKeyStoreFilePath().hashCode();
+        }
+    }
+
+    /**
+     * A factory that extends only {@link AbstractSslContextFactory}, as a factory of a custom certificate source does.
+     * On each load it reads its key store file. It trusts all peers.
+     */
+    private static class KeyFileSslContextFactory extends AbstractSslContextFactory {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final String keyStorePath;
+
+        /** */
+        private KeyFileSslContextFactory(Path keyStore) {
+            keyStorePath = keyStore.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void checkParameters() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected KeyManager[] createKeyManagers() throws SSLException {
+            try (InputStream in = Files.newInputStream(Path.of(keyStorePath))) {
+                KeyStore store = KeyStore.getInstance("JKS");
+
+                store.load(in, PASSWORD);
+
+                return createKeyManagers(KeyManagerFactory.getInstance("SunX509"), store, PASSWORD);
+            }
+            catch (GeneralSecurityException | IOException e) {
+                throw new SSLException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected TrustManager[] createTrustManagers() {
+            return new TrustManager[] {SslContextFactory.getDisabledTrustManager()};
         }
     }
 }
