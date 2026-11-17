@@ -99,10 +99,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
     private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
-    private transient volatile Long earliestExpiry;
+    private transient volatile long earliestExpiry;
 
     /** */
-    private transient Long pendingExpiry;
+    private transient long pendingExpiry;
 
     /**
      * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
@@ -145,9 +145,9 @@ public class SslContextFactory extends AbstractSslContextFactory {
      *     or have no private key with an X.509 chain.
      */
     public long getHotReloadTime() {
-        Long expiry = earliestExpiry;
+        long expiry = earliestExpiry;
 
-        return expiry == null ? 0 : expiry - hotReloadBeforeExpiryMs;
+        return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;
     }
 
     /** {@inheritDoc} */
@@ -340,7 +340,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             keyMgrFactory.init(keyStore, keyStorePwd);
 
-            pendingExpiry = earliestExpiry(keyStore);
+            pendingExpiry = keyChainsExpiry(keyStore);
 
             return keyMgrFactory.getKeyManagers();
         }
@@ -355,12 +355,12 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /**
      * @param store Loaded key store.
-     * @return Earliest certificate expiry in the private key chains, or {@code null} if the store has no private key
+     * @return Earliest certificate expiry in the private key chains, or {@code 0} if the store has no private key
      *     with an X.509 certificate chain.
      * @throws GeneralSecurityException If the key store cannot be read.
      */
-    private static Long earliestExpiry(KeyStore store) throws GeneralSecurityException {
-        long earliestExpiry = Long.MAX_VALUE;
+    private static long keyChainsExpiry(KeyStore store) throws GeneralSecurityException {
+        long earliest = Long.MAX_VALUE;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
             String alias = aliases.nextElement();
@@ -368,10 +368,10 @@ public class SslContextFactory extends AbstractSslContextFactory {
             if (!store.isKeyEntry(alias))
                 continue;
 
-            earliestExpiry = Math.min(earliestExpiry, chainExpiry(store.getCertificateChain(alias)));
+            earliest = Math.min(earliest, chainExpiry(store.getCertificateChain(alias)));
         }
 
-        return earliestExpiry == Long.MAX_VALUE ? null : earliestExpiry;
+        return earliest == Long.MAX_VALUE ? 0 : earliest;
     }
 
     /**

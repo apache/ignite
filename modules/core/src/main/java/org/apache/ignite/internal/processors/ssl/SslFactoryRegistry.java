@@ -99,7 +99,7 @@ public class SslFactoryRegistry {
 
         log = ctx.log(getClass());
 
-        List<RegisteredFactory> enabledFactories = new ArrayList<>();
+        boolean hotReload = false;
 
         for (RegisteredFactory registered : factories) {
             SslContextFactory sslFactory = registered.hotReloadFactory();
@@ -107,16 +107,16 @@ public class SslFactoryRegistry {
             if (sslFactory != null) {
                 registered.logHotReloadTime(sslFactory.getHotReloadTime());
 
-                enabledFactories.add(registered);
+                hotReload = true;
             }
         }
 
-        if (enabledFactories.isEmpty())
+        if (!hotReload)
             return;
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(() -> checkFactories(enabledFactories), null),
+        executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(this::checkFactories, null),
             0, CHECK_PERIOD, MILLISECONDS);
     }
 
@@ -131,12 +131,14 @@ public class SslFactoryRegistry {
     }
 
     /** Runs the hourly check of the factories with hot reload enabled. */
-    private void checkFactories(List<RegisteredFactory> enabledFactories) {
+    private void checkFactories() {
         if (log.isDebugEnabled())
             log.debug("TLS hot reload check started");
 
-        for (RegisteredFactory registered : enabledFactories)
-            registered.check();
+        for (RegisteredFactory registered : factories) {
+            if (registered.hotReloadFactory() != null)
+                registered.check();
+        }
     }
 
     /** */
