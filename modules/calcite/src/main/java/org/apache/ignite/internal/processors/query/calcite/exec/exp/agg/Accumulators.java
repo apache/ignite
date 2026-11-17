@@ -295,6 +295,9 @@ public class Accumulators {
 
     /** */
     public abstract static class AbstractAccumulator<Row> implements Accumulator<Row> {
+        /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = -8137684209502006176L;
+
         /** */
         private final RowHandler<Row> hnd;
 
@@ -1286,6 +1289,9 @@ public class Accumulators {
 
     /** */
     private abstract static class AggAccumulator<Row> extends AbstractAccumulator<Row> implements IterableAccumulator<Row> {
+        /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = -8063414927163293464L;
+
         /** */
         private final List<Row> buf;
 

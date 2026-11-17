@@ -37,6 +37,9 @@ import org.jetbrains.annotations.Nullable;
  * Base class for all interop tasks.
  */
 public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> {
+    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = 3575695119849215655L;
+
     /** Platform context. */
     protected final PlatformContext ctx;
 

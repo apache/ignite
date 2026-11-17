@@ -27,6 +27,9 @@ import org.jetbrains.annotations.Nullable;
  * Base class for Visor tasks intended to query data from a single node.
  */
 public abstract class VisorOneNodeTask<A, R> extends VisorMultiNodeTask<A, R, R> {
+    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = -8597058441288534163L;
+
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<A> arg) {
         Collection<UUID> nodes = super.jobNodes(arg);

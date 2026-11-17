@@ -38,6 +38,9 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.sys
  * @param <R> Job result type.
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter implements PublicAccessJob {
+    /** The value is equal to the one computed by JVM for the class in Ignite 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = 7105828509172755448L;
+
     /** Auto-injected grid instance. */
     @IgniteInstanceResource
     protected transient IgniteEx ignite;
