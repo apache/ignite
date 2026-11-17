@@ -91,7 +91,7 @@ public class SslFactoryRegistry {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
         metrics.register("ConsecutiveHotReloadFailures", this::consecutiveHotReloadFailures,
-            "Sum of consecutive automatic certificate hot reload failures across SSL factories.");
+            "Number of consecutive automatic hot reload failures.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual SSL factory reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic SSL factory hot reload attempts.");
@@ -128,33 +128,13 @@ public class SslFactoryRegistry {
         return sum;
     }
 
-    /**
-     * Checks the factories one by one until the registry stops. Counts and logs any failure of a check,
-     * so one factory does not stop the others or the schedule. A check that fails while the registry stops
-     * is logged at debug level and not counted.
-     */
+    /** Runs the hourly check of each factory. */
     private void checkFactories() {
         if (log.isDebugEnabled())
             log.debug("TLS hot reload check started");
 
-        for (RegisteredFactory registered : factories) {
-            synchronized (registered) {
-                if (executor.isShutdown())
-                    return;
-
-                try {
-                    registered.check();
-                }
-                catch (Throwable e) {
-                    if (!executor.isShutdown())
-                        registered.fail(e);
-                    else if (log.isDebugEnabled()) {
-                        log.debug("TLS hot reload failed during node stop [transports=" + registered.transports
-                            + ", err=" + e + ']');
-                    }
-                }
-            }
-        }
+        for (RegisteredFactory registered : factories)
+            registered.check();
     }
 
     /** */
@@ -199,11 +179,35 @@ public class SslFactoryRegistry {
         }
 
         /**
+         * Checks the factory unless the registry has stopped. Counts and logs a failed check, so it does not stop
+         * the other factories or the schedule. A check that fails while the registry stops is logged at debug level
+         * and not counted.
+         */
+        private synchronized void check() {
+            if (executor.isShutdown())
+                return;
+
+            try {
+                reloadIfDue();
+            }
+            catch (Throwable e) {
+                if (!executor.isShutdown()) {
+                    failures.incrementAndGet();
+
+                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                        + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
+                }
+                else if (log.isDebugEnabled())
+                    log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
+            }
+        }
+
+        /**
          * Reloads the factory if its hot reload time has come, and ends the failure streak if it has not.
          *
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
-        private void check() {
+        private void reloadIfDue() {
             SslContextFactory sslFactory = hotReloadFactory();
 
             if (sslFactory == null)
@@ -240,14 +244,6 @@ public class SslFactoryRegistry {
         /** @return Whether the loaded certificates have a hot reload time, and it has come. */
         private static boolean due(long hotReloadTime) {
             return hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis();
-        }
-
-        /** */
-        private void fail(Throwable cause) {
-            failures.incrementAndGet();
-
-            log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
-                + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', cause);
         }
 
         /** */
