@@ -114,4 +114,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the cache size estimation task for SQL statistics. */
     public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
+
+    /** Primary-side data version validation for transactional locks. */
+    public static final IgniteFeature VERSIONED_TX_LOCK_FEATURE = new IgniteCoreFeature(6);
 }

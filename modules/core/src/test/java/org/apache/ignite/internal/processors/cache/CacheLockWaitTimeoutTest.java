@@ -181,7 +181,8 @@ public class CacheLockWaitTimeoutTest extends GridCommonAbstractTest {
     ) {
         return GridTestUtils.runAsync(() -> {
             try (Transaction tx = grid(2).transactions().txStart(PESSIMISTIC, READ_COMMITTED, 30_000, 0)) {
-                return cache.unwrap(IgniteCacheProxy.class).internalProxy().lockTxEntries(entries, WAIT_TIMEOUT);
+                return !cache.unwrap(IgniteCacheProxy.class).internalProxy().lockTxEntries(entries, WAIT_TIMEOUT, false)
+                    .containsValue(false);
             }
         });
     }

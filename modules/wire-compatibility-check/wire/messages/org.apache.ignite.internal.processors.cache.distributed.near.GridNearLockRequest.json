@@ -29,6 +29,7 @@
     {"order": 25, "type": "long", "name": "accessTtl"},
     {"order": 26, "type": "byte", "name": "flags"},
     {"order": 27, "type": "java.lang.String", "name": "txLbl"},
-    {"order": 28, "type": "long", "name": "waitTimeout"}
+    {"order": 28, "type": "long", "name": "waitTimeout"},
+    {"order": 29, "type": "org.apache.ignite.internal.processors.cache.version.GridCacheVersion[]", "name": "expectedVers", "annotations": ["@org.apache.ignite.internal.Order(value=9, introducedBy=\"VERSIONED_TX_LOCK_FEATURE\")"]}
   ]
 }
