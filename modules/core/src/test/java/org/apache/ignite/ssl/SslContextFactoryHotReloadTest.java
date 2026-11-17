@@ -43,7 +43,7 @@ import org.junit.rules.TemporaryFolder;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;

@@ -94,7 +94,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return How long before the certificates expire hot reload becomes due, in milliseconds.
      *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
      */
-    public final long getHotReloadBeforeExpiryMs() {
+    public long getHotReloadBeforeExpiryMs() {
         return hotReloadBeforeExpiryMs;
     }
 
@@ -117,7 +117,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
      *     or the last successful load supplied no key store or no private key with an X.509 chain.
      */
-    public final long getHotReloadTime() {
+    public long getHotReloadTime() {
         long expiry = earliestExpiry;
 
         return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;

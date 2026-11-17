@@ -254,7 +254,7 @@ public class SslFactoryRegistryTest {
      * Given: hot reload is enabled, and the key store holds only a CA certificate.
      * When: the registry starts and the hourly check runs, then the operator puts a key store with a private key in place
      *     and reloads it.
-     * Then: the registry logs that hot reload has no scheduled date, and the check makes no attempt.
+     * Then: the registry logs that hot reload will not run, and the check makes no attempt.
      *     After the reload, the log shows when hot reload is due.
      */
     @Test
@@ -269,7 +269,7 @@ public class SslFactoryRegistryTest {
         check.run();
 
         assertEquals(1, logged.size());
-        assertTrue(logged.get(0), logged.get(0).startsWith("TLS hot reload has no scheduled date"));
+        assertTrue(logged.get(0), logged.get(0).startsWith("TLS hot reload will not run"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
@@ -826,8 +826,8 @@ public class SslFactoryRegistryTest {
         return logged;
     }
 
-    /** Loads the factory before registration, as the TCP transports do during startup. */
-    private void registerTransport(String transport, AbstractSslContextFactory factory) {
+    /** Loads a file-backed factory before registration, as the TCP transports do during startup. */
+    private void registerTransport(String transport, SslContextFactory factory) {
         factory.create();
         registry.register(transport, factory);
     }
