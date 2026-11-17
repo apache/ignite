@@ -188,6 +188,92 @@ If any factory on a node has another type, the command reports it as unsupported
 For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
 If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.
 
+== Automatic Certificate Hot Reload
+
+Automatic hot reload lets nodes load replacement certificates without a reload command.
+You must supply the replacements: Ignite reads them from the configured source and does not issue certificates.
+Hot reload covers the same TCP transports as <<Upgrading Certificates,manual reload>>.
+It does not update the HTTP REST endpoint or external client applications.
+
+=== Enable Hot Reload
+
+Enable hot reload on each configured `SslContextFactory` before starting the node:
+
+[source,java]
+----
+factory.setHotReloadEnabled(true);
+----
+
+Changing this setting requires a node restart.
+The key store must contain a private key with an X.509 certificate chain.
+A chain contains the key's certificate and the certificates of its issuers.
+Ignite ignores keys without such a chain, as TLS does.
+If the key store has no such key, the node logs a warning and skips hot reload.
+After a manual reload of a key store with such a key, hot reload works again.
+
+Before replacing key stores, prepare peers' trust stores as described in <<Upgrading Certificates>>.
+Once every affected peer trusts the replacement certificates, put the replacement key stores in the configured source.
+Put only certificates whose validity period has already started.
+Ignite installs the replacements without checking their dates, and peers may reject certificates that are not yet valid.
+Keep the configured paths, store types and passwords unchanged.
+Ignite loads the replacements automatically when hot reload is due; no reload command is needed for this step.
+
+=== When Hot Reload Runs
+
+At startup, Ignite checks each factory with hot reload enabled.
+After it finishes checking all factories, it waits one hour before checking them again.
+A slow certificate source can therefore delay a factory's next check by more than an hour.
+
+For each factory, hot reload becomes due `hotReloadBeforeExpiryMs` before the earliest certificate expiry in its private key chains.
+This includes issuing certificates. The default lead time is 7 days.
+The first check at or after that date attempts a reload, including the startup check.
+Allow enough time before expiry to supply the replacements, wait through the one-hour interval and load the stores.
+Keep the lead time shorter than the lifetime of the replacement certificates, or they will already be due when loaded.
+See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
+
+If the loaded certificates are still due for hot reload, Ignite records a failed hot reload attempt even though it installed them.
+This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.
+The loaded context remains in use until a later reload replaces it.
+
+After a manual reload, the next hourly check uses the loaded certificates.
+
+New connections use the loaded certificates; established connections remain open.
+To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.
+
+=== Check Failures and Recover
+
+If loading the stores or creating the TLS context fails, Ignite keeps the current certificates and retries on the next check, even after they expire.
+Keeping expired certificates does not extend their validity, so new connections may fail until a valid replacement is available.
+If the replacements appear after hot reload is due, the next retry loads them.
+
+The node log shows the affected transports.
+At `INFO` level it shows when the loaded certificates are due for hot reload, when an attempt starts and when it succeeds.
+At `WARN` level it shows why an attempt failed and when the node retries automatically.
+At `DEBUG` level it also shows the start of each check.
+The `ssl.ConsecutiveHotReloadFailures` metric sums consecutive failed automatic attempts across the node's factories.
+Each factory's count resets after a successful manual reload or when a check finds that the loaded certificates are no longer due for hot reload.
+
+To recover without waiting for the next retry:
+
+. Correct the replacement stores and run link:tools/control-script#reloading-tls-certificates[`control.sh --ssl reload`].
+. Check the command result and verify a new connection with the replacement certificates.
+
+*What happens to automatic hot reload.*
+If enabled, automatic hot reload continues after manual reload, as described in <<When Hot Reload Runs>>.
+A failed automatic attempt does not undo the manual reload.
+
+*If the command cannot connect.*
+First check the command's certificates and trust settings.
+If the problem is on the node, put a valid replacement in its source.
+If the node log shows automatic retries, wait for the next attempt.
+Otherwise, or to load the corrected stores without waiting, restart the affected nodes.
+
+=== Custom Certificate Sources
+
+For automatic hot reload, custom sources require a subclass of javadoc:org.apache.ignite.ssl.SslContextFactory[].
+Factories extending only `AbstractSslContextFactory` support manual reload only.
+Limit request duration in custom sources: a blocked load delays other hot reloads and manual reload.
+
 == SslContextFactory Properties
 
 `SslContextFactory` supports the following properties:
@@ -215,6 +301,14 @@ If you configured `trustManagers` directly, the command reuses them instead of r
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`hotReloadEnabled`
+|Enables automatic certificate hot reload. See <<Automatic Certificate Hot Reload>>.
+|`false`
+
+|`hotReloadBeforeExpiryMs`
+|How long before the certificates expire hot reload becomes due, in milliseconds. See <<When Hot Reload Runs>>.
+|`604800000` (7 days)
 
 |`trustStoreFilePath`
 |The path to the trust store file.
