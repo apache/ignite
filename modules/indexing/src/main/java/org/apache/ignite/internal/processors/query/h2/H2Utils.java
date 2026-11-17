@@ -82,6 +82,7 @@ import org.h2.result.Row;
 import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.util.LocalDateTimeUtils;
+import org.h2.util.StringUtils;
 import org.h2.value.CompareMode;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -146,9 +147,6 @@ public class H2Utils {
     /** Spatial index factory class name. */
     private static final String SPATIAL_IDX_FACTORY_CLS =
         "org.apache.ignite.internal.processors.query.h2.opt.GeoSpatialUtils";
-
-    /** Quotation character. */
-    private static final char ESC_CH = '\"';
 
     /**
      * @param c1 First column.
@@ -300,13 +298,13 @@ public class H2Utils {
     }
 
     /**
-     * Add quotes around the name.
+     * Add quotes around the name. A quote inside the name is doubled so it stays inside that identifier.
      *
-     * @param str String.
-     * @return String with quotes.
+     * @param str Name.
+     * @return Quoted name.
      */
     public static String withQuotes(String str) {
-        return ESC_CH + str + ESC_CH;
+        return StringUtils.quoteIdentifier(str);
     }
 
     /**

@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
@@ -26,11 +29,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Ignore;
@@ -192,6 +197,84 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
 
         ignite(0).destroyCache(cfg.getName());
         ignite(0).destroyCache(cfgEsc.getName());
+    }
+
+    /**
+     * Tests that creating a cache with this schema name does not create SCHEMA_INJECTED,
+     * and a row is readable through that schema.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSchemaNameIsNotExecuted() throws Exception {
+        startGrid(0);
+
+        String schemaName = "A\";CREATE TABLE PUBLIC.SCHEMA_INJECTED(ID INT);--";
+
+        String quotedSchema = "\"" + schemaName.replace("\"", "\"\"") + "\"";
+
+        IgniteCache<Integer, Fact> cache = ignite(0).createCache(cacheConfig("stmtSchema", true, Integer.class, Fact.class)
+            .setSqlSchema("\"" + schemaName + "\""));
+
+        assertH2TableAbsent("SCHEMA_INJECTED");
+
+        cache.put(1, new Fact(1, "v"));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery(
+            "select f.name from " + quotedSchema + ".Fact f")).getAll();
+
+        assertEquals(1, rows.size());
+        assertEquals("v", rows.get(0).get(0));
+    }
+
+    /**
+     * Tests that creating a cache with this table name does not create TABLE_INJECTED,
+     * and a row is readable through that table.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testTableNameIsNotExecuted() throws Exception {
+        startGrid(0);
+
+        String tblName = "A\";CREATE TABLE PUBLIC.TABLE_INJECTED(ID INT);--";
+
+        String quotedTbl = "\"" + tblName.replace("\"", "\"\"") + "\"";
+
+        QueryEntity entity = new QueryEntity()
+            .setTableName(tblName)
+            .setKeyType(Integer.class.getName())
+            .setValueFieldName("name")
+            .setValueType(String.class.getName())
+            .addQueryField("name", String.class.getName(), null);
+
+        IgniteCache<Integer, String> cache = ignite(0).createCache(new CacheConfiguration<Integer, String>("stmtTable")
+            .setQueryEntities(Collections.singletonList(entity)));
+
+        assertH2TableAbsent("TABLE_INJECTED");
+
+        cache.put(1, "v");
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery(
+            "select name from " + quotedTbl)).getAll();
+
+        assertEquals(1, rows.size());
+        assertEquals("v", rows.get(0).get(0));
+    }
+
+    /**
+     * @param tblName Table name.
+     */
+    private void assertH2TableAbsent(String tblName) throws Exception {
+        IgniteH2Indexing idx = (IgniteH2Indexing)ignite(0).context().query().getIndexing();
+
+        try (H2PooledConnection conn = idx.connections().connection()) {
+            try (Statement stmt = conn.connection().createStatement();
+                 ResultSet rs = stmt.executeQuery(
+                     "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + tblName + "'")) {
+                assertFalse(rs.next());
+            }
+        }
     }
 
     /**
