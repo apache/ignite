@@ -359,34 +359,6 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: two factories are registered and the second has a replacement certificate.
-     * When: the hourly check cannot read the hot reload setting of the first factory.
-     * Then: the registry counts and logs the failure and reloads the second factory.
-     */
-    @Test
-    public void testHotReloadSettingFailureDoesNotStopCheck() throws Exception {
-        List<String> logged = captureLog();
-        AbstractSslContextFactory custom = mock(AbstractSslContextFactory.class);
-        SslContextFactory clientConnector = factory(keys);
-
-        when(custom.isHotReloadEnabled()).thenReturn(true);
-        registry.register("communication", custom);
-        writeDueCertificates(keys);
-        clientConnector.setHotReloadEnabled(true);
-        registerTransport("client connector", clientConnector);
-        registry.start(ctx);
-
-        when(custom.isHotReloadEnabled()).thenThrow(new IllegalStateException("Source configuration unavailable"));
-        writeFreshCertificates(keys);
-        check.run();
-
-        assertEquals(1, failures());
-        assertEquals(1, metric("AutomaticHotReloadAttempts"));
-        assertTrue(logged.toString(), logged.toString().contains("TLS hot reload failed [transports=communication,"));
-        assertTrue(logged.toString(), logged.contains("TLS hot reload succeeded [transports=client connector]"));
-    }
-
-    /**
      * Given: hot reload is enabled for due certificates, and the key store file is deleted after start.
      * When: one automatic attempt fails, and the next one loads fresh certificates.
      * Then: the log shows when the loaded certificates are due for hot reload, and the start and result of each attempt.

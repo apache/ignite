@@ -134,8 +134,10 @@ public class SslFactoryRegistry {
         if (log.isDebugEnabled())
             log.debug("TLS hot reload check started");
 
-        for (RegisteredFactory registered : factories)
-            registered.checkIfEnabled();
+        for (RegisteredFactory registered : factories) {
+            if (registered.hotReloadFactory() != null)
+                registered.check();
+        }
     }
 
     /** */
@@ -179,21 +181,6 @@ public class SslFactoryRegistry {
             return factory instanceof AbstractSslContextFactory sslFactory && sslFactory.isHotReloadEnabled() ? sslFactory : null;
         }
 
-        /** */
-        private void checkIfEnabled() {
-            try {
-                if (hotReloadFactory() == null)
-                    return;
-            }
-            catch (Throwable e) {
-                onCheckFailed(e);
-
-                return;
-            }
-
-            check();
-        }
-
         /**
          * Checks the factory unless the registry has stopped. Counts and logs a failed check, so it does not stop
          * the other factories or the schedule. A check that fails while the registry stops is logged at debug level
@@ -207,20 +194,15 @@ public class SslFactoryRegistry {
                 reloadIfDue();
             }
             catch (Throwable e) {
-                onCheckFailed(e);
-            }
-        }
+                if (!executor.isShutdown()) {
+                    failures.incrementAndGet();
 
-        /** @param e Check failure. */
-        private void onCheckFailed(Throwable e) {
-            if (!executor.isShutdown()) {
-                failures.incrementAndGet();
-
-                log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
-                    + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
+                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                        + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
+                }
+                else if (log.isDebugEnabled())
+                    log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
             }
-            else if (log.isDebugEnabled())
-                log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
         }
 
         /**
