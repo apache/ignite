@@ -3005,7 +3005,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} makes room for the data pages
      * of all rows of a batch with known value sizes, so their inserts are not expected to hit an out-of-memory in
      * {@code FreeList.insertDataRow} (pages outside the reservation, e.g. B+tree pages, are covered by the empty pages
-     * pool). Rows up to half a page are counted twice, larger rows are rounded up to whole data pages.
+     * pool). The pages are counted as if the rows were written to empty pages one after another.
      * <p>
      * The full row size is reserved for updates too: an update inserts the new row before removing the old one, unless
      * it is done in place (same row size, no SQL indexes, unchanged expire time), which can't be known before the entry
@@ -3038,7 +3038,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         int pagePayload = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
-        long sumRowSize = 0;
+        // Filled pages and the space taken in the last page.
+        long pages = 0;
+
+        long lastPage = 0;
 
         for (int i = 0; i < req.size(); i++) {
             KeyCacheObject key = req.key(i);
@@ -3050,13 +3053,24 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // bound: the actual rows can not be larger than estimated.
             long size = rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, storeCacheId);
 
-            // 1/64 of a page covers the row overhead and the free list bucket step.
-            long shared = 2 * (size + pageSize / 64);
+            pages += size / pagePayload;
 
-            sumRowSize += shared <= pagePayload ? shared : (size + pagePayload - 1) / pagePayload * pagePayload;
+            // 1/64 of a page covers the row overhead and the free list bucket step.
+            long part = size % pagePayload + pageSize / 64;
+
+            if (lastPage > 0 && lastPage + part > pagePayload) {
+                pages++;
+
+                lastPage = 0;
+            }
+
+            lastPage += part;
         }
 
-        return ctx.shared().database().reserveInRegion(dataRegion, sumRowSize, false);
+        if (lastPage > 0)
+            pages++;
+
+        return ctx.shared().database().reserveInRegion(dataRegion, pages * pagePayload, false);
     }
 
     /**
