@@ -80,7 +80,7 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
 
     /** */
     private ComponentMessageSerializationContext componentContext(String cmpName) {
-        ComponentMessageSerializationContext cmpCtx = IgniteCoreFeature.COMPONENT_NAME.equals(cmpName)
+        ComponentMessageSerializationContext cmpCtx = cmpName == IgniteCoreFeature.COMPONENT_NAME
             ? coreCtx
             : ctxByComponent.get(cmpName);
 
