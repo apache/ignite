@@ -68,7 +68,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
     /**
      * @param pageIdx Page index.
-     * @return true if at least one data row has been evicted
+     * @return true if all data rows of the page have been evicted
      * @throws IgniteCheckedException If failed.
      */
     final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
@@ -112,18 +112,21 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             pageMem.releasePage(0, fakePageId, page);
         }
 
-        boolean evictionDone = false;
+        boolean evictionDone = !rowsToEvict.isEmpty();
 
         for (CacheDataRowAdapter dataRow : rowsToEvict) {
             GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(dataRow.cacheId());
 
-            if (!cacheCtx.userCache())
+            if (!cacheCtx.userCache()) {
+                evictionDone = false;
+
                 continue;
+            }
 
             GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
                 cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
+            evictionDone &= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
         }
 
         return evictionDone;

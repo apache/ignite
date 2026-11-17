@@ -94,6 +94,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -3004,7 +3005,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * cannot reserve (or evict) per entry there. Reserving before {@link #lockEntries} makes room for the data pages
      * of all rows of a batch with known value sizes, so their inserts are not expected to hit an out-of-memory in
      * {@code FreeList.insertDataRow} (pages outside the reservation, e.g. B+tree pages, are covered by the empty pages
-     * pool).
+     * pool). Rows up to half a page are counted twice, larger rows are rounded up to whole data pages.
      * <p>
      * The full row size is reserved for updates too: an update inserts the new row before removing the old one, unless
      * it is done in place (same row size, no SQL indexes, unchanged expire time), which can't be known before the entry
@@ -3033,6 +3034,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         boolean storeCacheId = ctx.group().storeCacheIdInDataPage();
 
+        int pageSize = dataRegion.pageMemory().pageSize();
+
+        int pagePayload = pageSize - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+
         long sumRowSize = 0;
 
         for (int i = 0; i < req.size(); i++) {
@@ -3043,7 +3048,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // CacheVersionIO.SIZE_V2 is the maximum of both version protocols (V1 is smaller), so this is an upper
             // bound: the actual rows can not be larger than estimated.
-            sumRowSize += rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, storeCacheId);
+            long size = rowSize(key, val, CacheVersionIO.SIZE_V2, coctx, storeCacheId);
+
+            // 1/64 of a page covers the row overhead and the free list bucket step.
+            long shared = 2 * (size + pageSize / 64);
+
+            sumRowSize += shared <= pagePayload ? shared : (size + pagePayload - 1) / pagePayload * pagePayload;
         }
 
         return ctx.shared().database().reserveInRegion(dataRegion, sumRowSize, false);
