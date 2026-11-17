@@ -382,7 +382,7 @@ public class SslFactoryRegistryTest {
 
         assertEquals(List.of("due", "started", "failed", "started", "succeeded", "due"), evts);
         assertTrue(logged.get(0), logged.get(0).endsWith("hotReloadTime=" + new Date(due) + ']'));
-        assertTrue(logged.get(2), logged.get(2).contains("nextAttemptNotBefore="));
+        assertTrue(logged.get(2), logged.get(2).contains("nextAttempt="));
         assertTrue(logged.get(5), logged.get(5).endsWith("hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']'));
     }
 

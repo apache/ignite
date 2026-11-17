@@ -196,7 +196,7 @@ public class SslFactoryRegistry {
                 if (!executor.isShutdown()) {
                     failures.incrementAndGet();
 
-                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttemptNotBefore="
+                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
                         + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
                 }
                 else if (log.isDebugEnabled())
