@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
@@ -46,12 +42,19 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.eclipse.jetty.http.HttpException;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol.DFLT_JETTY_PORT;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
@@ -62,12 +65,19 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * HTTPS of HTTP REST with {@link ConnectorConfiguration#getHttpSslFactory()}.
  * Server certificates are issued for {@code localhost}, and clients connect to {@code 127.0.0.1}.
  */
+@WithSystemProperty(key = IGNITE_JETTY_PORT, value = DFLT_JETTY_PORT)
 public class JettyRestHttpsTest extends GridCommonAbstractTest {
     /** Upper bound for waiting for an event that must happen. */
     private static final long TIMEOUT_MS = 30_000;
 
     /** */
     private static final int PORT = Integer.parseInt(DFLT_JETTY_PORT);
+
+    /** Test property read by the HTTPS connector in the Jetty XML configuration. */
+    private static final String JETTY_KEY_STORE = "ignite.test.JettyRestHttpsTest.keyStorePath";
+
+    /** */
+    private static final String JETTY_HTTPS_XML = "jetty/https.xml";
 
     /** */
     private final long now = System.currentTimeMillis();
@@ -157,12 +167,8 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testJettyXmlHttpConnectorServesHttpsFromFactory() throws Exception {
-        String customizer = "<Call name=\"addCustomizer\"><Arg>" +
-            "<New class=\"org.eclipse.jetty.server.SecureRequestCustomizer\"><Set name=\"sniHostCheck\">false</Set></New>" +
-            "</Arg></Call>";
-
         connCfg = new ConnectorConfiguration()
-            .setJettyPath(jettyXml(customizer, httpFactoryXml()).toString())
+            .setJettyPath("jetty/http-customizer.xml")
             .setHttpSslFactory(serverFactory(ca1, ca1));
 
         startGrid(0);
@@ -299,24 +305,17 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      * Then: the start fails with the reason, and nothing listens on the HTTP port.
      */
     @Test
+    @WithSystemProperty(key = JETTY_KEY_STORE, value = "")
     public void testRejectedConfigurationsDoNotServeHttp() throws Exception {
-        Path keys = dir.resolve("jetty-keys.jks");
-
-        save(ca1.keyStore("localhost", now - HOURS.toMillis(1), now + DAYS.toMillis(30)), keys);
-
-        String jettyTls = "<Item><New class=\"org.eclipse.jetty.server.SslConnectionFactory\"><Arg>" +
-            "<New class=\"org.eclipse.jetty.util.ssl.SslContextFactory$Server\">" +
-            "<Set name=\"keyStorePath\">" + keys + "</Set><Set name=\"keyStoreType\">JKS</Set>" +
-            "<Set name=\"keyStorePassword\">123456</Set></New></Arg><Arg>http/1.1</Arg></New></Item>";
-        String proxy = "<Item><New class=\"org.eclipse.jetty.server.ProxyConnectionFactory\"><Arg>http/1.1</Arg></New></Item>";
+        setJettyKeyStore(ca1);
 
         Map<ConnectorConfiguration, String> rejected = Map.of(
             new ConnectorConfiguration()
-                .setJettyPath(jettyXml("", jettyTls + httpFactoryXml()).toString())
+                .setJettyPath(JETTY_HTTPS_XML)
                 .setHttpSslFactory(serverFactory(ca1, ca1)),
             "Jetty connector that configures TLS",
             new ConnectorConfiguration()
-                .setJettyPath(jettyXml("", proxy + httpFactoryXml()).toString())
+                .setJettyPath("jetty/proxy.xml")
                 .setHttpSslFactory(serverFactory(ca1, ca1)),
             "default protocol is HTTP",
             new ConnectorConfiguration().setHttpSslClientAuth(true),
@@ -338,17 +337,11 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      * Then: the client gets the certificate of the Jetty configuration, and HTTP REST is not registered for TLS reload.
      */
     @Test
+    @WithSystemProperty(key = JETTY_KEY_STORE, value = "")
     public void testJettyXmlHttpsStaysOutsideReload() throws Exception {
-        Path keys = dir.resolve("jetty-keys.jks");
+        setJettyKeyStore(ca2);
 
-        save(ca2.keyStore("localhost", now - HOURS.toMillis(1), now + DAYS.toMillis(30)), keys);
-
-        String jettyTls = "<Item><New class=\"org.eclipse.jetty.server.SslConnectionFactory\"><Arg>" +
-            "<New class=\"org.eclipse.jetty.util.ssl.SslContextFactory$Server\">" +
-            "<Set name=\"keyStorePath\">" + keys + "</Set><Set name=\"keyStoreType\">JKS</Set>" +
-            "<Set name=\"keyStorePassword\">123456</Set></New></Arg><Arg>http/1.1</Arg></New></Item>";
-
-        connCfg = new ConnectorConfiguration().setJettyPath(jettyXml("", jettyTls + httpFactoryXml()).toString());
+        connCfg = new ConnectorConfiguration().setJettyPath(JETTY_HTTPS_XML);
 
         IgniteEx node = startGrid(0);
 
@@ -479,81 +472,34 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      * @return Response status.
      */
     private static int request(Socket sock, String host) throws IOException {
-        OutputStream out = sock.getOutputStream();
+        HttpTester.Request req = HttpTester.newRequest();
 
-        out.write(("GET /ignite?cmd=version HTTP/1.1\r\nHost: " + host + ':' + PORT + "\r\n\r\n").getBytes(StandardCharsets.US_ASCII));
-        out.flush();
+        req.setURI("/ignite?cmd=version");
+        req.put(HttpHeader.HOST, host + ':' + PORT);
 
-        InputStream in = new BufferedInputStream(sock.getInputStream());
-        String status = readLine(in);
+        BufferUtil.writeTo(req.generate(), sock.getOutputStream());
 
-        if (status == null || !status.startsWith("HTTP/1.1 "))
-            throw new IOException("No HTTP response: " + status);
+        try {
+            HttpTester.Response res = HttpTester.parseResponse(sock.getInputStream());
 
-        int len = 0;
-        boolean chunked = false;
+            if (res == null)
+                throw new EOFException("No HTTP response");
 
-        for (String hdr = readLine(in); hdr != null && !hdr.isEmpty(); hdr = readLine(in)) {
-            String lower = hdr.toLowerCase();
+            assertEquals(HttpVersion.HTTP_1_1, res.getVersion());
 
-            if (lower.startsWith("content-length:"))
-                len = Integer.parseInt(lower.substring("content-length:".length()).trim());
-            else if (lower.startsWith("transfer-encoding:") && lower.contains("chunked"))
-                chunked = true;
+            return res.getStatus();
         }
-
-        if (chunked) {
-            for (int size = Integer.parseInt(readLine(in).trim(), 16); size > 0; size = Integer.parseInt(readLine(in).trim(), 16)) {
-                in.readNBytes(size);
-                readLine(in);
-            }
-
-            readLine(in);
+        catch (HttpException.RuntimeException e) {
+            throw new IOException("Invalid HTTP response", e);
         }
-        else
-            in.readNBytes(len);
-
-        return Integer.parseInt(status.split(" ")[1]);
     }
 
-    /** @return Line without the line break, or {@code null} at the end of the stream. */
-    private static String readLine(InputStream in) throws IOException {
-        ByteArrayOutputStream line = new ByteArrayOutputStream();
+    /** Gives the Jetty XML connector a localhost certificate issued by the given CA. */
+    private void setJettyKeyStore(TestCertificateAuthority ca) throws Exception {
+        Path keyStore = dir.resolve("jetty-keys.jks");
 
-        for (int b = in.read(); b != -1; b = in.read()) {
-            if (b == '\n')
-                return line.toString(StandardCharsets.US_ASCII).replace("\r", "");
-
-            line.write(b);
-        }
-
-        return line.size() == 0 ? null : line.toString(StandardCharsets.US_ASCII);
-    }
-
-    /** Writes a Jetty XML configuration with one connector on the HTTP port. */
-    private Path jettyXml(String httpCfg, String factories) throws IOException {
-        Path path = Files.createTempFile(dir, "jetty", ".xml");
-
-        Files.writeString(path, "<?xml version=\"1.0\"?>\n" +
-            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure.dtd\">\n" +
-            "<Configure id=\"Server\" class=\"org.eclipse.jetty.server.Server\">\n" +
-            "  <New id=\"httpCfg\" class=\"org.eclipse.jetty.server.HttpConfiguration\">" + httpCfg + "</New>\n" +
-            "  <Call name=\"addConnector\"><Arg>\n" +
-            "    <New class=\"org.eclipse.jetty.server.ServerConnector\">\n" +
-            "      <Arg name=\"server\"><Ref refid=\"Server\"/></Arg>\n" +
-            "      <Arg name=\"factories\"><Array type=\"org.eclipse.jetty.server.ConnectionFactory\">" + factories + "</Array></Arg>\n" +
-            "      <Set name=\"host\">127.0.0.1</Set>\n" +
-            "      <Set name=\"port\">" + PORT + "</Set>\n" +
-            "    </New>\n" +
-            "  </Arg></Call>\n" +
-            "</Configure>\n");
-
-        return path;
-    }
-
-    /** @return Jetty XML item for the HTTP connection factory with the {@code httpCfg} configuration. */
-    private static String httpFactoryXml() {
-        return "<Item><New class=\"org.eclipse.jetty.server.HttpConnectionFactory\"><Arg><Ref refid=\"httpCfg\"/></Arg></New></Item>";
+        save(ca.keyStore("localhost", now - HOURS.toMillis(1), now + DAYS.toMillis(30)), keyStore);
+        System.setProperty(JETTY_KEY_STORE, keyStore.toString());
     }
 
     /** HTTPS connection to the HTTP REST port that sends requests over one TLS session. */
