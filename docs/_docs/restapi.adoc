@@ -118,7 +118,7 @@ include::code-snippets/xml/jetty.xml[tags=, indent=0]
 
 To serve HTTPS with an SSL context factory, set `ConnectorConfiguration.setHttpSslFactory(...)`.
 The factory applies to the built-in HTTP connector or to the connector of the Jetty XML configuration.
-That connector must serve plain HTTP and must not configure TLS itself; otherwise, the node fails to start.
+The node fails to start if the connector already configures TLS or its default connection factory is not Jetty's `HttpConnectionFactory`.
 To require client certificates, also set `setHttpSslClientAuth(true)`.
 
 New connections use exactly the protocols and cipher suites that the factory enables; Jetty does not exclude any of them.
@@ -131,10 +131,13 @@ New connections use the reloaded certificates, and established connections stay 
 HTTPS configured directly in the Jetty XML configuration keeps working, but Ignite does not reload it.
 To move it to a factory, make the following changes together before restarting each node.
 
-. Configure an `SslContextFactory` with the key and trust stores of the Jetty configuration.
+. Configure an Ignite `SslContextFactory` with the key and trust stores from Jetty.
+If the XML specifies only a key store, Jetty also uses it as the trust store. Set the same file, type, and password for both stores in Ignite.
+Ignite uses the key store password to open the private keys. If Jetty uses a different `keyManagerPassword`, prepare a copy of the key store whose private keys use the store password.
 . On the factory, call `setProtocols(...)` and `setCipherSuites(...)` with the protocols and cipher suites the connector currently enables.
 Use the names that remain after Jetty applies its defaults and any include or exclude patterns in the XML.
-. Remove the `SslConnectionFactory` from the Jetty connector, so that the connector serves plain HTTP.
+. Remove the `sslContextFactory` constructor argument from the Jetty `ServerConnector` if it has one.
+If the XML lists connection factories explicitly, remove the `SslConnectionFactory` and make `HttpConnectionFactory` the default.
 . Set the factory with `setHttpSslFactory(...)`.
 If the Jetty configuration has `needClientAuth=true`, also call `setHttpSslClientAuth(true)` to keep requiring client certificates.
 

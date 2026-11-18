@@ -526,10 +526,10 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Sets the SSL context factory that enables HTTPS on the HTTP REST connector: the built-in connector or the
-     * connector of the Jetty XML configuration. The connector must serve plain HTTP and must not configure TLS itself,
-     * otherwise the node fails to start. The TLS reload command and automatic hot reload apply to this factory as to
-     * the other transports.
+     * Sets the SSL context factory that enables HTTPS on the built-in HTTP REST connector or the connector in Jetty XML.
+     * The node fails to start if the connector already configures TLS or its default connection factory is not Jetty's
+     * {@code HttpConnectionFactory}. The TLS reload command and automatic hot reload apply to this factory as to the
+     * other transports.
      *
      * @param httpSslFactory SSL context factory.
      * @return {@code this} for chaining.

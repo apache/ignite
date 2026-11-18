@@ -74,12 +74,21 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
     }
 
-    /**
-     */
-    private static class TestContextFactory extends TestLifecycleBean implements Factory<SSLContext> {
+    /** Instances have the same SSL configuration and track their lifecycle callbacks separately. */
+    private static final class TestContextFactory extends TestLifecycleBean implements Factory<SSLContext> {
         /** {@inheritDoc} */
         @Override public SSLContext create() {
             return sslFactory().create();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            return obj instanceof TestContextFactory;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return TestContextFactory.class.hashCode();
         }
     }
 

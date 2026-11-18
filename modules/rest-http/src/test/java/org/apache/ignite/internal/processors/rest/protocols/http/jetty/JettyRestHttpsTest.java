@@ -38,11 +38,11 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 import javax.security.auth.x500.X500Principal;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol.JettySslContextFactory;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
@@ -59,11 +59,13 @@ import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol.DFLT_JETTY_PORT;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.ssl.TestCertificateAuthority.trustStoreOf;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -75,9 +77,6 @@ import static org.junit.Assert.assertArrayEquals;
 public class JettyRestHttpsTest extends GridCommonAbstractTest {
     /** Upper bound for waiting for an event that must happen. */
     private static final long TIMEOUT_MS = 30_000;
-
-    /** */
-    private static final int PORT = Integer.parseInt(DFLT_JETTY_PORT);
 
     /** Test property read by the HTTPS connector in the Jetty XML configuration. */
     private static final String JETTY_KEY_STORE = "ignite.test.JettyRestHttpsTest.keyStorePath";
@@ -145,7 +144,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             assertEquals(ca1.subject(), conn.serverIssuer());
         }
 
-        assertThrows(log, () -> plainHttpVersion(), IOException.class, null);
+        assertThrows(log, () -> plainHttpVersion(node.localNode().attribute(ATTR_REST_JETTY_PORT)), IOException.class, null);
         assertTrue(node.context().ssl().factories().contains(Map.entry(factory, "HTTP REST")));
     }
 
@@ -206,7 +205,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         try (HttpsConnection established = new HttpsConnection(client1, "localhost")) {
             assertEquals(200, established.version());
-            assertThrows(log, () -> issuerOfNewConnection(client2), IOException.class, null);
+            assertThrows(log, () -> issuerOfNewConnection(client2), SSLException.class, null);
 
             Files.delete(Path.of(factory.getKeyStoreFilePath()));
 
@@ -294,8 +293,8 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             assertEquals(suite, conn.sock.getSession().getCipherSuite());
         }
 
-        assertThrows(log, () -> version("TLSv1.2", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"), IOException.class, null);
-        assertThrows(log, () -> version("TLSv1.3", tls13Suite), IOException.class, null);
+        assertThrows(log, () -> version("TLSv1.2", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"), SSLException.class, null);
+        assertThrows(log, () -> version("TLSv1.3", tls13Suite), SSLException.class, null);
     }
 
     /**
@@ -353,6 +352,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      * Then: the start fails with the reason, and nothing listens on the HTTP port.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_JETTY_PORT, value = "")
     @WithSystemProperty(key = JETTY_KEY_STORE, value = "")
     public void testRejectedConfigurationsDoNotServeHttp() throws Exception {
         setJettyKeyStore(ca1);
@@ -369,13 +369,19 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             new ConnectorConfiguration().setHttpSslClientAuth(true),
             "client authentication requires an HTTP SSL factory");
 
+        int port;
+
+        try (ServerSocket sock = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+            port = sock.getLocalPort();
+        }
+
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(port));
+
         for (Map.Entry<ConnectorConfiguration, String> e : rejected.entrySet()) {
-            connCfg = e.getKey();
+            connCfg = e.getKey().setPortRange(1);
 
-            Throwable err = assertThrows(log, () -> startGrid(0), Exception.class, null);
-
-            assertTrue(X.getFullStackTrace(err), X.getFullStackTrace(err).contains(e.getValue()));
-            assertThrows(log, () -> plainHttpVersion(), ConnectException.class, null);
+            assertThrowsAnyCause(log, () -> startGrid(0), IgniteCheckedException.class, e.getValue());
+            assertThrows(log, () -> plainHttpVersion(port), ConnectException.class, null);
         }
     }
 
@@ -403,10 +409,13 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      * Then: the node starts without HTTP REST, and HTTP REST is not registered for TLS reload.
      */
     @Test
+    @WithSystemProperty(key = IGNITE_JETTY_PORT, value = "")
     public void testHttpsThatDidNotStartIsNotRegistered() throws Exception {
         connCfg = new ConnectorConfiguration().setHttpSslFactory(serverFactory(ca1, ca1)).setPortRange(1);
 
-        try (ServerSocket ignored = new ServerSocket(PORT, 1, InetAddress.getByName("127.0.0.1"))) {
+        try (ServerSocket sock = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
+            System.setProperty(IGNITE_JETTY_PORT, Integer.toString(sock.getLocalPort()));
+
             IgniteEx node = startGrid(0);
 
             assertTrue(node.context().ssl().factories().isEmpty());
@@ -452,7 +461,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     }
 
     /** @return Issuer of the certificate that a new connection gets. */
-    private static X500Principal issuerOfNewConnection(SSLContext client) throws Exception {
+    private X500Principal issuerOfNewConnection(SSLContext client) throws Exception {
         try (HttpsConnection conn = new HttpsConnection(client, "localhost")) {
             assertEquals(200, conn.version());
 
@@ -461,8 +470,8 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     }
 
     /** Sends the version command over plain HTTP. */
-    private static int plainHttpVersion() throws IOException {
-        try (Socket sock = new Socket("127.0.0.1", PORT)) {
+    private static int plainHttpVersion(int port) throws IOException {
+        try (Socket sock = new Socket("127.0.0.1", port)) {
             sock.setSoTimeout((int)TIMEOUT_MS);
 
             return request(sock, "localhost");
@@ -478,7 +487,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         HttpTester.Request req = HttpTester.newRequest();
 
         req.setURI("/ignite?cmd=version");
-        req.put(HttpHeader.HOST, host + ':' + PORT);
+        req.put(HttpHeader.HOST, host + ':' + sock.getPort());
 
         BufferUtil.writeTo(req.generate(), sock.getOutputStream());
 
@@ -506,7 +515,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     }
 
     /** HTTPS connection to the HTTP REST port that sends requests over one TLS session. */
-    private static class HttpsConnection implements AutoCloseable {
+    private class HttpsConnection implements AutoCloseable {
         /** */
         private final SSLSocket sock;
 
@@ -521,7 +530,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         private HttpsConnection(SSLContext client, String host, String... tls) throws IOException {
             this.host = host;
 
-            sock = (SSLSocket)client.getSocketFactory().createSocket("127.0.0.1", PORT);
+            int port = grid(0).localNode().attribute(ATTR_REST_JETTY_PORT);
+
+            sock = (SSLSocket)client.getSocketFactory().createSocket("127.0.0.1", port);
 
             sock.setSoTimeout((int)TIMEOUT_MS);
 

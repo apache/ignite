@@ -41,6 +41,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
@@ -1925,39 +1926,42 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
-        List<Object> objs = new ArrayList<>();
+        Collection<Object> objs = new ArrayList<>();
+        ConnectorConfiguration connCfg = cfg.getConnectorConfiguration();
+        Object httpFactory = connCfg == null ? null : connCfg.getHttpSslFactory();
+
+        // The HTTP factory can also be a lifecycle bean or another configured component.
+        Consumer<Object> add = obj -> {
+            if (obj == httpFactory && obj instanceof LifecycleAware && objs.stream().anyMatch(existing -> existing == obj))
+                return;
+
+            objs.add(obj);
+        };
 
         if (cfg.getLifecycleBeans() != null)
-            Collections.addAll(objs, cfg.getLifecycleBeans());
+            Arrays.asList(cfg.getLifecycleBeans()).forEach(add);
 
         if (cfg.getSegmentationResolvers() != null)
-            Collections.addAll(objs, cfg.getSegmentationResolvers());
-
-        ConnectorConfiguration connCfg = cfg.getConnectorConfiguration();
+            Arrays.asList(cfg.getSegmentationResolvers()).forEach(add);
 
         if (connCfg != null) {
-            objs.add(connCfg.getMessageInterceptor());
-            objs.add(connCfg.getSslFactory());
-            objs.add(connCfg.getHttpSslFactory());
+            add.accept(connCfg.getMessageInterceptor());
+
+            Object binaryFactory = connCfg.getSslFactory();
+            boolean sharedWithBinary = binaryFactory == httpFactory;
+
+            if (!sharedWithBinary)
+                objs.add(binaryFactory);
+
+            add.accept(httpFactory);
         }
 
-        objs.add(ctx.marshaller());
-        objs.add(cfg.getGridLogger());
-        objs.add(cfg.getMBeanServer());
+        add.accept(ctx.marshaller());
+        add.accept(cfg.getGridLogger());
+        add.accept(cfg.getMBeanServer());
 
         if (cfg.getCommunicationFailureResolver() != null)
-            objs.add(cfg.getCommunicationFailureResolver());
-
-        if (connCfg != null && connCfg.getHttpSslFactory() instanceof LifecycleAware factory) {
-            // A shared HTTP SSL factory receives callbacks at its first configured position.
-            for (int i = 0; i < objs.size(); i++) {
-                if (objs.get(i) == factory) {
-                    objs.subList(i + 1, objs.size()).removeIf(obj -> obj == factory);
-
-                    break;
-                }
-            }
-        }
+            add.accept(cfg.getCommunicationFailureResolver());
 
         return objs;
     }
