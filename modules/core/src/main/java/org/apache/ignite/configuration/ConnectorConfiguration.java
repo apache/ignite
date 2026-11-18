@@ -117,6 +117,12 @@ public class ConnectorConfiguration {
     /** SSL context factory for rest binary server. */
     private Factory<SSLContext> sslFactory;
 
+    /** SSL context factory for HTTPS on the HTTP REST connector. */
+    private Factory<SSLContext> httpSslFactory;
+
+    /** Whether HTTP REST requires a trusted client certificate. */
+    private boolean httpSslClientAuth;
+
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
 
@@ -159,6 +165,8 @@ public class ConnectorConfiguration {
         sslClientAuth = cfg.isSslClientAuth();
         sslEnabled = cfg.isSslEnabled();
         sslFactory = cfg.getSslFactory();
+        httpSslFactory = cfg.getHttpSslFactory();
+        httpSslClientAuth = cfg.isHttpSslClientAuth();
         idleQryCurTimeout = cfg.getIdleQueryCursorTimeout();
         idleQryCurCheckFreq = cfg.getIdleQueryCursorCheckFrequency();
     }
@@ -504,6 +512,52 @@ public class ConnectorConfiguration {
      */
     public ConnectorConfiguration setSslFactory(Factory<SSLContext> sslFactory) {
         this.sslFactory = sslFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets the SSL context factory of HTTPS on the HTTP REST connector.
+     *
+     * @return SSL context factory, or {@code null} if the factory does not manage HTTPS of HTTP REST.
+     */
+    public Factory<SSLContext> getHttpSslFactory() {
+        return httpSslFactory;
+    }
+
+    /**
+     * Sets the SSL context factory that enables HTTPS on the HTTP REST connector: the built-in connector or the
+     * connector of the Jetty XML configuration. The connector must serve plain HTTP and must not configure TLS itself,
+     * otherwise the node fails to start. The TLS reload command and automatic hot reload apply to this factory as to
+     * the other transports.
+     *
+     * @param httpSslFactory SSL context factory.
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setHttpSslFactory(Factory<SSLContext> httpSslFactory) {
+        this.httpSslFactory = httpSslFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets whether HTTP REST requires a client certificate that the factory from {@link #getHttpSslFactory()} trusts.
+     *
+     * @return Whether HTTP REST requires a trusted client certificate.
+     */
+    public boolean isHttpSslClientAuth() {
+        return httpSslClientAuth;
+    }
+
+    /**
+     * Sets whether HTTP REST requires a client certificate that the factory from {@link #getHttpSslFactory()} trusts.
+     * If the factory is not set, the node fails to start.
+     *
+     * @param httpSslClientAuth Whether HTTP REST requires a trusted client certificate.
+     * @return {@code this} for chaining.
+     */
+    public ConnectorConfiguration setHttpSslClientAuth(boolean httpSslClientAuth) {
+        this.httpSslClientAuth = httpSslClientAuth;
 
         return this;
     }

@@ -160,7 +160,8 @@ include::{javaFile}[tag=disable-validation,indent=0]
 
 You can replace certificate files and reload them without restarting nodes that use `SslContextFactory`.
 The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] updates TCP transports on all server and thick-client nodes.
-It does not reload TLS for the HTTP REST endpoint (Jetty) or external client applications.
+This includes HTTPS of HTTP REST when it uses link:restapi#https[`httpSslFactory`].
+It does not reload HTTPS configured directly in Jetty XML or external client applications.
 
 . Back up the key and trust store files before replacing them.
 Keep their configured paths, store types, and passwords unchanged; changing node configuration requires a restart.
@@ -192,8 +193,8 @@ If you configured `trustManagers` directly, the command reuses them instead of r
 
 Automatic hot reload lets nodes load replacement certificates without a reload command.
 You must supply the replacements: Ignite reads them from the configured source and does not issue certificates.
-Hot reload covers the same TCP transports as <<Upgrading Certificates,manual reload>>.
-It does not update the HTTP REST endpoint or external client applications.
+Hot reload covers the same transports as <<Upgrading Certificates,manual reload>>.
+It does not update HTTPS configured directly in Jetty XML or external client applications.
 
 === Enable Hot Reload
 

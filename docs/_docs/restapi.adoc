@@ -85,6 +85,16 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Yes
 |`null`
 
+|`setHttpSslFactory(Factory<SSLContext>)`
+|SSL context factory that enables HTTPS on the HTTP connector. See <<HTTPS>>.
+|Yes
+|`null`
+
+|`setHttpSslClientAuth(boolean)`
+|Whether HTTPS requires a client certificate that the trust store of `httpSslFactory` trusts. Requires `httpSslFactory`.
+|Yes
+|`false`
+
 |`setMessageInterceptor(...)`
 |The interceptor transforms all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
 |Yes
@@ -103,6 +113,27 @@ NOTE: Ignite uses Jetty 12. Custom Jetty XML configurations created for earlier 
 ----
 include::code-snippets/xml/jetty.xml[tags=, indent=0]
 ----
+
+=== HTTPS
+
+To serve HTTPS with an SSL context factory, set `ConnectorConfiguration.setHttpSslFactory(...)`.
+The factory applies to the built-in HTTP connector or to the connector of the Jetty XML configuration.
+That connector must serve plain HTTP and must not configure TLS itself; otherwise, the node fails to start.
+To require client certificates, also set `setHttpSslClientAuth(true)`.
+
+New connections use exactly the protocols and cipher suites that the factory enables; Jetty does not exclude any of them.
+Jetty checks that the host name in each request matches the server certificate.
+Issue the certificate for the host name or IP address that clients use, or turn the check off with a `SecureRequestCustomizer` whose `sniHostCheck` is `false` in the Jetty XML configuration.
+
+The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] and link:security/ssl-tls#automatic-certificate-hot-reload[automatic hot reload] apply to this factory like to the other transports.
+New connections use the reloaded certificates, and established connections stay open.
+
+HTTPS configured directly in the Jetty XML configuration keeps working, but Ignite does not reload it.
+To move it to a factory, restart each node with this configuration:
+
+. Configure an `SslContextFactory` with the key and trust stores of the Jetty configuration.
+. Remove the `SslConnectionFactory` from the Jetty connector, so that the connector serves plain HTTP.
+. Set the factory with `setHttpSslFactory(...)`.
 
 === Security
 

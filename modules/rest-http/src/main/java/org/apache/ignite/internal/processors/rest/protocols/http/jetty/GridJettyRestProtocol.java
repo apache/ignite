@@ -29,6 +29,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import jakarta.servlet.DispatcherType;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -58,6 +61,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
@@ -158,6 +162,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         AbstractNetworkConnector connector = getJettyConnector();
 
+        enableHttps(connector);
+
         try {
             host = InetAddress.getByName(connector.getHost());
         }
@@ -173,6 +179,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             connector.setPort(port);
 
             if (startJetty()) {
+                if (config().getHttpSslFactory() != null)
+                    ctx.ssl().register("HTTP REST", config().getHttpSslFactory());
+
                 if (log.isInfoEnabled()) {
                     log.info(startInfo());
 
@@ -400,6 +409,35 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
+     * Enables HTTPS with the factory from {@link org.apache.ignite.configuration.ConnectorConfiguration#getHttpSslFactory()}
+     * on a connector that serves plain HTTP.
+     *
+     * @param connector Jetty connector.
+     * @throws IgniteCheckedException If the configuration does not allow HTTPS from the factory.
+     */
+    private void enableHttps(AbstractNetworkConnector connector) throws IgniteCheckedException {
+        Factory<SSLContext> factory = config().getHttpSslFactory();
+
+        if (factory == null) {
+            if (config().isHttpSslClientAuth())
+                throw new IgniteCheckedException("HTTP REST client authentication requires an HTTP SSL factory.");
+
+            return;
+        }
+
+        if (connector.getConnectionFactory(SslConnectionFactory.class) != null)
+            throw new IgniteCheckedException("HTTP SSL factory cannot be used with a Jetty connector that configures TLS.");
+
+        if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory)) {
+            throw new IgniteCheckedException("HTTP SSL factory requires a Jetty connector whose default protocol is HTTP " +
+                "[defaultProtocol=" + connector.getDefaultProtocol() + ']');
+        }
+
+        connector.addFirstConnectionFactory(new SslConnectionFactory(
+            new JettySslContextFactory(factory, config().isHttpSslClientAuth()), connector.getDefaultProtocol()));
+    }
+
+    /**
      * Check if ignite-json module enabled.
      */
     private static boolean checkJacksonEnabled() {
@@ -489,5 +527,38 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridJettyRestProtocol.class, this);
+    }
+
+    /**
+     * Jetty SSL context factory that takes the current context of an Ignite factory for each new connection, so new
+     * connections use a reloaded context. Connections enable exactly the protocols and cipher suites of the Ignite
+     * factory, without the default exclusions of Jetty.
+     */
+    private static class JettySslContextFactory extends SslContextFactory.Server {
+        /** */
+        private final Factory<SSLContext> factory;
+
+        /**
+         * @param factory Ignite SSL context factory.
+         * @param clientAuth Whether a trusted client certificate is required.
+         */
+        private JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
+            this.factory = factory;
+
+            SSLContext ctx = factory.create();
+            SSLEngine engine = ctx.createSSLEngine();
+
+            setSslContext(ctx);
+            setIncludeProtocols(engine.getEnabledProtocols());
+            setIncludeCipherSuites(engine.getEnabledCipherSuites());
+            setExcludeProtocols();
+            setExcludeCipherSuites();
+            setNeedClientAuth(clientAuth);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SSLContext getSslContext() {
+            return isStarted() ? factory.create() : super.getSslContext();
+        }
     }
 }
