@@ -176,9 +176,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** Dummy {@code CacheObjectValueContext} used for mocking. */
     private CacheObjectValueContext fakeCacheObjCtx;
 
-    /** Number of failed attempts to find metadata for an object with compact footer. */
-    private AtomicLongMetric metaNotFoundCnt;
-
     /**
      * @param ctx Kernal context.
      */
@@ -203,8 +200,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             metadataFileStore.start();
         }
 
-        metaNotFoundCnt = ctx.metric().registry(metricName("binary", "metadata")).longMetric("NotFoundCount",
-            "Total number of failed attempts to find metadata for an object with compact footer.");
+        AtomicLongMetric metaNotFoundCnt = ctx.metric().registry(metricName("binary", "metadata")).longMetric("NotFoundCount",
+            "Total number of failed attempts to find metadata or schema for an object with compact footer.");
 
         BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
             @Override public void addMeta(
@@ -252,7 +249,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
                 BinaryType meta = CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
 
-                if (meta == null)
+                if (meta == null || !((BinaryTypeImpl)meta).metadata().hasSchema(schemaId))
                     metaNotFoundCnt.increment();
 
                 return meta;

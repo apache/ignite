@@ -765,19 +765,19 @@ Register name: `cache`
 
 == Binary Metadata
 
-Binary metadata metrics. The register is created on both server and client nodes.
+Binary metadata metrics. The register is created on server and client nodes and in the `ignite-cdc.sh` application.
+
+Each attempt counted by `NotFoundCount` fails with the `Cannot find metadata for object with compact footer` or `Cannot find schema for object with compact footer` error, e.g. when the Ignite work directory was cleared after a restart. The attempt is counted on the node that reads the object; reads performed by thin clients, the JDBC thin driver and Ignite.NET are not counted.
+
+The binary types registered on the node are listed in the link:monitoring-metrics/system-views#binary_metadata[BINARY_METADATA] system view.
 
 Register name: `binary.metadata`
 
 [cols="2,1,3",opts="header"]
 |===
 |Name | Type | Description
-|NotFoundCount | long | Total number of failed attempts to find metadata for an object with compact footer.
+|NotFoundCount | long | Total number of failed attempts to find metadata or schema for an object with compact footer.
 |===
-
-Each attempt counted by `NotFoundCount` fails on this node with the `Cannot find metadata for object with compact footer` error, e.g. when the Ignite work directory was cleared after a restart.
-
-The binary types registered on the node are listed in the link:monitoring-metrics/system-views#binary_metadata[BINARY_METADATA] system view.
 
 == SQL Parser Metrics
 
@@ -830,7 +830,7 @@ Register name: `failure.ignored`
 
 == Change Data Capture
 
-The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, through the exporters configured in `CdcConfiguration`.
+The `ignite-cdc.sh` application runs in a separate JVM and exports its own registers, `cdc` and `cdc.consumer`, and the link:#binary-metadata[`binary.metadata`] register through the exporters configured in `CdcConfiguration`.
 See link:persistence/change-data-capture#metrics[Change Data Capture] for the list of metrics.
 
 == Custom Metrics

@@ -257,25 +257,41 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
         }, BinaryObjectException.class, "The type is removing now");
     }
 
-    /** Tests that a failed attempt to find metadata for an object with compact footer is counted by the metric. */
+    /** Tests that failed attempts to find metadata or schema for an object with compact footer are counted by the metric. */
     @Test
     @WithSystemProperty(key = IGNITE_WAIT_SCHEMA_UPDATE, value = "100")
     public void testMetadataNotFoundMetric() throws Exception {
-        IgniteEx ign = grid("srv0");
+        for (IgniteEx ign : new IgniteEx[] {grid("srv0"), grid("cli0")}) {
+            BinaryObject obj = ign.binary().builder("Type0").setField("f", 1).build();
 
-        BinaryObject obj = ign.binary().builder("Type0").setField("f", 1).build();
+            LongMetric notFoundCnt = ign.context().metric().registry("binary.metadata").findMetric("NotFoundCount");
 
-        LongMetric notFoundCnt = ign.context().metric().registry("binary.metadata").findMetric("NotFoundCount");
+            // Makes the read below look up the metadata instead of taking the schema cached by the builder.
+            ign.context().cacheObjects().binaryContext().unregisterBinarySchemas();
 
-        assertEquals(1, (int)obj.field("f"));
-        assertEquals(0, notFoundCnt.value());
+            assertEquals(1, (int)obj.field("f"));
+            assertEquals(0, notFoundCnt.value());
 
-        removeType(ign, "Type0");
+            delayIfClient(ign);
 
-        GridTestUtils.assertThrows(log, () -> obj.field("f"), BinaryObjectException.class,
-            "Cannot find metadata for object with compact footer");
+            removeType(ign, "Type0");
 
-        assertEquals(1, notFoundCnt.value());
+            delayIfClient(ign);
+
+            GridTestUtils.assertThrows(log, () -> obj.field("f"), BinaryObjectException.class,
+                "Cannot find metadata for object with compact footer");
+
+            assertEquals(1, notFoundCnt.value());
+
+            ign.binary().builder("Type0").setField("g", 1).build();
+
+            delayIfClient(ign);
+
+            GridTestUtils.assertThrows(log, () -> obj.field("f"), BinaryObjectException.class,
+                "Cannot find schema for object with compact footer");
+
+            assertEquals(2, notFoundCnt.value());
+        }
     }
 
     /**
