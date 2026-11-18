@@ -353,7 +353,7 @@ public class BinaryContext {
      * @see #isCustomLoader(ClassLoader)
      */
     public ClassLoader resolveClassLoader(@Nullable ClassLoader ldr) {
-        return isCustomLoader(ldr) ? ldr : clsLdr;
+        return CommonUtils.resolveClassLoader(ldr, clsLdr);
     }
 
     /**
@@ -362,7 +362,7 @@ public class BinaryContext {
      *      {@code false} if it is {@code null}, the default loader or the loader Ignite was loaded by.
      */
     public boolean isCustomLoader(@Nullable ClassLoader ldr) {
-        return ldr != null && ldr != clsLdr && ldr != CommonUtils.gridClassLoader();
+        return resolveClassLoader(ldr) != clsLdr;
     }
 
     /**
@@ -773,7 +773,23 @@ public class BinaryContext {
         if (desc != null)
             return desc;
 
-        ldr = resolveClassLoader(ldr);
+        return descriptorForTypeId0(userType, typeId, resolveClassLoader(ldr), registerMeta);
+    }
+
+    /**
+     * @param userType User type or not.
+     * @param typeId Type ID.
+     * @param ldr Resolved class loader to load the class with.
+     * @param registerMeta If {@code true}, then metadata will be registered along with the type descriptor.
+     * @return Class descriptor.
+     */
+    private BinaryClassDescriptor descriptorForTypeId0(
+        boolean userType,
+        int typeId,
+        ClassLoader ldr,
+        boolean registerMeta
+    ) {
+        BinaryClassDescriptor desc;
 
         Class cls;
 
@@ -798,17 +814,19 @@ public class BinaryContext {
             }
 
         }
-        catch (ClassNotFoundException e) {
-            // Class might have been loaded by default class loader.
-            if (userType && isCustomLoader(ldr) && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
-                return desc;
+        catch (ClassNotFoundException | IgniteCheckedException e) {
+            // Class might have been loaded by a more generic loader: custom -> default -> the loader Ignite was loaded by.
+            ClassLoader fallbackLdr = ldr != clsLdr
+                ? clsLdr
+                : clsLdr != CommonUtils.gridClassLoader()
+                    ? CommonUtils.gridClassLoader()
+                    : null;
 
-            throw new BinaryInvalidTypeException(e);
-        }
-        catch (IgniteCheckedException e) {
-            // Class might have been loaded by default class loader.
-            if (userType && isCustomLoader(ldr) && (desc = descriptorForTypeId(true, typeId, null, registerMeta)) != null)
-                return desc;
+            if (userType && fallbackLdr != null)
+                return descriptorForTypeId0(true, typeId, fallbackLdr, registerMeta);
+
+            if (e instanceof ClassNotFoundException)
+                throw new BinaryInvalidTypeException(e);
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
         }

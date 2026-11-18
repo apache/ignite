@@ -39,6 +39,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  *
@@ -62,6 +63,9 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /** */
     private static volatile boolean useWrappingLoader = false;
 
+    /** Whether to configure a class loader that can't load {@link TestValue2}. */
+    private static volatile boolean useHidingLoader = false;
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -75,8 +79,12 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
         cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
-        cfg.setClassLoader(useWrappingLoader ? new WrappingClassLoader(getExternalClassLoader()) :
-            getExternalClassLoader());
+        if (useHidingLoader)
+            cfg.setClassLoader(new HidingClassLoader(getClass().getClassLoader(), TestValue2.class.getName()));
+        else {
+            cfg.setClassLoader(useWrappingLoader ? new WrappingClassLoader(getExternalClassLoader()) :
+                getExternalClassLoader());
+        }
 
         if (customBinaryConf) {
             BinarySerializer bs = new BinarySerializer() {
@@ -255,6 +263,44 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     }
 
     /**
+     * Checks that a class which is not available through the configured class loader is resolved
+     * with the class loader Ignite was loaded by.
+     *
+     * @throws Exception If test failed.
+     */
+    @Test
+    public void testClassUnavailableThroughConfiguredLoader() throws Exception {
+        useHidingLoader = true;
+
+        try {
+            Ignite ignite = startGrid(1);
+
+            assertThrows(
+                log,
+                () -> ignite.configuration().getClassLoader().loadClass(TestValue2.class.getName()),
+                ClassNotFoundException.class,
+                null
+            );
+
+            IgniteCache<Integer, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            cache.put(1, new TestValue2(123));
+
+            Object val = cache.get(1);
+
+            assertSame(TestValue2.class, val.getClass());
+            assertEquals(123, ((TestValue2)val).value());
+
+            BinaryObject bo = (BinaryObject)cache.withKeepBinary().get(1);
+
+            assertEquals(123, ((TestValue2)bo.deserialize()).value());
+        }
+        finally {
+            useHidingLoader = false;
+        }
+    }
+
+    /**
      *
      */
     private static class TestValue1 implements Serializable {
@@ -315,6 +361,30 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         /** */
         public WrappingClassLoader(ClassLoader parent) {
             super(parent);
+        }
+    }
+
+    /** Class loader that delegates to the parent except for a single class it fails to load. */
+    private static class HidingClassLoader extends ClassLoader {
+        /** Name of the class to hide. */
+        private final String hiddenClsName;
+
+        /**
+         * @param parent Parent class loader.
+         * @param hiddenClsName Name of the class to hide.
+         */
+        public HidingClassLoader(ClassLoader parent, String hiddenClsName) {
+            super(parent);
+
+            this.hiddenClsName = hiddenClsName;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+            if (hiddenClsName.equals(name))
+                throw new ClassNotFoundException(name);
+
+            return super.loadClass(name, resolve);
         }
     }
 }
