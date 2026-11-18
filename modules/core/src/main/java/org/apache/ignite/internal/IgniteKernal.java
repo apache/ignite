@@ -41,7 +41,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.DataRegionMetricsAdapter;
@@ -82,7 +81,6 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
@@ -1927,41 +1925,26 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();
-        ConnectorConfiguration connCfg = cfg.getConnectorConfiguration();
-        Object httpFactory = connCfg == null ? null : connCfg.getHttpSslFactory();
-
-        // The HTTP factory can also be a lifecycle bean or another configured component.
-        Consumer<Object> add = obj -> {
-            if (obj == httpFactory && obj instanceof LifecycleAware && objs.stream().anyMatch(existing -> existing == obj))
-                return;
-
-            objs.add(obj);
-        };
 
         if (cfg.getLifecycleBeans() != null)
-            Arrays.asList(cfg.getLifecycleBeans()).forEach(add);
+            Collections.addAll(objs, cfg.getLifecycleBeans());
 
         if (cfg.getSegmentationResolvers() != null)
-            Arrays.asList(cfg.getSegmentationResolvers()).forEach(add);
+            Collections.addAll(objs, cfg.getSegmentationResolvers());
 
-        if (connCfg != null) {
-            add.accept(connCfg.getMessageInterceptor());
-
-            Object binaryFactory = connCfg.getSslFactory();
-            boolean sharedWithBinary = binaryFactory == httpFactory;
-
-            if (!sharedWithBinary)
-                objs.add(binaryFactory);
-
-            add.accept(httpFactory);
+        if (cfg.getConnectorConfiguration() != null) {
+            objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
+            objs.add(cfg.getConnectorConfiguration().getSslFactory());
+            if (cfg.getConnectorConfiguration().getHttpSslFactory() != cfg.getConnectorConfiguration().getSslFactory())
+                objs.add(cfg.getConnectorConfiguration().getHttpSslFactory());
         }
 
-        add.accept(ctx.marshaller());
-        add.accept(cfg.getGridLogger());
-        add.accept(cfg.getMBeanServer());
+        objs.add(ctx.marshaller());
+        objs.add(cfg.getGridLogger());
+        objs.add(cfg.getMBeanServer());
 
         if (cfg.getCommunicationFailureResolver() != null)
-            add.accept(cfg.getCommunicationFailureResolver());
+            objs.add(cfg.getCommunicationFailureResolver());
 
         return objs;
     }
