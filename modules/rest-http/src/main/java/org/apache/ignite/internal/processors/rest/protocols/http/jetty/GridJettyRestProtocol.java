@@ -553,11 +553,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             setSslContext(ctx);
 
-            // Jetty uses its defaults for an empty include list. Exclude all values when the factory enables none.
+            // An empty include list selects Jetty's defaults, so exclude every name when Ignite enables none.
+            String[] excludeAll = {".*"};
+
             setIncludeProtocols(protocols);
-            setExcludeProtocols(protocols.length == 0 ? engine.getSupportedProtocols() : new String[0]);
+            setExcludeProtocols(protocols.length == 0 ? excludeAll : U.EMPTY_STRS);
             setIncludeCipherSuites(cipherSuites);
-            setExcludeCipherSuites(cipherSuites.length == 0 ? engine.getSupportedCipherSuites() : new String[0]);
+            setExcludeCipherSuites(cipherSuites.length == 0 ? excludeAll : U.EMPTY_STRS);
             setNeedClientAuth(clientAuth);
         }
 
