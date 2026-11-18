@@ -251,10 +251,12 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         try (SSLSocket established = connect(client)) {
             assertEquals(200, request(established, "localhost"));
 
+            SSLContext startupCtx = factory.create();
+
             save(serverKeys(ca2, 30), Path.of(factory.getKeyStoreFilePath()));
             factory.finishReload.countDown();
 
-            assertTrue(waitForCondition(() -> factory.getHotReloadTime() > System.currentTimeMillis(), TIMEOUT_MS));
+            assertTrue(waitForCondition(() -> factory.create() != startupCtx, TIMEOUT_MS));
             assertEquals(ca2.subject(), issuerOfNewConnection(client));
 
             assertEquals(200, request(established, "localhost"));
