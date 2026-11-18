@@ -557,7 +557,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         @Override public SSLParameters customize(SSLParameters params) {
             super.customize(params);
 
-            // Jetty copies its startup lists into params. Null tells JSSE to keep this engine's TLS settings.
+            // Jetty supplies defaults even without jetty.xml. Null preserves the protocols and cipher suites
+            // that the current Ignite SSLContext enabled for this connection.
             params.setProtocols(null);
             params.setCipherSuites(null);
 
