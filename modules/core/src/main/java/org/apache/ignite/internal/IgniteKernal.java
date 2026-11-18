@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1921,7 +1922,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /**
      * @param cfg Ignite configuration to use.
-     * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
+     * @return Components provided in configuration which can implement {@link LifecycleAware} interface,
+     *      each instance once.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();
@@ -1937,12 +1939,21 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             objs.add(cfg.getConnectorConfiguration().getSslFactory());
         }
 
+        objs.add(cfg.getSslContextFactory());
+
+        if (cfg.getClientConnectorConfiguration() != null)
+            objs.add(cfg.getClientConnectorConfiguration().getSslContextFactory());
+
         objs.add(ctx.marshaller());
         objs.add(cfg.getGridLogger());
         objs.add(cfg.getMBeanServer());
 
         if (cfg.getCommunicationFailureResolver() != null)
             objs.add(cfg.getCommunicationFailureResolver());
+
+        Set<Object> seen = U.newIdentityHashSet();
+
+        objs.removeIf(obj -> !seen.add(obj));
 
         return objs;
     }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorMessageInterceptor;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,8 +29,10 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Test;
 
 /**
  * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
@@ -82,7 +85,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         /** {@inheritDoc} */
         @Override public SSLContext create() {
-            return null;
+            return GridTestUtils.sslFactory().create();
         }
     }
 
@@ -151,6 +154,18 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         lifecycleAwares.add(ctxFactory);
 
+        TestContextFactory nodeSslFactory = new TestContextFactory();
+
+        cfg.setSslContextFactory(nodeSslFactory);
+
+        lifecycleAwares.add(nodeSslFactory);
+
+        TestContextFactory cliConnSslFactory = new TestContextFactory();
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslContextFactory(cliConnSslFactory));
+
+        lifecycleAwares.add(cliConnSslFactory);
+
         TestLifecycleBean lifecycleBean = new TestLifecycleBean();
 
         cfg.setLifecycleBeans(lifecycleBean);
@@ -164,5 +179,37 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         lifecycleAwares.add(testLog.lifecycleAware());
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /**
+     * One SSL factory that the node, the client connector and binary REST share starts and stops once.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testSharedSslFactory() throws Exception {
+        TestContextFactory factory = new TestContextFactory();
+
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName())
+            .setSslContextFactory(factory)
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration().setSslContextFactory(factory))
+            .setConnectorConfiguration(new ConnectorConfiguration().setSslFactory(factory));
+
+        startGrid(cfg);
+
+        assertEquals(1, factory.startCount());
+        assertEquals(0, factory.stopCount());
+
+        stopGrid();
+
+        assertEquals(1, factory.startCount());
+        assertEquals(1, factory.stopCount());
     }
 }
