@@ -2068,8 +2068,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 true,
-                true,
-                false).get();
+                true).get();
 
             List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
 
@@ -2164,8 +2163,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             ctx.cache().dynamicStartCaches(cacheCfgs,
                 false,
-                true,
-                false).get();
+                true).get();
 
             List<IgniteCache> createdCaches = new ArrayList<>(cacheCfgs.size());
 
@@ -2390,7 +2388,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         try {
             checkClusterState();
 
-            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx, false, null);
+            return ctx.cache().dynamicDestroyCache(cacheName, sql, checkThreadTx);
         }
         finally {
             unguard();

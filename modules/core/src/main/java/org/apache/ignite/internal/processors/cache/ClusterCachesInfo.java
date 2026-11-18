@@ -112,9 +112,6 @@ public class ClusterCachesInfo {
     /** */
     public static final String CACHE_GRPS_VIEW_DESC = "Cache groups";
 
-    /** Representation of null for restarting caches map */
-    private static final IgniteUuid NULL_OBJECT = new IgniteUuid();
-
     /** */
     private final GridKernalContext ctx;
 
@@ -144,9 +141,6 @@ public class ClusterCachesInfo {
 
     /** Cache templates. */
     private final ConcurrentMap<String, DynamicCacheDescriptor> registeredTemplates = new ConcurrentHashMap<>();
-
-    /** Caches currently being restarted (with restarter id). */
-    private final ConcurrentHashMap<String, IgniteUuid> restartingCaches = new ConcurrentHashMap<>();
 
     /** */
     private final IgniteLogger log;
@@ -776,45 +770,29 @@ public class ClusterCachesInfo {
         AffinityTopologyVersion waitTopVer = null;
 
         if (req.start()) {
-            boolean proceedFuther = true;
+            if (desc == null) { /* Starting a new cache.*/
+                if (!processStartNewCacheRequest(exchangeActions, topVer, persistedCfgs, res, req, cacheName))
+                    return;
 
-            if (restartingCaches.containsKey(cacheName) &&
-                ((req.restartId() == null && restartingCaches.get(cacheName) != NULL_OBJECT)
-                    || (req.restartId() != null && !req.restartId().equals(restartingCaches.get(cacheName))))) {
-
-                if (req.failIfExists()) {
-                    ctx.cache().completeCacheStartFuture(req, false,
-                        new CacheExistsException("Failed to start cache (a cache is restarting): " + cacheName));
-                }
-
-                proceedFuther = false;
+                needExchange = true;
             }
+            else {
+                clientCacheStart = processStartAlreadyStartedCacheRequest(topVer, persistedCfgs, req, cacheName, desc);
 
-            if (proceedFuther) {
-                if (desc == null) { /* Starting a new cache.*/
-                    if (!processStartNewCacheRequest(exchangeActions, topVer, persistedCfgs, res, req, cacheName))
-                        return;
+                if (!clientCacheStart) {
+                    if (desc.clientCacheStartVersion() != null)
+                        waitTopVer = desc.clientCacheStartVersion();
+                    else {
+                        AffinityTopologyVersion nodeStartVer =
+                            new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
 
-                    needExchange = true;
-                }
-                else {
-                    clientCacheStart = processStartAlreadyStartedCacheRequest(topVer, persistedCfgs, req, cacheName, desc);
+                        if (desc.startTopologyVersion() != null)
+                            waitTopVer = desc.startTopologyVersion();
+                        else
+                            waitTopVer = desc.receivedFromStartVersion();
 
-                    if (!clientCacheStart) {
-                        if (desc.clientCacheStartVersion() != null)
-                            waitTopVer = desc.clientCacheStartVersion();
-                        else {
-                            AffinityTopologyVersion nodeStartVer =
-                                new AffinityTopologyVersion(ctx.discovery().localNode().order(), 0);
-
-                            if (desc.startTopologyVersion() != null)
-                                waitTopVer = desc.startTopologyVersion();
-                            else
-                                waitTopVer = desc.receivedFromStartVersion();
-
-                            if (waitTopVer == null || nodeStartVer.compareTo(waitTopVer) > 0)
-                                waitTopVer = nodeStartVer;
-                        }
+                        if (waitTopVer == null || nodeStartVer.compareTo(waitTopVer) > 0)
+                            waitTopVer = nodeStartVer;
                     }
                 }
             }
@@ -923,12 +901,6 @@ public class ClusterCachesInfo {
         assert old != null && old == desc : "Dynamic cache map was concurrently modified [req=" + req + ']';
 
         registeredCachesById.remove(old.cacheId());
-
-        if (req.restart()) {
-            IgniteUuid restartId = req.restartId();
-
-            restartingCaches.put(cacheName, restartId == null ? NULL_OBJECT : restartId);
-        }
 
         exchangeActions.addCacheToStop(req, desc);
 
@@ -1183,8 +1155,6 @@ public class ClusterCachesInfo {
 
         registeredCachesById.put(startDesc.cacheId(), startDesc);
 
-        restartingCaches.remove(ccfg.getName());
-
         assert old == null;
 
         ctx.discovery().setCacheFilter(
@@ -1231,20 +1201,6 @@ public class ClusterCachesInfo {
      */
     void collectJoiningNodeData(DiscoveryDataBag dataBag) {
         dataBag.addJoiningNodeData(CACHE_PROC.ordinal(), joinDiscoveryData());
-    }
-
-    /**
-     * @return {@code True} if there are currently restarting caches.
-     */
-    boolean hasRestartingCaches() {
-        return !F.isEmpty(restartingCaches);
-    }
-
-    /**
-     * @return Collection of currently restarting caches.
-     */
-    Collection<String> restartingCaches() {
-        return restartingCaches.keySet();
     }
 
     /**
@@ -2750,14 +2706,6 @@ public class ClusterCachesInfo {
      */
     private boolean surviveReconnect(String cacheName) {
         return CU.isUtilityCache(cacheName);
-    }
-
-    /**
-     * @param cacheName Cache name.
-     * @return {@code True} if cache is restarting.
-     */
-    public boolean isRestarting(String cacheName) {
-        return restartingCaches.containsKey(cacheName);
     }
 
     /** */
