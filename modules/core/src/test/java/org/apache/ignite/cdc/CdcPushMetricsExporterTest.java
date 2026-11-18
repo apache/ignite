@@ -114,6 +114,8 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         lsnrLog = new ListeningTestLogger(log);
     }
 
