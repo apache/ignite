@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.systemview.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -175,6 +176,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** Dummy {@code CacheObjectValueContext} used for mocking. */
     private CacheObjectValueContext fakeCacheObjCtx;
 
+    /** Number of failed attempts to find metadata for an object with compact footer. */
+    private AtomicLongMetric metaNotFoundCnt;
+
     /**
      * @param ctx Kernal context.
      */
@@ -198,6 +202,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
             metadataFileStore.start();
         }
+
+        metaNotFoundCnt = ctx.metric().registry(metricName("binary", "metadata")).longMetric("NotFoundCount",
+            "Total number of failed attempts to find metadata for an object with compact footer.");
 
         BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
             @Override public void addMeta(
@@ -243,7 +250,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
 
             @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
+                BinaryType meta = CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
+
+                if (meta == null)
+                    metaNotFoundCnt.increment();
+
+                return meta;
             }
 
             @Override public Collection<BinaryType> metadata() throws BinaryObjectException {

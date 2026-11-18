@@ -763,6 +763,22 @@ Register name: `cache`
 |LastDataVersion | long | The latest data version on the node.
 |===
 
+== Binary Metadata
+
+Binary metadata metrics. The register is created on both server and client nodes.
+
+Register name: `binary.metadata`
+
+[cols="2,1,3",opts="header"]
+|===
+|Name | Type | Description
+|NotFoundCount | long | Total number of failed attempts to find metadata for an object with compact footer.
+|===
+
+Each attempt counted by `NotFoundCount` fails on this node with the `Cannot find metadata for object with compact footer` error, e.g. when the Ignite work directory was cleared after a restart.
+
+The binary types registered on the node are listed in the link:monitoring-metrics/system-views#binary_metadata[BINARY_METADATA] system view.
+
 == SQL Parser Metrics
 
 Register name: `sql.parser.cache`
