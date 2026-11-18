@@ -545,9 +545,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
             this.factory = factory;
 
-            // Set the Ignite context so Jetty checks it for weak protocols and cipher suites at startup.
-            // Calling create() here also lets Ignite report factory errors before Jetty tries to bind an HTTP port.
-            setSslContext(factory.create());
             setNeedClientAuth(clientAuth);
         }
 
