@@ -50,11 +50,6 @@ public interface IgniteTxLocalState extends IgniteTxState {
     public void seal();
 
     /**
-     * @return Recovery mode flag.
-     */
-    public boolean recovery();
-
-    /**
      * Awaits for previous async operations on active caches to be completed.
      */
     public void awaitLastFuture();

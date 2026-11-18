@@ -1007,7 +1007,6 @@ public class IgniteTxHandler {
             GridCacheMessage res = new GridNearTxFinishResponse(
                 req.stripeIdx(),
                 req.version(),
-                req.threadId(),
                 req.futureId(),
                 req.miniId(),
                 new IgniteTxRollbackCheckedException("Transaction has been already completed or not started yet."));

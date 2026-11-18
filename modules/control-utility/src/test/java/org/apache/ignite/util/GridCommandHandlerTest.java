@@ -109,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
@@ -1779,6 +1780,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         U.awaitQuiet(lockLatch);
 
+        UUID client0Id = clients[0].cluster().localNode().id();
+
+        GridCacheVersion client0TxVer = ((IgniteEx)prim).context().cache().context().tm().activeTransactions().stream()
+            .filter(tx -> client0Id.equals(tx.originatingNodeId()))
+            .findFirst()
+            .get()
+            .xidVersion();
+
         commitLatch.countDown();
 
         primSpi.waitForBlocked(clients.length);
@@ -1792,7 +1801,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (m instanceof GridDhtTxFinishRequest) {
                     GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)m;
 
-                    return !r.nearNodeId().equals(clients[0].cluster().localNode().id());
+                    return !r.version().equals(client0TxVer);
                 }
 
                 return true;

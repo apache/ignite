@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Get request. Responsible for obtaining entry from primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
-public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
+public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
@@ -59,7 +59,8 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
     IgniteUuid miniId;
 
     /** Version. */
-    @Order(2)
+    @GridToStringExclude
+    @Order(value = 2, deprecatedBy = "UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE")
     GridCacheVersion ver;
 
     /** */
@@ -110,7 +111,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Sub ID.
-     * @param ver Version.
      * @param keys Keys.
      * @param readThrough Read through flag.
      * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
@@ -125,7 +125,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion ver,
         Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
@@ -144,7 +143,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
-        this.ver = ver;
         keyMap = keys;
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
@@ -186,11 +184,6 @@ public class GridNearGetRequest extends GridCacheIdMessage implements GridCacheD
      */
     public int taskNameHash() {
         return taskNameHash;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
-        return ver;
     }
 
     /**
