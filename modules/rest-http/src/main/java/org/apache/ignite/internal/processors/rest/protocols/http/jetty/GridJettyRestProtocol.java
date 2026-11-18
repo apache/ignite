@@ -553,13 +553,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             setSslContext(ctx);
 
-            // An empty include list selects Jetty's defaults, so exclude every name when Ignite enables none.
-            String[] excludeAll = {".*"};
-
+            // Jetty falls back to SSLContext defaults when an include list is empty.
             setIncludeProtocols(protocols);
-            setExcludeProtocols(protocols.length == 0 ? excludeAll : U.EMPTY_STRS);
+            setExcludeProtocols(protocols.length == 0 ? engine.getSupportedProtocols() : U.EMPTY_STRS);
+
             setIncludeCipherSuites(cipherSuites);
-            setExcludeCipherSuites(cipherSuites.length == 0 ? excludeAll : U.EMPTY_STRS);
+            setExcludeCipherSuites(cipherSuites.length == 0 ? engine.getSupportedCipherSuites() : U.EMPTY_STRS);
+
             setNeedClientAuth(clientAuth);
         }
 
@@ -572,7 +572,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         @Override public SSLParameters customize(SSLParameters params) {
             super.customize(params);
 
-            // JSSE keeps the engine's enabled protocols and cipher suites when these parameters are null.
+            // Jetty copies its startup lists into params. Null tells JSSE to keep this engine's TLS settings.
             params.setProtocols(null);
             params.setCipherSuites(null);
 
