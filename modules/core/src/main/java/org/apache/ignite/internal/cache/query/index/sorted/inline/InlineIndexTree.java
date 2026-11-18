@@ -163,7 +163,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
         this.def = def;
 
-        cctx = def.cacheInfo().cacheContext();
+        cctx = def == null ? null : def.cacheInfo().cacheContext();
 
         if (cctx == null || IgniteSystemProperties.getBoolean(IGNITE_BPLUS_TREE_DISABLE_METRICS))
             fullRowSearchCntr = null;
