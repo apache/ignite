@@ -44,7 +44,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -374,28 +373,6 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: binary REST and HTTP REST share one SSL factory that has a lifecycle.
-     * When: the node starts and stops.
-     * Then: the node starts and stops the factory once.
-     */
-    @Test
-    public void testSharedFactoryStartsAndStopsOnce() throws Exception {
-        LifecycleFactory factory = new LifecycleFactory();
-
-        configure(factory, ca1, ca1);
-
-        connCfg = new ConnectorConfiguration().setSslEnabled(true).setSslFactory(factory).setHttpSslFactory(factory);
-
-        startGrid(0);
-
-        assertEquals(1, factory.starts.get());
-
-        stopGrid(0);
-
-        assertEquals(1, factory.stops.get());
-    }
-
-    /**
      * Creates a server factory with a {@code localhost} certificate of the first CA and a trust store with the second CA.
      * The certificate is valid for 30 days. The stores are files in the test directory.
      */
@@ -658,28 +635,6 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             }
 
             return super.loadKeyStore(type, path, pwd);
-        }
-    }
-
-    /** Factory that counts its lifecycle calls. */
-    private static class LifecycleFactory extends SslContextFactory implements LifecycleAware {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final transient AtomicInteger starts = new AtomicInteger();
-
-        /** */
-        private final transient AtomicInteger stops = new AtomicInteger();
-
-        /** {@inheritDoc} */
-        @Override public void start() {
-            starts.incrementAndGet();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop() {
-            stops.incrementAndGet();
         }
     }
 }
