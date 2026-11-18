@@ -72,7 +72,6 @@ import static org.junit.Assert.assertArrayEquals;
 
 /**
  * HTTPS of HTTP REST with {@link ConnectorConfiguration#getHttpSslFactory()}.
- * Server certificates are issued for {@code localhost}, and clients connect to {@code 127.0.0.1}.
  */
 @WithSystemProperty(key = IGNITE_JETTY_PORT, value = DFLT_JETTY_PORT)
 public class JettyRestHttpsTest extends GridCommonAbstractTest {
@@ -134,7 +133,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testBuiltInConnectorServesHttpsFromFactory() throws Exception {
-        SslContextFactory factory = serverFactory();
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
 
         connCfg = new ConnectorConfiguration().setHttpSslFactory(factory);
 
@@ -146,15 +145,22 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: an HTTP SSL factory, and the built-in connector, which leaves the Host check of Jetty enabled.
-     * When: a client sends a request with a Host that the server certificate does not name.
-     * Then: the server rejects the request with status 400.
+     * Given: an HTTP SSL factory with a certificate for {@code localhost}, and the built-in connector,
+     *     which leaves the Host check of Jetty enabled.
+     * When: clients send requests with Host {@code localhost} and with Host {@code 127.0.0.1}.
+     * Then: the server answers the first request and rejects the second with status 400.
      */
     @Test
     public void testHostMustMatchServerCertificate() throws Exception {
-        connCfg = new ConnectorConfiguration().setHttpSslFactory(serverFactory());
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
+
+        connCfg = new ConnectorConfiguration().setHttpSslFactory(factory);
 
         startGrid(0);
+
+        try (SSLSocket sock = connect(client())) {
+            assertEquals(200, request(sock, "localhost"));
+        }
 
         try (SSLSocket sock = connect(client())) {
             assertEquals(400, request(sock, "127.0.0.1"));
@@ -163,15 +169,17 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
     /**
      * Given: a Jetty XML connector for plain HTTP whose secure request customizer does not check the Host,
-     *     and an HTTP SSL factory.
-     * When: a client connects over HTTPS with a Host that the server certificate does not name.
+     *     and an HTTP SSL factory with a certificate for {@code localhost}.
+     * When: a client connects over HTTPS with Host {@code 127.0.0.1}.
      * Then: the client gets the factory certificate and a response.
      */
     @Test
     public void testJettyXmlHttpConnectorServesHttpsFromFactory() throws Exception {
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
+
         connCfg = new ConnectorConfiguration()
-            .setJettyPath("jetty/http-customizer.xml")
-            .setHttpSslFactory(serverFactory());
+            .setJettyPath("jetty/http-without-host-check.xml")
+            .setHttpSslFactory(factory);
 
         startGrid(0);
 
@@ -191,7 +199,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testReloadRotatesKeysAndTrustForNewConnections() throws Exception {
-        SslContextFactory factory = serverFactory();
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
 
         connCfg = new ConnectorConfiguration().setHttpSslFactory(factory).setHttpSslClientAuth(true);
 
@@ -213,7 +221,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             }, Exception.class, null);
             assertEquals(ca1.subject(), issuerOfNewConnection(client1));
 
-            save(serverKeys(ca2, 30), Path.of(factory.getKeyStoreFilePath()));
+            save(serverKeys(ca2, "localhost"), Path.of(factory.getKeyStoreFilePath()));
             save(trustStoreOf(ca1, ca2), Path.of(factory.getTrustStoreFilePath()));
             node.context().ssl().reload(factory);
 
@@ -235,8 +243,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     @Test
     public void testScheduledRenewalKeepsEstablishedConnections() throws Exception {
         BlockingReloadFactory factory = new BlockingReloadFactory();
+        KeyStore keys = ca1.keyStore("localhost", now - HOURS.toMillis(1), now + DAYS.toMillis(1));
 
-        configureServer(factory, 1);
+        configureServer(factory, keys, ca1.trustStore());
         factory.setHotReloadEnabled(true);
         factory.setHotReloadBeforeExpiryMs(DAYS.toMillis(2));
 
@@ -253,7 +262,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
             SSLContext startupCtx = factory.create();
 
-            save(serverKeys(ca2, 30), Path.of(factory.getKeyStoreFilePath()));
+            save(serverKeys(ca2, "localhost"), Path.of(factory.getKeyStoreFilePath()));
             factory.finishReload.countDown();
 
             assertTrue(waitForCondition(() -> factory.create() != startupCtx, TIMEOUT_MS));
@@ -273,7 +282,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     public void testFactoryProtocolsAndCipherSuitesApplyExactly() throws Exception {
         String suite = "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA";
         String tls13Suite = "TLS_AES_128_GCM_SHA256";
-        SslContextFactory factory = serverFactory();
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
 
         factory.setProtocols("TLSv1.2");
         factory.setCipherSuites(suite, tls13Suite);
@@ -298,7 +307,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNewEngineUsesReloadedTlsSettings() throws Exception {
-        SslContextFactory factory = serverFactory();
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
 
         factory.setProtocols();
         factory.setCipherSuites();
@@ -339,9 +348,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     @WithSystemProperty(key = IGNITE_JETTY_PORT, value = "")
     @WithSystemProperty(key = JETTY_KEY_STORE, value = "")
     public void testRejectedConfigurationsDoNotServeHttp() throws Exception {
-        setJettyKeyStore();
+        setJettyKeyStore(serverKeys(ca2, "localhost"));
 
-        SslContextFactory factory = serverFactory();
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
 
         Map<ConnectorConfiguration, String> rejected = Map.of(
             new ConnectorConfiguration()
@@ -379,7 +388,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = JETTY_KEY_STORE, value = "")
     public void testJettyXmlHttpsStaysOutsideReload() throws Exception {
-        setJettyKeyStore();
+        setJettyKeyStore(serverKeys(ca2, "localhost"));
 
         connCfg = new ConnectorConfiguration().setJettyPath(JETTY_HTTPS_XML);
 
@@ -397,7 +406,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IGNITE_JETTY_PORT, value = "")
     public void testHttpsThatDidNotStartIsNotRegistered() throws Exception {
-        connCfg = new ConnectorConfiguration().setHttpSslFactory(serverFactory()).setPortRange(1);
+        SslContextFactory factory = serverFactory(serverKeys(ca1, "localhost"), ca1.trustStore());
+
+        connCfg = new ConnectorConfiguration().setHttpSslFactory(factory).setPortRange(1);
 
         try (ServerSocket sock = new ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))) {
             System.setProperty(IGNITE_JETTY_PORT, Integer.toString(sock.getLocalPort()));
@@ -408,18 +419,19 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Creates a server factory that uses CA 1 for both keys and trust. */
-    private SslContextFactory serverFactory() throws Exception {
-        return configureServer(new SslContextFactory(), 30);
+    /** Creates a server factory with the given key and trust stores. */
+    private SslContextFactory serverFactory(KeyStore keys, KeyStore trust) throws Exception {
+        return configureServer(new SslContextFactory(), keys, trust);
     }
 
-    /** Configures the initial server certificate with the validity needed by the test. */
-    private SslContextFactory configureServer(SslContextFactory factory, int validDays) throws Exception {
+    /** Saves the key and trust stores to files and points the factory at them. */
+    private SslContextFactory configureServer(SslContextFactory factory, KeyStore keys, KeyStore trust)
+        throws Exception {
         Path keyStore = dir.resolve("keys.jks");
         Path trustStore = dir.resolve("trust.jks");
 
-        save(serverKeys(ca1, validDays), keyStore);
-        save(ca1.trustStore(), trustStore);
+        save(keys, keyStore);
+        save(trust, trustStore);
 
         factory.setKeyStoreFilePath(keyStore.toString());
         factory.setKeyStorePassword(PASSWORD);
@@ -429,9 +441,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         return factory;
     }
 
-    /** Issues a server certificate for localhost. */
-    private KeyStore serverKeys(TestCertificateAuthority ca, int validDays) throws Exception {
-        return ca.keyStore("localhost", now - HOURS.toMillis(1), now + DAYS.toMillis(validDays));
+    /** Issues a server certificate for the host that is valid for 30 days. */
+    private KeyStore serverKeys(TestCertificateAuthority ca, String host) throws Exception {
+        return ca.keyStore(host, now - HOURS.toMillis(1), now + DAYS.toMillis(30));
     }
 
     /** Creates a client with a certificate issued by the given CA. */
@@ -522,11 +534,11 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Gives the Jetty XML connector a localhost certificate issued by CA 2. */
-    private void setJettyKeyStore() throws Exception {
+    /** Saves the key store of the HTTPS connector in the Jetty XML configuration and points the connector at it. */
+    private void setJettyKeyStore(KeyStore keys) throws Exception {
         Path keyStore = dir.resolve("jetty-keys.jks");
 
-        save(serverKeys(ca2, 30), keyStore);
+        save(keys, keyStore);
         System.setProperty(JETTY_KEY_STORE, keyStore.toString());
     }
 
