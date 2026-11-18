@@ -512,7 +512,7 @@ public class SslFactoryRegistryTest {
         SSLContext initCtx = custom.create();
 
         registry.register("communication", custom);
-        registry.start(ctx);
+        registry.onKernalStart(true);
 
         char[] replacementPwd = "replacement".toCharArray();
         KeyStore replacement = authority.keyStore("node", at(-1), at(DAYS.toHours(30)), replacementPwd);
@@ -543,7 +543,7 @@ public class SslFactoryRegistryTest {
         assertTrue(custom.getHotReloadTime() > 0);
 
         registry.register("communication", custom);
-        registry.start(ctx);
+        registry.onKernalStart(true);
 
         custom.setKeys(null, null);
         registry.reload(custom);
