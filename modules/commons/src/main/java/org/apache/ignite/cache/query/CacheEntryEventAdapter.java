@@ -26,6 +26,9 @@ import static javax.cache.event.EventType.REMOVED;
 
 /** */
 public abstract class CacheEntryEventAdapter<K, V> extends CacheEntryEvent<K, V> {
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = -8573869898821005572L;
+
     /** */
     protected CacheEntryEventAdapter(Cache src, EventType evtType) {
         super(src, evtType);

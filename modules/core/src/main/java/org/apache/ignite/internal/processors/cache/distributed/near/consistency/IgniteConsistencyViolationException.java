@@ -26,6 +26,9 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture.SkipLoggingExce
  * Consistency violation exception.
  */
 public abstract class IgniteConsistencyViolationException extends IgniteCheckedException implements SkipLoggingException {
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = 7803760939138900218L;
+
     /**
      * Inconsistent entries keys.
      */
