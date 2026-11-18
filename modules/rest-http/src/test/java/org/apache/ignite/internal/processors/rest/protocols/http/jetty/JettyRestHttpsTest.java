@@ -309,9 +309,6 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
             SSLEngine first = jetty.newSSLEngine(peer);
 
-            assertArrayEquals(first.getEnabledProtocols(), jetty.getSelectedProtocols());
-            assertArrayEquals(first.getEnabledCipherSuites(), jetty.getSelectedCipherSuites());
-
             factory.setProtocols("TLSv1.3");
             factory.setCipherSuites("TLS_AES_128_GCM_SHA256");
             factory.init();

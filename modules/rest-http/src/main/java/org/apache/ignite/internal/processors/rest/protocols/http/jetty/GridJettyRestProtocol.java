@@ -31,7 +31,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import jakarta.servlet.DispatcherType;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -546,20 +545,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
             this.factory = factory;
 
-            SSLContext ctx = factory.create();
-            SSLEngine engine = ctx.createSSLEngine();
-            String[] protocols = engine.getEnabledProtocols();
-            String[] cipherSuites = engine.getEnabledCipherSuites();
-
-            setSslContext(ctx);
-
-            // Jetty falls back to SSLContext defaults when an include list is empty.
-            setIncludeProtocols(protocols);
-            setExcludeProtocols(protocols.length == 0 ? engine.getSupportedProtocols() : U.EMPTY_STRS);
-
-            setIncludeCipherSuites(cipherSuites);
-            setExcludeCipherSuites(cipherSuites.length == 0 ? engine.getSupportedCipherSuites() : U.EMPTY_STRS);
-
+            setSslContext(factory.create());
             setNeedClientAuth(clientAuth);
         }
 
