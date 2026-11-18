@@ -54,7 +54,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private static final int ALLOW_WAIT_TOP_FUT_FLAG_MASK = 0x10;
 
-    /** Recovery value flag. */
+    /** Recovery flag, unused since 2.20. Nodes of older versions still set it, so the bit must not be reused. */
     private static final int RECOVERY_FLAG_MASK = 0x40;
 
     /** Future ID. */
@@ -124,8 +124,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean explicitLock,
         int taskNameHash,
         boolean firstClientReq,
-        boolean allowWaitTopFut,
-        boolean recovery
+        boolean allowWaitTopFut
     ) {
         super(tx, timeout, reads, writes, txNodes, retVal, last, onePhaseCommit);
 
@@ -143,7 +142,6 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
         setFlag(explicitLock, EXPLICIT_LOCK_FLAG_MASK);
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
         setFlag(allowWaitTopFut, ALLOW_WAIT_TOP_FUT_FLAG_MASK);
-        setFlag(recovery, RECOVERY_FLAG_MASK);
     }
 
     /**

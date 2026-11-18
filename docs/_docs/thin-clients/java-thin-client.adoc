@@ -59,6 +59,8 @@ Alternatively, you can use the `ignite-core-{version}.jar` library from the Igni
 
 To initialize a thin client, use the `Ignition.startClient(ClientConfiguration)` method. The method accepts a `ClientConfiguration` object, which defines client connection parameters.
 
+Use `ClientConfiguration.setHandshakeTimeout(int)` to configure the time allowed to establish the client handshake (10 seconds by default), and `ClientConfiguration.setRequestTimeout(int)` to configure the time allowed for operation requests (60 seconds by default). A value of `0` means an infinite timeout. `ClientConfiguration.setTimeout(int)` is deprecated; it sets both timeouts for backward compatibility.
+
 The method returns the `IgniteClient` interface, which provides various methods for accessing data. `IgniteClient` is an auto-closable resource. Use the _try-with-resources_ statement to close the thin client and release the resources associated with the connection.
 
 [source, java]

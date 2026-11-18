@@ -36,6 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -97,6 +98,7 @@ public class GridCommandHandlerSslReloadTest extends GridCommandHandlerClusterPe
                 : "communication, client connector, binary REST, discovery";
 
             assertContains(log, testOut.toString(), nodes.get(i).localNode().id() + ": " + transports + ": reloaded");
+            assertEquals(1, nodes.get(i).context().metric().registry("ssl").<LongMetric>findMetric("ManualReloadAttempts").value());
         }
     }
 

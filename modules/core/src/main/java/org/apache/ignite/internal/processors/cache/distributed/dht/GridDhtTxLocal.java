@@ -587,7 +587,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             GridNearTxFinishResponse res = new GridNearTxFinishResponse(
                 -1,
                 nearXidVer,
-                threadId,
                 nearFinFutId,
                 nearFinMiniId,
                 err);

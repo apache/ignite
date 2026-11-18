@@ -19,12 +19,10 @@ package org.apache.ignite.internal.management.ssl;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.UUID;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
@@ -120,7 +118,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
 
         /** {@inheritDoc} */
         @Override protected String run(NoArg arg) {
-            Map<String, Factory<SSLContext>> factories = ignite.context().ssl().factories();
+            List<Entry<Factory<SSLContext>, String>> factories = ignite.context().ssl().factories();
             UUID nodeId = ignite.localNode().id();
             String initiator = "";
 
@@ -138,9 +136,9 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                 return report;
             }
 
-            for (Map.Entry<String, Factory<SSLContext>> entry : factories.entrySet()) {
-                if (!(entry.getValue() instanceof AbstractSslContextFactory)) {
-                    String report = entry.getKey() + ": unsupported: " + entry.getValue().getClass().getName();
+            for (Entry<Factory<SSLContext>, String> entry : factories) {
+                if (!(entry.getKey() instanceof AbstractSslContextFactory)) {
+                    String report = entry.getValue() + ": unsupported: " + entry.getKey().getClass().getName();
 
                     ignite.log().warning("TLS reload: " + nodeId + ": " + report + initiator);
 
@@ -148,20 +146,13 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                 }
             }
 
-            Set<Factory<SSLContext>> processed = Collections.newSetFromMap(new IdentityHashMap<>());
             List<String> reports = new ArrayList<>();
 
-            for (Factory<SSLContext> factory : factories.values()) {
-                if (!processed.add(factory))
-                    continue;
-
-                String transports = factories.entrySet().stream()
-                    .filter(entry -> entry.getValue() == factory)
-                    .map(Map.Entry::getKey)
-                    .collect(joining(", "));
+            for (Entry<Factory<SSLContext>, String> entry : factories) {
+                String transports = entry.getValue();
 
                 try {
-                    ((AbstractSslContextFactory)factory).init();
+                    ignite.context().ssl().reload((AbstractSslContextFactory)entry.getKey());
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);
