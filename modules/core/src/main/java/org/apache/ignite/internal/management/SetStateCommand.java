@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.management.api.PreparableCommand;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTask;
 import org.apache.ignite.internal.visor.misc.VisorIdAndTagViewTaskResult;
 import org.jetbrains.annotations.Nullable;
@@ -96,10 +94,8 @@ public class SetStateCommand implements NativeCommand<SetStateCommandArg, Boolea
         if (ignite != null)
             return ((IgniteEx)ignite).context().cluster().clusterName();
 
-        ClusterNode node = F.first(CommandUtils.nodes(client, ignite));
-
-        VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, ignite,
-            VisorIdAndTagViewTask.class, null, Collections.singleton(node));
+        VisorIdAndTagViewTaskResult idAndTag = CommandUtils.execute(client, null,
+            VisorIdAndTagViewTask.class, null, Collections.singleton(client.cluster().forServers().node()));
 
         return idAndTag.clusterName();
     }

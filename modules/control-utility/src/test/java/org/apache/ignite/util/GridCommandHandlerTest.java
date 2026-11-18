@@ -697,22 +697,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx igniteEx,
         String clusterName
     ) {
-        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+        String prompt = "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
 
-        injectTestSystemIn(CONFIRM_MSG);
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, prompt, "--deactivate");
 
-        assertEquals(EXIT_CODE_OK, execute("--set-state", "ACTIVE"));
+        igniteEx.cluster().state(ACTIVE);
         assertTrue(igniteEx.cluster().state().active());
 
-        if (cliCommandHandler()) {
-            assertContains(
-                log,
-                testOut.toString(),
-                "Warning: the command will change state of cluster with name \"" + clusterName + "\" to ACTIVE."
-            );
-        }
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, prompt, "--deactivate");
 
-        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+        igniteEx.cluster().state(ACTIVE);
+
+        deactivateWithCheckClusterNameInConfirmation(
+            igniteEx,
+            "Warning: the command will change state of cluster with name \"" + clusterName + "\" to INACTIVE.",
+            "--set-state", "INACTIVE"
+        );
     }
 
     /**
@@ -720,23 +720,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * confirmation.
      *
      * @param igniteEx Node.
-     * @param clusterName Cluster name to check in the confirmation message.
+     * @param prompt Confirmation message with the cluster name.
+     * @param cmd Deactivation command.
      * */
-    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String clusterName) {
+    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String prompt, String... cmd) {
         autoConfirmation = false;
         injectTestSystemOut();
         injectTestSystemIn(CONFIRM_MSG);
 
-        assertEquals(EXIT_CODE_OK, execute("--deactivate"));
+        assertEquals(EXIT_CODE_OK, execute(cmd));
         assertFalse(igniteEx.cluster().state().active());
 
-        if (cliCommandHandler()) {
-            assertContains(
-                log,
-                testOut.toString(),
-                "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
-            );
-        }
+        if (cliCommandHandler())
+            assertContains(log, testOut.toString(), prompt);
     }
 
     /**
