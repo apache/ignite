@@ -104,7 +104,7 @@ public class QueryStartRequest extends AbstractMessage implements DeferredUnmars
         this.schema = schema;
         this.root = root;
         this.ver = ver;
-        this.fragmentDesc = fragmentDesc.preparedToSend();
+        this.fragmentDesc = fragmentDesc;
         this.totalFragmentsCnt = totalFragmentsCnt;
         this.params = params;
         this.paramsBytes = paramsBytes; // If we already have marshalled params, use it.
