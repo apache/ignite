@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.ssl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,7 +31,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -59,6 +66,7 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -488,6 +496,62 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: a custom factory has loaded a certificate that is due for hot reload.
+     * When: the source supplies a new key store and password and the scheduled check runs.
+     * Then: the factory installs the replacement context and schedules its next reload from the new certificate.
+     */
+    @Test
+    public void testScheduledReloadUsesCustomFactoryKeyStoreAndPassword() throws Exception {
+        SourceSslContextFactory custom = new SourceSslContextFactory();
+
+        custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
+        custom.setHotReloadEnabled(true);
+
+        SSLContext initCtx = custom.create();
+
+        registry.register("communication", custom);
+        registry.start(ctx);
+
+        char[] replacementPwd = "replacement".toCharArray();
+        KeyStore replacement = authority.keyStore("node", at(-1), at(DAYS.toHours(30)), replacementPwd);
+
+        custom.setKeys(replacement, replacementPwd);
+        check.run();
+
+        assertNotSame(initCtx, custom.create());
+
+        long expiry = ((X509Certificate)replacement.getCertificate("node")).getNotAfter().getTime();
+
+        assertEquals(expiry - custom.getHotReloadBeforeExpiryMs(), custom.getHotReloadTime());
+    }
+
+    /**
+     * Given: hot reload is enabled for a custom factory that has loaded a key store with due certificates.
+     * When: a manual reload creates the context without a key store, and the scheduled check runs.
+     * Then: the factory has no hot reload date, and the check makes no attempt.
+     */
+    @Test
+    public void testLoadWithoutKeyStoreClearsHotReloadDate() throws Exception {
+        SourceSslContextFactory custom = new SourceSslContextFactory();
+
+        custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
+        custom.setHotReloadEnabled(true);
+        custom.create();
+
+        assertTrue(custom.getHotReloadTime() > 0);
+
+        registry.register("communication", custom);
+        registry.start(ctx);
+
+        custom.setKeys(null, null);
+        registry.reload(custom);
+        check.run();
+
+        assertEquals(0, custom.getHotReloadTime());
+        assertEquals(0, metric("AutomaticHotReloadAttempts"));
+    }
+
+    /**
      * Given: a registered factory that is not an {@link SslContextFactory}.
      * When: a manual reload runs.
      * Then: the factory is loaded.
@@ -881,6 +945,47 @@ public class SslFactoryRegistryTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return getKeyStoreFilePath().hashCode();
+        }
+    }
+
+    /** Creates key managers from the key store and password supplied by the test, or none without a key store. */
+    private static class SourceSslContextFactory extends AbstractSslContextFactory {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private KeyStore store;
+
+        /** */
+        private char[] pwd;
+
+        /** */
+        private void setKeys(KeyStore store, char[] pwd) {
+            this.store = store;
+            this.pwd = pwd;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void checkParameters() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected KeyManager[] createKeyManagers() throws SSLException {
+            if (store == null)
+                return null;
+
+            try {
+                return createKeyManagers(KeyManagerFactory.getInstance("SunX509"), store, pwd);
+            }
+            catch (GeneralSecurityException e) {
+                throw new SSLException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected TrustManager[] createTrustManagers() {
+            return null;
         }
     }
 }

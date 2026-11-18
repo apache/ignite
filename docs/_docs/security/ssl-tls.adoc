@@ -197,7 +197,7 @@ It does not update the HTTP REST endpoint or external client applications.
 
 === Enable Hot Reload
 
-Enable hot reload on each configured `SslContextFactory` before starting the node:
+Enable hot reload on each configured factory before starting the node:
 
 [source,java]
 ----
@@ -229,7 +229,7 @@ This includes issuing certificates. The default lead time is 7 days.
 The first check at or after that date attempts a reload, including the startup check.
 Allow enough time before expiry to supply the replacements, wait through the one-hour interval and load the stores.
 Keep the lead time shorter than the lifetime of the replacement certificates, or they will already be due when loaded.
-See link:{javadoc_base_url}/org/apache/ignite/ssl/SslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
+See link:{javadoc_base_url}/org/apache/ignite/ssl/AbstractSslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
 
 If the loaded certificates are still due for hot reload, Ignite records a failed hot reload attempt even though it installed them.
 This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.
@@ -270,8 +270,10 @@ Otherwise, or to load the corrected stores without waiting, restart the affected
 
 === Custom Certificate Sources
 
-For automatic hot reload, custom sources require a subclass of javadoc:org.apache.ignite.ssl.SslContextFactory[].
-Factories extending only `AbstractSslContextFactory` support manual reload only.
+For automatic hot reload, a custom factory creates its key managers with `createKeyManagers(KeyManagerFactory, KeyStore, char[])` of javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
+On each load, call this method once with the key store and the key password that your source returned.
+Ignite takes the hot reload date from that key store.
+A factory that does not call this method has no hot reload date, and the node logs a warning.
 Limit request duration in custom sources: a blocked load delays other hot reloads and manual reload.
 
 == SslContextFactory Properties

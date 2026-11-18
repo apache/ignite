@@ -24,15 +24,11 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
@@ -65,9 +61,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
     /** Default key manager / trust manager algorithm. Specifying different trust manager algorithm is not supported. */
     public static final String DFLT_KEY_ALGORITHM = System.getProperty("ssl.KeyManagerFactory.algorithm", "SunX509");
 
-    /** Default lead time for certificate hot reload: 7 days. */
-    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
-
     /** Key manager algorithm. */
     protected String keyAlgorithm = DFLT_KEY_ALGORITHM;
 
@@ -91,73 +84,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
     /** Trust managers. */
     protected TrustManager[] trustMgrs;
-
-    /** */
-    private boolean hotReloadEnabled;
-
-    /** */
-    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
-
-    /** */
-    private transient volatile long earliestExpiry;
-
-    /** */
-    private transient long pendingExpiry;
-
-    /**
-     * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
-     */
-    public boolean isHotReloadEnabled() {
-        return hotReloadEnabled;
-    }
-
-    /**
-     * @param enabled Whether automatic certificate hot reload is enabled. Changes require a node restart.
-     */
-    public void setHotReloadEnabled(boolean enabled) {
-        hotReloadEnabled = enabled;
-    }
-
-    /**
-     * @return How long before the certificates expire hot reload becomes due, in milliseconds.
-     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
-     */
-    public long getHotReloadBeforeExpiryMs() {
-        return hotReloadBeforeExpiryMs;
-    }
-
-    /**
-     * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
-     */
-    public void setHotReloadBeforeExpiryMs(long millis) {
-        A.ensure(millis > 0, "millis > 0");
-
-        hotReloadBeforeExpiryMs = millis;
-    }
-
-    /**
-     * The hot reload time is calculated from the loaded certificates.
-     * It comes {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry among the chains of the private keys.
-     * A chain expires when any certificate in it expires.
-     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
-     *
-     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
-     *     or have no private key with an X.509 chain.
-     */
-    public long getHotReloadTime() {
-        long expiry = earliestExpiry;
-
-        return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;
-    }
-
-    /** {@inheritDoc} */
-    @Override SSLContext createSslContext() throws SSLException {
-        SSLContext ctx = super.createSslContext();
-
-        earliestExpiry = pendingExpiry;
-
-        return ctx;
-    }
 
     /**
      * Gets key store type used for context creation.
@@ -338,11 +264,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
 
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            pendingExpiry = keyChainsExpiry(keyStore);
-
-            return keyMgrFactory.getKeyManagers();
+            return createKeyManagers(keyMgrFactory, keyStore, keyStorePwd);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);
@@ -351,48 +273,6 @@ public class SslContextFactory extends AbstractSslContextFactory {
             throw new SSLException("Failed to initialize Key Manager (security exception occurred) [type=" +
                 keyStoreType + ", keyStorePath=" + keyStoreFilePath + ']', e);
         }
-    }
-
-    /**
-     * @param store Loaded key store.
-     * @return Earliest certificate expiry in the private key chains, or {@code 0} if the store has no private key
-     *     with an X.509 certificate chain.
-     * @throws GeneralSecurityException If the key store cannot be read.
-     */
-    private static long keyChainsExpiry(KeyStore store) throws GeneralSecurityException {
-        long earliest = Long.MAX_VALUE;
-
-        for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
-            String alias = aliases.nextElement();
-
-            if (!store.isKeyEntry(alias))
-                continue;
-
-            earliest = Math.min(earliest, chainExpiry(store.getCertificateChain(alias)));
-        }
-
-        return earliest == Long.MAX_VALUE ? 0 : earliest;
-    }
-
-    /**
-     * @param chain Certificate chain of a key entry, or {@code null} if the entry has none.
-     * @return Earliest expiry in the chain, or {@link Long#MAX_VALUE} if there is no chain or it holds a certificate other
-     *     than X.509, as TLS ignores such keys.
-     */
-    private static long chainExpiry(Certificate[] chain) {
-        long expiry = Long.MAX_VALUE;
-
-        if (chain == null)
-            return expiry;
-
-        for (Certificate cert : chain) {
-            if (!(cert instanceof X509Certificate x509))
-                return Long.MAX_VALUE;
-
-            expiry = Math.min(expiry, x509.getNotAfter().getTime());
-        }
-
-        return expiry;
     }
 
     /** {@inheritDoc} */
