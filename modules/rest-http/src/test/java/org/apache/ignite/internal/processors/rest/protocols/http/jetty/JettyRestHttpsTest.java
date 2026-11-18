@@ -30,11 +30,12 @@ import java.security.cert.X509Certificate;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
+import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -58,6 +59,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol.DFLT_JETTY_PORT;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
+import static org.apache.ignite.ssl.TestCertificateAuthority.trustStoreOf;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -134,9 +136,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(0);
 
-        try (HttpsConnection conn = new HttpsConnection(client(null), "localhost")) {
+        try (HttpsConnection conn = new HttpsConnection(client(), "localhost")) {
             assertEquals(200, conn.version());
-            assertEquals(ca1Subject(), conn.serverCertificate().getIssuerX500Principal().getName());
+            assertEquals(ca1.subject(), conn.serverIssuer());
         }
 
         assertThrows(log, () -> plainHttpVersion(), IOException.class, null);
@@ -154,7 +156,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        try (HttpsConnection conn = new HttpsConnection(client(null), "127.0.0.1")) {
+        try (HttpsConnection conn = new HttpsConnection(client(), "127.0.0.1")) {
             assertEquals(400, conn.version());
         }
     }
@@ -173,9 +175,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        try (HttpsConnection conn = new HttpsConnection(client(null), "127.0.0.1")) {
+        try (HttpsConnection conn = new HttpsConnection(client(), "127.0.0.1")) {
             assertEquals(200, conn.version());
-            assertEquals(ca1Subject(), conn.serverCertificate().getIssuerX500Principal().getName());
+            assertEquals(ca1.subject(), conn.serverIssuer());
         }
     }
 
@@ -195,8 +197,8 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(0);
 
-        SSLContext client1 = client(ca1.keyStore("client1", now - HOURS.toMillis(1), now + DAYS.toMillis(30)));
-        SSLContext client2 = client(ca2.keyStore("client2", now - HOURS.toMillis(1), now + DAYS.toMillis(30)));
+        SSLContext client1 = client(ca1.keyManagers("client1", now - HOURS.toMillis(1), now + DAYS.toMillis(30)));
+        SSLContext client2 = client(ca2.keyManagers("client2", now - HOURS.toMillis(1), now + DAYS.toMillis(30)));
 
         try (HttpsConnection established = new HttpsConnection(client1, "localhost")) {
             assertEquals(200, established.version());
@@ -209,19 +211,19 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
                 return null;
             }, Exception.class, null);
-            assertEquals(ca1Subject(), issuerOfNewConnection(client1));
+            assertEquals(ca1.subject(), issuerOfNewConnection(client1));
 
             save(ca2.keyStore("localhost", now - HOURS.toMillis(1), now + DAYS.toMillis(30)), Path.of(factory.getKeyStoreFilePath()));
-            save(trustStore(ca1, ca2), Path.of(factory.getTrustStoreFilePath()));
+            save(trustStoreOf(ca1, ca2), Path.of(factory.getTrustStoreFilePath()));
             node.context().ssl().reload(factory);
 
             try (HttpsConnection conn = new HttpsConnection(client2, "localhost")) {
                 assertEquals(200, conn.version());
-                assertEquals(ca2Subject(), conn.serverCertificate().getIssuerX500Principal().getName());
+                assertEquals(ca2.subject(), conn.serverIssuer());
             }
 
             assertEquals(200, established.version());
-            assertEquals(ca1Subject(), established.serverCertificate().getIssuerX500Principal().getName());
+            assertEquals(ca1.subject(), established.serverIssuer());
         }
     }
 
@@ -248,7 +250,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         assertTrue(factory.reloadStarted.await(TIMEOUT_MS, MILLISECONDS));
 
-        SSLContext client = client(null);
+        SSLContext client = client();
 
         try (HttpsConnection established = new HttpsConnection(client, "localhost")) {
             assertEquals(200, established.version());
@@ -257,10 +259,10 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             factory.finishReload.countDown();
 
             assertTrue(waitForCondition(() -> factory.getHotReloadTime() > System.currentTimeMillis(), TIMEOUT_MS));
-            assertEquals(ca2Subject(), issuerOfNewConnection(client));
+            assertEquals(ca2.subject(), issuerOfNewConnection(client));
 
             assertEquals(200, established.version());
-            assertEquals(ca1Subject(), established.serverCertificate().getIssuerX500Principal().getName());
+            assertEquals(ca1.subject(), established.serverIssuer());
         }
     }
 
@@ -281,7 +283,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         startGrid(0);
 
-        try (HttpsConnection conn = new HttpsConnection(client(null), "localhost", "TLSv1.2", suite)) {
+        try (HttpsConnection conn = new HttpsConnection(client(), "localhost", "TLSv1.2", suite)) {
             assertEquals(200, conn.version());
             assertEquals("TLSv1.2", conn.sock.getSession().getProtocol());
             assertEquals(suite, conn.sock.getSession().getCipherSuite());
@@ -293,7 +295,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
     /** Sends the version command from a client without a certificate that offers only the given protocol and suite. */
     private int version(String protocol, String suite) throws Exception {
-        try (HttpsConnection conn = new HttpsConnection(client(null), "localhost", protocol, suite)) {
+        try (HttpsConnection conn = new HttpsConnection(client(), "localhost", protocol, suite)) {
             return conn.version();
         }
     }
@@ -345,7 +347,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         IgniteEx node = startGrid(0);
 
-        assertEquals(ca2Subject(), issuerOfNewConnection(client(null)));
+        assertEquals(ca2.subject(), issuerOfNewConnection(client()));
         assertTrue(node.context().ssl().factories().isEmpty());
     }
 
@@ -390,71 +392,26 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         return factory;
     }
 
-    /** Creates a trust store with all given CAs. */
-    private static KeyStore trustStore(TestCertificateAuthority... cas) throws Exception {
-        KeyStore res = KeyStore.getInstance("JKS");
-
-        res.load(null, PASSWORD);
-
-        for (TestCertificateAuthority ca : cas) {
-            KeyStore store = ca.trustStore();
-            String alias = store.aliases().nextElement();
-
-            res.setCertificateEntry(alias, store.getCertificate(alias));
-        }
-
-        return res;
-    }
-
-    /**
-     * Creates a client context that trusts both CAs.
-     *
-     * @param keys Client key store, or {@code null} for a client without a certificate.
-     */
-    private SSLContext client(KeyStore keys) throws Exception {
+    /** Creates a client context that trusts both CAs. Omit the key managers for a client without a certificate. */
+    private SSLContext client(KeyManager... keyManagers) throws Exception {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance("PKIX");
 
-        tmf.init(trustStore(ca1, ca2));
-
-        KeyManagerFactory kmf = null;
-
-        if (keys != null) {
-            kmf = KeyManagerFactory.getInstance("SunX509");
-
-            kmf.init(keys, PASSWORD);
-        }
+        tmf.init(trustStoreOf(ca1, ca2));
 
         SSLContext ctx = SSLContext.getInstance("TLS");
 
-        ctx.init(kmf == null ? null : kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+        ctx.init(keyManagers, tmf.getTrustManagers(), null);
 
         return ctx;
     }
 
     /** @return Issuer of the certificate that a new connection gets. */
-    private static String issuerOfNewConnection(SSLContext client) throws Exception {
+    private static X500Principal issuerOfNewConnection(SSLContext client) throws Exception {
         try (HttpsConnection conn = new HttpsConnection(client, "localhost")) {
             assertEquals(200, conn.version());
 
-            return conn.serverCertificate().getIssuerX500Principal().getName();
+            return conn.serverIssuer();
         }
-    }
-
-    /** */
-    private String ca1Subject() throws Exception {
-        return subject(ca1);
-    }
-
-    /** */
-    private String ca2Subject() throws Exception {
-        return subject(ca2);
-    }
-
-    /** */
-    private static String subject(TestCertificateAuthority ca) throws Exception {
-        KeyStore store = ca.trustStore();
-
-        return ((X509Certificate)store.getCertificate(store.aliases().nextElement())).getSubjectX500Principal().getName();
     }
 
     /** Sends the version command over plain HTTP. */
@@ -537,9 +494,9 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
             return request(sock, host);
         }
 
-        /** @return Certificate that the server presented. */
-        private X509Certificate serverCertificate() throws SSLException {
-            return (X509Certificate)sock.getSession().getPeerCertificates()[0];
+        /** @return Issuer of the certificate presented by the server. */
+        private X500Principal serverIssuer() throws SSLException {
+            return ((X509Certificate)sock.getSession().getPeerCertificates()[0]).getIssuerX500Principal();
         }
 
         /** {@inheritDoc} */
