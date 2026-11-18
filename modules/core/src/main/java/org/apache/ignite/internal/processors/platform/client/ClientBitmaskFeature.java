@@ -115,7 +115,10 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
     QRY_INITIATOR_ID(23),
 
     /** Cache affinity configuration. */
-    CACHE_AFFINITY_CFG(24);
+    CACHE_AFFINITY_CFG(24),
+
+    /** Server-assigned connection ID in the handshake response. */
+    CONNECTION_ID(25);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

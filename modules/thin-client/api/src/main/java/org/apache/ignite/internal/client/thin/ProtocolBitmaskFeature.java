@@ -112,7 +112,10 @@ public enum ProtocolBitmaskFeature {
     QRY_INITIATOR_ID(23),
 
     /** Cache affinity configuration. */
-    CACHE_AFFINITY_CFG(24);
+    CACHE_AFFINITY_CFG(24),
+
+    /** Server-assigned connection ID in the handshake response. */
+    CONNECTION_ID(25);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =
