@@ -545,13 +545,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
             this.factory = factory;
 
+            // Jetty reads this context directly at startup and calls getSslContext() for new connections.
             setSslContext(factory.create());
             setNeedClientAuth(clientAuth);
         }
 
         /** {@inheritDoc} */
         @Override public SSLContext getSslContext() {
-            return isStarted() ? factory.create() : super.getSslContext();
+            return factory.create();
         }
 
         /** {@inheritDoc} */
