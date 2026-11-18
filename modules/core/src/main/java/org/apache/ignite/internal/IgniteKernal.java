@@ -81,6 +81,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
@@ -1924,7 +1925,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
      * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
-        Collection<Object> objs = new ArrayList<>();
+        List<Object> objs = new ArrayList<>();
 
         if (cfg.getLifecycleBeans() != null)
             Collections.addAll(objs, cfg.getLifecycleBeans());
@@ -1932,12 +1933,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (cfg.getSegmentationResolvers() != null)
             Collections.addAll(objs, cfg.getSegmentationResolvers());
 
-        if (cfg.getConnectorConfiguration() != null) {
-            objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
-            objs.add(cfg.getConnectorConfiguration().getSslFactory());
+        ConnectorConfiguration connCfg = cfg.getConnectorConfiguration();
 
-            if (cfg.getConnectorConfiguration().getHttpSslFactory() != cfg.getConnectorConfiguration().getSslFactory())
-                objs.add(cfg.getConnectorConfiguration().getHttpSslFactory());
+        if (connCfg != null) {
+            objs.add(connCfg.getMessageInterceptor());
+            objs.add(connCfg.getSslFactory());
+            objs.add(connCfg.getHttpSslFactory());
         }
 
         objs.add(ctx.marshaller());
@@ -1946,6 +1947,17 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getCommunicationFailureResolver() != null)
             objs.add(cfg.getCommunicationFailureResolver());
+
+        if (connCfg != null && connCfg.getHttpSslFactory() instanceof LifecycleAware factory) {
+            // A shared HTTP SSL factory receives callbacks at its first configured position.
+            for (int i = 0; i < objs.size(); i++) {
+                if (objs.get(i) == factory) {
+                    objs.subList(i + 1, objs.size()).removeIf(obj -> obj == factory);
+
+                    break;
+                }
+            }
+        }
 
         return objs;
     }

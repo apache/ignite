@@ -32,6 +32,7 @@ import jakarta.servlet.DispatcherType;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -534,7 +535,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      * connections use a reloaded context. Connections enable exactly the protocols and cipher suites of the Ignite
      * factory, without the default exclusions of Jetty.
      */
-    private static class JettySslContextFactory extends SslContextFactory.Server {
+    static class JettySslContextFactory extends SslContextFactory.Server {
         /** */
         private final Factory<SSLContext> factory;
 
@@ -542,23 +543,41 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
          * @param factory Ignite SSL context factory.
          * @param clientAuth Whether a trusted client certificate is required.
          */
-        private JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
+        JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
             this.factory = factory;
 
             SSLContext ctx = factory.create();
             SSLEngine engine = ctx.createSSLEngine();
+            String[] protocols = engine.getEnabledProtocols();
+            String[] cipherSuites = engine.getEnabledCipherSuites();
 
             setSslContext(ctx);
-            setIncludeProtocols(engine.getEnabledProtocols());
-            setIncludeCipherSuites(engine.getEnabledCipherSuites());
-            setExcludeProtocols();
-            setExcludeCipherSuites();
+
+            // Jetty uses its defaults for an empty include list. Exclude all values when the factory enables none.
+            setIncludeProtocols(protocols);
+            setExcludeProtocols(protocols.length == 0 ? engine.getSupportedProtocols() : new String[0]);
+            setIncludeCipherSuites(cipherSuites);
+            setExcludeCipherSuites(cipherSuites.length == 0 ? engine.getSupportedCipherSuites() : new String[0]);
             setNeedClientAuth(clientAuth);
         }
 
         /** {@inheritDoc} */
         @Override public SSLContext getSslContext() {
             return isStarted() ? factory.create() : super.getSslContext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public SSLParameters customize(SSLParameters params) {
+            // Jetty selects these lists at startup. Each new engine carries the lists from its own Ignite context.
+            String[] protocols = params.getProtocols();
+            String[] cipherSuites = params.getCipherSuites();
+
+            super.customize(params);
+
+            params.setProtocols(protocols);
+            params.setCipherSuites(cipherSuites);
+
+            return params;
         }
     }
 }

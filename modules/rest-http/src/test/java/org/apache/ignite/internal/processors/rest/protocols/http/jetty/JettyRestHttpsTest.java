@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -32,6 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
@@ -39,6 +41,7 @@ import javax.security.auth.x500.X500Principal;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol.JettySslContextFactory;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
@@ -62,6 +65,7 @@ import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.ssl.TestCertificateAuthority.trustStoreOf;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * HTTPS of HTTP REST with {@link ConnectorConfiguration#getHttpSslFactory()}.
@@ -267,17 +271,18 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: an HTTP SSL factory that enables only TLS 1.2 and a cipher suite that Jetty excludes by default.
-     * When: clients that offer only that protocol and cipher suite, another cipher suite or another protocol connect.
-     * Then: the first connection uses that protocol and cipher suite, and the others fail.
+     * Given: the factory enables only TLS 1.2, a TLS 1.2 suite Jetty normally excludes, and a TLS 1.3 suite.
+     * When: clients offer the configured TLS 1.2 suite, another TLS 1.2 suite, or TLS 1.3 with its configured suite.
+     * Then: only the first client connects.
      */
     @Test
     public void testFactoryProtocolsAndCipherSuitesApplyExactly() throws Exception {
         String suite = "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA";
+        String tls13Suite = "TLS_AES_128_GCM_SHA256";
         SslContextFactory factory = serverFactory(ca1, ca1);
 
         factory.setProtocols("TLSv1.2");
-        factory.setCipherSuites(suite);
+        factory.setCipherSuites(suite, tls13Suite);
 
         connCfg = new ConnectorConfiguration().setHttpSslFactory(factory);
 
@@ -290,7 +295,48 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
         }
 
         assertThrows(log, () -> version("TLSv1.2", "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"), IOException.class, null);
-        assertThrows(log, () -> version("TLSv1.3", "TLS_AES_128_GCM_SHA256"), IOException.class, null);
+        assertThrows(log, () -> version("TLSv1.3", tls13Suite), IOException.class, null);
+    }
+
+    /**
+     * Given: the factory enables no protocols or cipher suites, and Jetty requires a client certificate.
+     * When: the factory reloads with a protocol and cipher enabled.
+     * Then: each engine keeps the settings from the context that created it and requires a client certificate.
+     */
+    @Test
+    public void testNewEngineUsesReloadedTlsSettings() throws Exception {
+        SslContextFactory factory = serverFactory(ca1, ca1);
+
+        factory.setProtocols();
+        factory.setCipherSuites();
+
+        JettySslContextFactory jetty = new JettySslContextFactory(factory, true);
+        InetSocketAddress peer = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
+
+        try {
+            jetty.start();
+
+            SSLEngine first = jetty.newSSLEngine(peer);
+
+            assertArrayEquals(first.getEnabledProtocols(), jetty.getSelectedProtocols());
+            assertArrayEquals(first.getEnabledCipherSuites(), jetty.getSelectedCipherSuites());
+
+            factory.setProtocols("TLSv1.3");
+            factory.setCipherSuites("TLS_AES_128_GCM_SHA256");
+            factory.init();
+
+            SSLEngine reloaded = jetty.newSSLEngine(peer);
+
+            assertEquals(0, first.getEnabledProtocols().length);
+            assertEquals(0, first.getEnabledCipherSuites().length);
+            assertTrue(first.getNeedClientAuth());
+            assertArrayEquals(factory.getProtocols(), reloaded.getEnabledProtocols());
+            assertArrayEquals(factory.getCipherSuites(), reloaded.getEnabledCipherSuites());
+            assertTrue(reloaded.getNeedClientAuth());
+        }
+        finally {
+            jetty.stop();
+        }
     }
 
     /** Sends the version command from a client without a certificate that offers only the given protocol and suite. */

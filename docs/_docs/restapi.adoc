@@ -129,11 +129,14 @@ The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command]
 New connections use the reloaded certificates, and established connections stay open.
 
 HTTPS configured directly in the Jetty XML configuration keeps working, but Ignite does not reload it.
-To move it to a factory, restart each node with this configuration:
+To move it to a factory, make the following changes together before restarting each node.
 
 . Configure an `SslContextFactory` with the key and trust stores of the Jetty configuration.
+. On the factory, call `setProtocols(...)` and `setCipherSuites(...)` with the protocols and cipher suites the connector currently enables.
+Use the names that remain after Jetty applies its defaults and any include or exclude patterns in the XML.
 . Remove the `SslConnectionFactory` from the Jetty connector, so that the connector serves plain HTTP.
 . Set the factory with `setHttpSslFactory(...)`.
+If the Jetty configuration has `needClientAuth=true`, also call `setHttpSslClientAuth(true)` to keep requiring client certificates.
 
 === Security
 

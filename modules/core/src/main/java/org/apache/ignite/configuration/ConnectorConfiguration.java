@@ -551,7 +551,7 @@ public class ConnectorConfiguration {
 
     /**
      * Sets whether HTTP REST requires a client certificate that the factory from {@link #getHttpSslFactory()} trusts.
-     * If the factory is not set, the node fails to start.
+     * If client authentication is enabled without a factory, the node fails to start when it initializes HTTP REST.
      *
      * @param httpSslClientAuth Whether HTTP REST requires a trusted client certificate.
      * @return {@code this} for chaining.

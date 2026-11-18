@@ -32,6 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareS
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.sslFactory;
+
 /**
  * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
  */
@@ -74,16 +76,10 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestContextFactory extends TestLifecycleAware implements Factory<SSLContext> {
-        /**
-         */
-        TestContextFactory() {
-            super(null);
-        }
-
+    private static class TestContextFactory extends TestLifecycleBean implements Factory<SSLContext> {
         /** {@inheritDoc} */
         @Override public SSLContext create() {
-            return null;
+            return sslFactory().create();
         }
     }
 
@@ -192,6 +188,35 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName())
             .setConnectorConfiguration(new ConnectorConfiguration().setSslFactory(factory).setHttpSslFactory(factory));
 
+        checkFactoryLifecycle(cfg, factory);
+    }
+
+    /** An HTTP SSL factory registered as a lifecycle bean starts and stops once with the node. */
+    @Test
+    public void testHttpSslFactoryAsLifecycleBean() throws Exception {
+        TestContextFactory factory = new TestContextFactory();
+
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName())
+            .setLifecycleBeans(factory)
+            .setConnectorConfiguration(new ConnectorConfiguration().setHttpSslFactory(factory));
+
+        checkFactoryLifecycle(cfg, factory);
+    }
+
+    /** A lifecycle bean shared by binary and HTTP REST receives one start and one stop callback. */
+    @Test
+    public void testSharedSslFactoryAsLifecycleBean() throws Exception {
+        TestContextFactory factory = new TestContextFactory();
+
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName())
+            .setLifecycleBeans(factory)
+            .setConnectorConfiguration(new ConnectorConfiguration().setSslFactory(factory).setHttpSslFactory(factory));
+
+        checkFactoryLifecycle(cfg, factory);
+    }
+
+    /** Starts and stops the node and checks the factory's lifecycle callbacks after each operation. */
+    private void checkFactoryLifecycle(IgniteConfiguration cfg, TestContextFactory factory) throws Exception {
         startGrid(cfg);
 
         assertEquals(1, factory.startCount());
