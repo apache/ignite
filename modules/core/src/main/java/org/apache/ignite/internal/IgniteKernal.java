@@ -1936,7 +1936,10 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
             objs.add(cfg.getConnectorConfiguration().getSslFactory());
 
-            if (cfg.getConnectorConfiguration().getHttpSslFactory() != cfg.getConnectorConfiguration().getSslFactory())
+            boolean sharedWithBinaryRest =
+                cfg.getConnectorConfiguration().getHttpSslFactory() == cfg.getConnectorConfiguration().getSslFactory();
+
+            if (!sharedWithBinaryRest)
                 objs.add(cfg.getConnectorConfiguration().getHttpSslFactory());
         }
 
