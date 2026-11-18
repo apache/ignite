@@ -264,9 +264,7 @@ public class SslContextFactory extends AbstractSslContextFactory {
 
             KeyStore keyStore = loadKeyStore(keyStoreType, keyStoreFilePath, keyStorePwd);
 
-            keyMgrFactory.init(keyStore, keyStorePwd);
-
-            return keyMgrFactory.getKeyManagers();
+            return createKeyManagers(keyMgrFactory, keyStore, keyStorePwd);
         }
         catch (NoSuchAlgorithmException e) {
             throw new SSLException("Unsupported key algorithm: " + keyAlgorithm, e);

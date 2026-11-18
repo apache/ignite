@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -143,6 +144,8 @@ public class SqlValueUtilsTest {
             Object[] right = {Collections.singletonList(new Object[] {i})};
 
             assertEquals(dest.targets(left), dest.targets(right));
+            assertEquals(dest.targets(new Object[] {BigDecimal.valueOf(i)}),
+                dest.targets(new Object[] {BigDecimal.valueOf(i).setScale(2)}));
         }
 
         assertNotEquals(dest.targets(new Object[] {Collections.singletonList(new Object[] {0})}),
@@ -159,9 +162,88 @@ public class SqlValueUtilsTest {
     }
 
     /** */
+    @Test
+    public void testDecimalValues() {
+        for (String[] pair : new String[][] {
+            {"11845600", "11845600"},
+            {"11845600", "1.18456E+7"},
+            {"11845600", "11845600.00"},
+            {"11845600.00", "11845600.00"},
+            {"1.18456E+7", "1.18456E+7"},
+            {"0", "0"},
+            {"0", "0.000"},
+            {"-11845600", "-11845600"},
+            {"-11845600.00", "-11845600.00"},
+            {"-11845600", "-11845600.00"},
+            {"-11845600", "-1.18456E+7"}
+        }) {
+            BigDecimal left = new BigDecimal(pair[0]);
+            BigDecimal right = new BigDecimal(pair[1]);
+
+            assertSameValue(left, right);
+            assertSameValue(new Object[] {left}, new Object[] {right});
+            assertSameValue(List.of(left), List.of(right));
+            assertSameValue(Collections.singletonMap(left, left), Collections.singletonMap(right, right));
+
+            GroupKey<Object[]> first = GroupKey.of(new Object[] {left}, ArrayRowHandler.INSTANCE);
+            GroupKey<Object[]> second = GroupKey.of(new Object[] {right}, ArrayRowHandler.INSTANCE);
+            Map<GroupKey<Object[]>, String> idx = new HashMap<>();
+
+            idx.put(first, "found");
+
+            assertEquals(first, second);
+            assertEquals(first.hashCode(), second.hashCode());
+            assertEquals("found", idx.get(second));
+        }
+    }
+
+    /** */
+    @Test
+    public void testDifferentDecimalValues() {
+        for (String[] pair : new String[][] {
+            {"11845600", "11845601"},
+            {"11845600.00", "11845601.00"},
+            {"11845600", "1.18457E+7"},
+            {"11845600", "11845601.00"},
+            {"0", "0.001"},
+            {"-11845600", "-11845601"},
+            {"-11845600.00", "-11845601.00"},
+            {"-11845600", "-11845601.00"},
+            {"-11845600", "-1.18457E+7"},
+            {"11845600", "-1.18456E+7"}
+        }) {
+            BigDecimal left = new BigDecimal(pair[0]);
+            BigDecimal right = new BigDecimal(pair[1]);
+
+            assertDifferentValue(left, right);
+            assertDifferentValue(new Object[] {left}, new Object[] {right});
+            assertDifferentValue(List.of(left), List.of(right));
+            assertDifferentValue(Collections.singletonMap(left, "value"), Collections.singletonMap(right, "value"));
+            assertDifferentValue(Collections.singletonMap("key", left), Collections.singletonMap("key", right));
+
+            GroupKey<Object[]> first = GroupKey.of(new Object[] {left}, ArrayRowHandler.INSTANCE);
+            GroupKey<Object[]> second = GroupKey.of(new Object[] {right}, ArrayRowHandler.INSTANCE);
+            Map<GroupKey<Object[]>, String> idx = new HashMap<>();
+
+            idx.put(first, "found");
+
+            assertNotEquals(first, second);
+            assertNull(idx.get(second));
+        }
+
+        assertDifferentValue(new BigDecimal("1"), 1);
+    }
+
+    /** */
     private static void assertSameValue(Object left, Object right) {
         assertTrue(SqlValueUtils.deepEquals(left, right));
         assertTrue(SqlValueUtils.deepEquals(right, left));
         assertEquals(SqlValueUtils.deepHashCode(left), SqlValueUtils.deepHashCode(right));
+    }
+
+    /** */
+    private static void assertDifferentValue(Object left, Object right) {
+        assertFalse(SqlValueUtils.deepEquals(left, right));
+        assertFalse(SqlValueUtils.deepEquals(right, left));
     }
 }

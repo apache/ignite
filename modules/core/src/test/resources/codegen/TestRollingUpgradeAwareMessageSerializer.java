@@ -158,7 +158,8 @@ public final class TestRollingUpgradeAwareMessageSerializer implements MessageSe
                     if (!reader.isLastRead())
                         return false;
 
-                    rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));
+                    if (!rawFields.isEmpty())
+                        rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));
 
                     if (!rawFields.isEmpty())
                         msg.rawFields(rawFields);

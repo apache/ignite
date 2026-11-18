@@ -55,6 +55,7 @@ import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstab
 import org.apache.ignite.internal.client.thin.ThinClientPutAllConflictKeepBinaryTest;
 import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
+import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionIdTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientRequestEventListenerTest;
 import org.junit.runner.RunWith;
@@ -105,6 +106,7 @@ import org.junit.runners.Suite;
     ThinClientPutAllConflictKeepBinaryTest.class,
     MetadataRegistrationTest.class,
     IgniteClientConnectionEventListenerTest.class,
+    IgniteClientConnectionIdTest.class,
     IgniteClientRequestEventListenerTest.class,
     IgniteClientLifecycleEventListenerTest.class,
     ThinClientEnpointsDiscoveryTest.class,
