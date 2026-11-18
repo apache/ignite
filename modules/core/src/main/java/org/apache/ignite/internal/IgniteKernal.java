@@ -1085,6 +1085,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
+                startProcessor(ctx.ssl());
                 startProcessor(new DataStreamProcessor(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
@@ -1242,8 +1243,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                     recon = true;
                 }
             }
-
-            ctx.ssl().start(ctx);
 
             // Start plugins.
             for (PluginProvider<?> provider : ctx.plugins().allProviders())
@@ -1724,8 +1723,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         GridKernalGateway gw = this.gw.get();
 
         if (stopGuard.compareAndSet(false, true)) {
-            ctx.ssl().stop();
-
             // Only one thread is allowed to perform stop sequence.
             boolean firstStop = false;
 

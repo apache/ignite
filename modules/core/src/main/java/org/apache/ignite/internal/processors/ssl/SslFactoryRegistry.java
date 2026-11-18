@@ -29,11 +29,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +41,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /** SSL factories used by running transports. */
-public class SslFactoryRegistry {
+public class SslFactoryRegistry extends GridProcessorAdapter {
     /** */
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
@@ -52,14 +51,16 @@ public class SslFactoryRegistry {
     /** */
     private volatile ScheduledExecutorService executor;
 
-    /** Logs nothing until the registry starts. */
-    private volatile IgniteLogger log = new NullLogger();
-
     /** */
     private final AtomicLong manualReloadAttempts = new AtomicLong();
 
     /** */
     private final AtomicLong automaticHotReloadAttempts = new AtomicLong();
+
+    /** @param ctx Kernal context. */
+    public SslFactoryRegistry(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** */
     public synchronized void register(String transport, Factory<SSLContext> factory) {
@@ -86,8 +87,8 @@ public class SslFactoryRegistry {
         return res;
     }
 
-    /** */
-    public void start(GridKernalContext ctx) {
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
         metrics.register("ConsecutiveHotReloadFailures", this::consecutiveHotReloadFailures,
@@ -95,8 +96,6 @@ public class SslFactoryRegistry {
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual reload attempts.");
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic hot reload attempts.");
-
-        log = ctx.log(getClass());
 
         boolean hotReload = false;
 
@@ -140,8 +139,8 @@ public class SslFactoryRegistry {
         }
     }
 
-    /** */
-    public void stop() {
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
         if (executor != null)
             executor.shutdownNow();
     }

@@ -266,7 +266,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private final SslFactoryRegistry sslFactories = new SslFactoryRegistry();
+    private SslFactoryRegistry sslFactories;
 
     /** */
     @GridToStringInclude
@@ -451,6 +451,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         defragMgr = new IgniteDefragmentationImpl(this);
 
+        sslFactories = new SslFactoryRegistry(this);
+
         try {
             spring = SPRING.create(false);
         }
@@ -601,7 +603,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor
-            || comp instanceof QueryEngine))
+            || comp instanceof QueryEngine
+            || comp instanceof SslFactoryRegistry))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
