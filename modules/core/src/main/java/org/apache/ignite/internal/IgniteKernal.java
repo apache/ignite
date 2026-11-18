@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1922,8 +1921,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /**
      * @param cfg Ignite configuration to use.
-     * @return Components provided in configuration which can implement {@link LifecycleAware} interface,
-     *      each instance once.
+     * @return Components provided in configuration which can implement {@link LifecycleAware} interface.
      */
     private Iterable<Object> lifecycleAwares(IgniteConfiguration cfg) {
         Collection<Object> objs = new ArrayList<>();
@@ -1937,7 +1935,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         if (cfg.getConnectorConfiguration() != null) {
             objs.add(cfg.getConnectorConfiguration().getMessageInterceptor());
             objs.add(cfg.getConnectorConfiguration().getSslFactory());
-            objs.add(cfg.getConnectorConfiguration().getHttpSslFactory());
+
+            if (cfg.getConnectorConfiguration().getHttpSslFactory() != cfg.getConnectorConfiguration().getSslFactory())
+                objs.add(cfg.getConnectorConfiguration().getHttpSslFactory());
         }
 
         objs.add(ctx.marshaller());
@@ -1946,10 +1946,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getCommunicationFailureResolver() != null)
             objs.add(cfg.getCommunicationFailureResolver());
-
-        Set<Object> seen = U.newIdentityHashSet();
-
-        objs.removeIf(obj -> !seen.add(obj));
 
         return objs;
     }
