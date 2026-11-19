@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.management.baseline.BaselineCommandArg",
-  "fields": [
-    {"order": 0, "type": "boolean", "name": "verbose"}
-  ]
-}

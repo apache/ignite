@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyHandlerResponse",
-  "fields": [
-    {"order": 0, "type": "java.util.Map<org.apache.ignite.internal.management.cache.PartitionKey,org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord>", "name": "res"}
-  ]
-}
