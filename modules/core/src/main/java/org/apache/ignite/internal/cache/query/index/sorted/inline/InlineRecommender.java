@@ -144,12 +144,13 @@ public class InlineRecommender {
         if (def.primary() || def.affinity()) {
             return "set system property "
                 + IgniteSystemProperties.IGNITE_MAX_INDEX_PAYLOAD_SIZE + " with recommended size " +
-                "(be aware it will be used by default for all indexes without explicit inline size)";
+                "(be aware it will be used by default for all indexes without explicit inline size), " +
+                "or set CacheConfiguration.sqlIndexMaxInlineSize with recommended size for this cache";
         }
         else {
             return "use INLINE_SIZE option for CREATE INDEX command, " +
-                "QuerySqlField.inlineSize for annotated classes, or QueryIndex.inlineSize for explicit " +
-                "QueryEntity configuration";
+                "QuerySqlField.inlineSize for annotated classes, QueryIndex.inlineSize for explicit " +
+                "QueryEntity configuration, or QueryGroupIndex.inlineSize for group indexes";
         }
     }
 
