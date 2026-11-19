@@ -135,6 +135,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
      */
     @Test
     public void testConcurrentNodesStartStop() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8885");
+
         try {
             multithreadedAsync(
                 new Callable<Object>() {
