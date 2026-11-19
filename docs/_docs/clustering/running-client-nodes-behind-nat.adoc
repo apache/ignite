@@ -39,7 +39,7 @@ tab:C++[unsupported]
 
 == Limitations
 
-* This mode cannot be used when `TcpCommunicationSpi.usePairedConnections = true` on both server and client nodes.
+* This mode cannot be used when `TcpCommunicationSpi.usePairedConnections = true` on either server or client nodes.
 
 * Peer class loading for link:key-value-api/continuous-queries[continuous queries (transformers and filters)] does not work when a continuous query is started from a client node `forceClientToServerConnections = true`.
 You will need to add the corresponding classes to the classpath of every server node.
