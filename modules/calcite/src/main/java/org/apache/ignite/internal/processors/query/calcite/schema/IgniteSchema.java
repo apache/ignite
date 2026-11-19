@@ -33,6 +33,7 @@ import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -135,24 +136,35 @@ public class IgniteSchema extends AbstractSchema {
      *
      * @param parent Parent schema.
      * @param frameworkCfg Framework config.
+     * @param qryEngineCfg Query engine configuration.
      * @return Registered schema.
      */
-    public SchemaPlus register(SchemaPlus parent, FrameworkConfig frameworkCfg) {
+    public SchemaPlus register(
+        SchemaPlus parent,
+        FrameworkConfig frameworkCfg,
+        CalciteQueryEngineConfiguration qryEngineCfg
+    ) {
         SchemaPlus newSchema = parent.add(schemaName, this);
 
-        viewMap.forEach((name, sql) -> newSchema.add(name, new ViewTableMacroImpl(sql, newSchema, frameworkCfg)));
+        viewMap.forEach((name, sql) -> newSchema.add(name,
+            new ViewTableMacroImpl(sql, newSchema, frameworkCfg, qryEngineCfg)));
 
-        registerDualTableIfSupported(newSchema, frameworkCfg);
+        registerDualTableIfSupported(newSchema, frameworkCfg, qryEngineCfg);
 
         return newSchema;
     }
 
     /** */
-    private static void registerDualTableIfSupported(SchemaPlus schema, FrameworkConfig frameworkCfg) {
+    private static void registerDualTableIfSupported(
+        SchemaPlus schema,
+        FrameworkConfig frameworkCfg,
+        CalciteQueryEngineConfiguration qryEngineCfg
+    ) {
         if (frameworkCfg != null && frameworkCfg.getSqlValidatorConfig().conformance().isSupportedDualTable()
             && schema.tables().get(DUAL_TBL_NAME) == null
             && schema.getFunctions(DUAL_TBL_NAME).stream().noneMatch(TableMacro.class::isInstance)) {
-            schema.add(DUAL_TBL_NAME, new ViewTableMacroImpl(DUAL_TBL_VIEW, schema, frameworkCfg));
+            schema.add(DUAL_TBL_NAME,
+                new ViewTableMacroImpl(DUAL_TBL_VIEW, schema, frameworkCfg, qryEngineCfg));
         }
     }
 

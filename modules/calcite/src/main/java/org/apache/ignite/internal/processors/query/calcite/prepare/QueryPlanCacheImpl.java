@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
@@ -53,7 +54,7 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        distrCfg = queryProcessor(ctx).distributedConfiguration();
+        distrCfg = CalciteQueryProcessor.queryProcessor(ctx).distributedConfiguration();
 
         if (distrCfg.planCacheSize() != DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE)
             clear(); // Recreate cache with configured size.

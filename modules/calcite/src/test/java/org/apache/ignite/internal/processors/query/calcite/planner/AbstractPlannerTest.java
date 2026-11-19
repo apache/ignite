@@ -50,6 +50,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -775,8 +776,10 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractWrapperTest 
         SchemaPlus rootSchema = createRootSchema(false);
         SchemaPlus dfltSchema = null;
 
+        var qryEngineCfg = new CalciteQueryEngineConfiguration();
+
         for (IgniteSchema igniteSchema : schemas) {
-            SchemaPlus schema = igniteSchema.register(rootSchema, null);
+            SchemaPlus schema = igniteSchema.register(rootSchema, null, qryEngineCfg);
 
             if (dfltSchema == null || DEFAULT_SCHEMA.equals(schema.getName()))
                 dfltSchema = schema;
