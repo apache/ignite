@@ -110,6 +110,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
@@ -701,12 +702,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx igniteEx,
         String clusterName
     ) {
-        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+        String prompt = "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
+
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, prompt, "--deactivate");
 
         igniteEx.cluster().state(ACTIVE);
         assertTrue(igniteEx.cluster().state().active());
 
-        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, prompt, "--deactivate");
+
+        igniteEx.cluster().state(ACTIVE);
+
+        deactivateWithCheckClusterNameInConfirmation(
+            igniteEx,
+            "Warning: the command will change state of cluster with name \"" + clusterName + "\" to INACTIVE.",
+            "--set-state", "INACTIVE"
+        );
     }
 
     /**
@@ -714,23 +725,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * confirmation.
      *
      * @param igniteEx Node.
-     * @param clusterName Cluster name to check in the confirmation message.
+     * @param prompt Confirmation message with the cluster name.
+     * @param cmd Deactivation command.
      * */
-    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String clusterName) {
+    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String prompt, String... cmd) {
         autoConfirmation = false;
         injectTestSystemOut();
         injectTestSystemIn(CONFIRM_MSG);
 
-        assertEquals(EXIT_CODE_OK, execute("--deactivate"));
+        assertEquals(EXIT_CODE_OK, execute(cmd));
         assertFalse(igniteEx.cluster().state().active());
 
-        if (cliCommandHandler()) {
-            assertContains(
-                log,
-                testOut.toString(),
-                "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
-            );
-        }
+        if (cliCommandHandler())
+            assertContains(log, testOut.toString(), prompt);
     }
 
     /**
@@ -1783,6 +1790,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         U.awaitQuiet(lockLatch);
 
+        UUID client0Id = clients[0].cluster().localNode().id();
+
+        GridCacheVersion client0TxVer = ((IgniteEx)prim).context().cache().context().tm().activeTransactions().stream()
+            .filter(tx -> client0Id.equals(tx.originatingNodeId()))
+            .findFirst()
+            .get()
+            .xidVersion();
+
         commitLatch.countDown();
 
         primSpi.waitForBlocked(clients.length);
@@ -1796,7 +1811,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (m instanceof GridDhtTxFinishRequest) {
                     GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)m;
 
-                    return !r.nearNodeId().equals(clients[0].cluster().localNode().id());
+                    return !r.version().equals(client0TxVer);
                 }
 
                 return true;
@@ -2838,27 +2853,29 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         assertTrue(isReencryptionStarted(DEFAULT_CACHE_NAME));
 
-        int ret = execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME);
-
-        assertEquals(EXIT_CODE_OK, ret);
-
         Pattern ptrn = Pattern.compile("(?m)Node [-0-9a-f]{36}:\n\\s+(?<left>\\d+) KB of data.+");
-        Matcher matcher = ptrn.matcher(testOut.toString());
-        int matchesCnt = 0;
 
-        while (matcher.find()) {
-            assertEquals(1, matcher.groupCount());
+        // Pages left are counted asynchronously after the key change, so the status may report zero at first.
+        assertTrue(waitForCondition(() -> {
+            assertEquals(EXIT_CODE_OK, execute("--encryption", REENCRYPTION_STATUS, DEFAULT_CACHE_NAME));
 
-            int pagesLeft = Integer.parseInt(matcher.group("left"));
+            Matcher matcher = ptrn.matcher(testOut.toString());
+            int matchesCnt = 0;
 
-            assertTrue(pagesLeft > 0);
+            while (matcher.find()) {
+                assertEquals(1, matcher.groupCount());
 
-            matchesCnt++;
-        }
+                int pagesLeft = Integer.parseInt(matcher.group("left"));
 
-        assertEquals(srvNodes, matchesCnt);
+                assertTrue(pagesLeft > 0);
 
-        ret = execute("--encryption", REENCRYPTION_SUSPEND, DEFAULT_CACHE_NAME);
+                matchesCnt++;
+            }
+
+            return matchesCnt == srvNodes;
+        }, getTestTimeout()));
+
+        int ret = execute("--encryption", REENCRYPTION_SUSPEND, DEFAULT_CACHE_NAME);
 
         assertEquals(EXIT_CODE_OK, ret);
         assertEquals(srvNodes, countSubstrs(testOut.toString(),

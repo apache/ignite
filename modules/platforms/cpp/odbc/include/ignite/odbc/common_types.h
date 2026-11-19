@@ -356,6 +356,9 @@ namespace ignite
                 /** Conversion failure. */
                 CONVERSION_FAILED = 3013,
 
+                /** Schema not found. */
+                SCHEMA_NOT_FOUND = 3015,
+
                 /* 4xxx - cache related runtime errors */
 
                 /** Attempt to INSERT a key that is already in cache. */

@@ -302,6 +302,9 @@ public class RexUtils {
             if (F.isEmpty(collFldPreds))
                 break;
 
+            if (mapping != null)
+                fldIdx = mapping.getSourceOpt(fldIdx);
+
             for (RexCall pred : collFldPreds) {
                 if (pred.getOperator().kind != SqlKind.EQUALS && pred.getOperator().kind != IS_NOT_DISTINCT_FROM) {
                     if (ignoreNotEqualPreds)
@@ -312,9 +315,6 @@ public class RexUtils {
 
                 if (bounds == null)
                     bounds = Arrays.asList(new SearchBounds[types.size()]);
-
-                if (mapping != null)
-                    fldIdx = mapping.getSourceOpt(fldIdx);
 
                 bounds.set(fldIdx, new ExactBounds(pred,
                     makeCast(builder(cluster), removeCast(pred.operands.get(1)), types.get(fldIdx))));

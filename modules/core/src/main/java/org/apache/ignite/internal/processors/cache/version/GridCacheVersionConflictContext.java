@@ -54,6 +54,9 @@ public class GridCacheVersionConflictContext<K, V> {
     /** Manual resolve flag. */
     private boolean manualResolve;
 
+    /** Resolve failed flag. */
+    private boolean resolveFailed;
+
     /**
      * Constructor.
      *
@@ -170,6 +173,18 @@ public class GridCacheVersionConflictContext<K, V> {
      */
     public boolean isManualResolve() {
         return manualResolve;
+    }
+
+    /** Forces the cache to ignore the new entry and marks that the conflict could not be resolved. */
+    public void markResolveFailed() {
+        useOld();
+
+        resolveFailed = true;
+    }
+
+    /** @return {@code True} if the conflict could not be resolved. */
+    public boolean isResolveFailed() {
+        return resolveFailed;
     }
 
     /**

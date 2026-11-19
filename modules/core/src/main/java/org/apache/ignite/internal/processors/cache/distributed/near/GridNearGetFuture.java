@@ -736,7 +736,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 cctx.cacheId(),
                 rootFutId,
                 futId,
-                ver,
                 keys,
                 readThrough,
                 topVer,

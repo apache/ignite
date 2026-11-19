@@ -218,26 +218,6 @@ public final class GridCacheMvcc {
     }
 
     /**
-     *
-     * @param threadId Thread ID.
-     * @param reentry Reentry flag.
-     * @return Local candidate for the thread.
-     */
-    @Nullable private GridCacheMvccCandidate localCandidate(long threadId, boolean reentry) {
-        if (locs != null)
-            for (GridCacheMvccCandidate cand : locs) {
-                if (cand.isHeldByThread(threadId)) {
-                    if (cand.reentry() && !reentry)
-                        continue;
-
-                    return cand;
-                }
-            }
-
-        return null;
-    }
-
-    /**
      * @param cand Existing candidate.
      * @param newCand New candidate.
      * @return {@code False} if new candidate can not be added.
@@ -309,24 +289,6 @@ public final class GridCacheMvcc {
                         return true;
                     }
 
-                    GridCacheMvccCandidate first = locs.getFirst();
-
-                    if (first.owner()) {
-                        // If reentry, add at the beginning. Note that
-                        // no reentry happens for DHT-local candidates.
-                        if (!cand.dhtLocal() && first.hasSameHolderAs(cand)) {
-                            assert !first.serializable();
-
-                            cand.setOwner();
-                            cand.setReady();
-                            cand.setReentry();
-
-                            locs.addFirst(cand);
-
-                            return true;
-                        }
-                    }
-
                     // Iterate in reverse order.
                     for (ListIterator<GridCacheMvccCandidate> it = locs.listIterator(locs.size()); it.hasPrevious(); ) {
                         GridCacheMvccCandidate c = it.previous();
@@ -336,7 +298,7 @@ public final class GridCacheMvcc {
 
                         // Add after the owner or serializable tx.
                         if (c.owner() || c.serializable()) {
-                            // Threads are checked above.
+                            // Threads are checked in addLocal(..).
                             assert cand.dhtLocal() || !c.hasSameHolderAs(cand);
 
                             // Reposition.
@@ -573,11 +535,10 @@ public final class GridCacheMvcc {
      * @param threadId Thread ID.
      * @param ver Lock version.
      * @param timeout Lock acquisition timeout.
-     * @param reenter Reentry flag ({@code true} if reentry is allowed).
      * @param tx Transaction flag.
      * @param implicitSingle Implicit transaction flag.
      * @param read Read lock flag.
-     * @return New lock candidate if lock was added, or current owner if lock was reentered,
+     * @return New lock candidate if lock was added,
      *      or <tt>null</tt> if lock was owned by another thread and timeout is negative.
      */
     @Nullable public GridCacheMvccCandidate addLocal(
@@ -585,7 +546,6 @@ public final class GridCacheMvcc {
         long threadId,
         GridCacheVersion ver,
         long timeout,
-        boolean reenter,
         boolean tx,
         boolean implicitSingle,
         boolean read) {
@@ -597,7 +557,6 @@ public final class GridCacheMvcc {
             ver,
             timeout,
             /*serializable order*/null,
-            reenter,
             tx,
             implicitSingle,
             /*dht-local*/false,
@@ -613,12 +572,11 @@ public final class GridCacheMvcc {
      * @param ver Lock version.
      * @param timeout Lock acquisition timeout.
      * @param serOrder Version for serializable transactions ordering.
-     * @param reenter Reentry flag ({@code true} if reentry is allowed).
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
      * @param dhtLoc DHT local flag.
      * @param read Read lock flag.
-     * @return New lock candidate if lock was added, or current owner if lock was reentered,
+     * @return New lock candidate if lock was added,
      *      or <tt>null</tt> if lock was owned by another thread and timeout is negative.
      */
     @Nullable public GridCacheMvccCandidate addLocal(
@@ -629,17 +587,16 @@ public final class GridCacheMvcc {
         GridCacheVersion ver,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        boolean reenter,
         boolean tx,
         boolean implicitSingle,
         boolean dhtLoc,
         boolean read) {
         if (log.isDebugEnabled())
             log.debug("Adding local candidate [mvcc=" + this + ", parent=" + parent + ", threadId=" + threadId +
-                ", ver=" + ver + ", timeout=" + timeout + ", reenter=" + reenter + ", tx=" + tx + "]");
+                ", ver=" + ver + ", timeout=" + timeout + ", tx=" + tx + "]");
 
         // Don't check reenter for DHT candidates.
-        if (!dhtLoc && !reenter) {
+        if (!dhtLoc) {
             GridCacheMvccCandidate owner = localOwner();
 
             if (owner != null && owner.isHeldByThreadOrVer(threadId, ver))
@@ -660,7 +617,6 @@ public final class GridCacheMvcc {
 
         UUID locNodeId = cctx.nodeId();
 
-        // If this is a reentry, then reentry flag will be flipped within 'add0(..)' method.
         GridCacheMvccCandidate cand = new GridCacheMvccCandidate(
             parent,
             locNodeId,
@@ -701,7 +657,6 @@ public final class GridCacheMvcc {
      * @param ver Lock version.
      * @param tx Transaction flag.
      * @param implicitSingle Implicit flag.
-     * @param nearLoc Near local flag.
      * @return Add remote candidate.
      */
     public GridCacheMvccCandidate addRemote(
@@ -711,8 +666,7 @@ public final class GridCacheMvcc {
         long threadId,
         GridCacheVersion ver,
         boolean tx,
-        boolean implicitSingle,
-        boolean nearLoc) {
+        boolean implicitSingle) {
         GridCacheMvccCandidate cand = new GridCacheMvccCandidate(
             parent,
             nodeId,
@@ -724,7 +678,7 @@ public final class GridCacheMvcc {
             /*reentry*/false,
             tx,
             implicitSingle,
-            nearLoc,
+            /*near-local*/false,
             false,
             null,
             /*read*/false
@@ -913,16 +867,9 @@ public final class GridCacheMvcc {
      * Sets remote candidate to done.
      *
      * @param ver Version.
-     * @param pending Pending versions.
-     * @param committed Committed versions.
-     * @param rolledback Rolledback versions.
      * @return Lock owner.
      */
-    @Nullable public CacheLockCandidates doneRemote(
-        GridCacheVersion ver,
-        Collection<GridCacheVersion> pending,
-        Collection<GridCacheVersion> committed,
-        Collection<GridCacheVersion> rolledback) {
+    @Nullable public CacheLockCandidates doneRemote(GridCacheVersion ver) {
         assert ver != null;
 
         if (log.isDebugEnabled())
@@ -939,31 +886,6 @@ public final class GridCacheMvcc {
 
             cand.setOwner();
             cand.setUsed();
-
-            List<GridCacheMvccCandidate> mvAfter = null;
-
-            for (ListIterator<GridCacheMvccCandidate> it = rmts.listIterator(); it.hasNext(); ) {
-                GridCacheMvccCandidate c = it.next();
-
-                assert !c.nearLocal() : "Remote candidate marked as near local: " + c;
-
-                if (c == cand) {
-                    if (mvAfter != null)
-                        for (GridCacheMvccCandidate mv : mvAfter)
-                            it.add(mv);
-
-                    break;
-                }
-                else if (!committed.contains(c.version()) && !rolledback.contains(c.version()) &&
-                    pending.contains(c.version())) {
-                    it.remove();
-
-                    if (mvAfter == null)
-                        mvAfter = new LinkedList<>();
-
-                    mvAfter.add(c);
-                }
-            }
         }
 
         return allOwners();
@@ -1302,8 +1224,13 @@ public final class GridCacheMvcc {
      * @return Candidate or <tt>null</tt> if there is no candidate for given ID.
      */
     @Nullable GridCacheMvccCandidate localCandidate(long threadId) {
-        // Don't return reentries.
-        return localCandidate(threadId, false);
+        if (locs != null)
+            for (GridCacheMvccCandidate cand : locs) {
+                if (cand.isHeldByThread(threadId))
+                    return cand;
+            }
+
+        return null;
     }
 
     /**
@@ -1365,11 +1292,10 @@ public final class GridCacheMvcc {
     }
 
     /**
-     * @param reentry Reentry flag.
      * @return Collection of local candidates.
      */
-    public List<GridCacheMvccCandidate> localCandidatesNoCopy(boolean reentry) {
-        return candidates(locs, reentry, false, cctx.emptyVersion());
+    public List<GridCacheMvccCandidate> localCandidatesNoCopy() {
+        return candidates(locs, false);
     }
 
     /**
@@ -1382,78 +1308,37 @@ public final class GridCacheMvcc {
         if (src == null)
             return Collections.emptyList();
 
-        return candidatesCopy(src, dst, false);
+        dst.addAll(src);
+
+        return dst;
     }
 
     /**
-     * @param excludeVers Exclude versions.
      * @return Collection of local candidates.
      */
-    public Collection<GridCacheMvccCandidate> localCandidates(GridCacheVersion... excludeVers) {
-        return candidates(locs, false, true, excludeVers);
+    public Collection<GridCacheMvccCandidate> localCandidates() {
+        return candidates(locs, true);
     }
 
     /**
-     * @param reentries Flag to include reentries.
-     * @param excludeVers Exclude versions.
-     * @return Collection of local candidates.
-     */
-    public List<GridCacheMvccCandidate> localCandidates(boolean reentries,
-        GridCacheVersion... excludeVers) {
-        return candidates(locs, reentries, true, excludeVers);
-    }
-
-    /**
-     * @param excludeVers Exclude versions.
      * @return Collection of remote candidates.
      */
-    public List<GridCacheMvccCandidate> remoteCandidates(GridCacheVersion... excludeVers) {
-        return candidates(rmts, false, true, excludeVers);
+    public List<GridCacheMvccCandidate> remoteCandidates() {
+        return candidates(rmts, true);
     }
 
     /**
      * @param col Collection of candidates.
-     * @param reentries Reentry flag.
      * @param cp Whether to copy or not.
-     * @param excludeVers Exclude versions.
-     * @return Collection of candidates minus the exclude versions.
+     * @return Collection of candidates.
      */
-    private List<GridCacheMvccCandidate> candidates(List<GridCacheMvccCandidate> col,
-        boolean reentries, boolean cp, GridCacheVersion... excludeVers) {
+    private List<GridCacheMvccCandidate> candidates(List<GridCacheMvccCandidate> col, boolean cp) {
         if (col == null)
             return Collections.emptyList();
 
         assert !col.isEmpty();
 
-        if (!cp && F.isEmpty(excludeVers))
-            return col;
-
-        List<GridCacheMvccCandidate> cands = new ArrayList<>(col.size());
-
-        return candidatesCopy(col, cands, reentries, excludeVers);
-    }
-
-    /**
-     * Copy candidates collection from {@code src} to {@code dst}.
-     * @param src Source collection.
-     * @param dst Destination collection.
-     * @param reentries Flag to include reentries.
-     * @param excludeVers Exclude versions.
-     * @return Copied collection of candidates.
-     */
-    private List<GridCacheMvccCandidate> candidatesCopy(
-        List<GridCacheMvccCandidate> src,
-        List<GridCacheMvccCandidate> dst,
-        boolean reentries,
-        GridCacheVersion... excludeVers
-    ) {
-        for (GridCacheMvccCandidate c : src) {
-            // Don't include reentries.
-            if ((reentries || !c.reentry()) && !U.containsObjectArray(excludeVers, c.version()))
-                dst.add(c);
-        }
-
-        return dst;
+        return cp ? new ArrayList<>(col) : col;
     }
 
     /**

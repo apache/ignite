@@ -145,9 +145,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
     };
 
-    /** Empty cache version array. */
-    private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
-
     /** @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING */
     public static final boolean DFLT_READ_LOAD_BALANCING = true;
 
@@ -1202,13 +1199,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Empty cache version array.
-     */
-    public GridCacheVersion[] emptyVersion() {
-        return EMPTY_VERSION;
-    }
-
-    /**
      * Sets cache object context.
      *
      * @param cacheObjCtx Cache object context.
@@ -1577,6 +1567,9 @@ public class GridCacheContext<K, V> implements Externalizable {
             cache().metrics0().incrementResolverRejectedCount();
         else
             cache().metrics0().incrementResolverMergedCount();
+
+        if (ctx.isResolveFailed())
+            cache().metrics0().incrementResolverFailedCount();
 
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());

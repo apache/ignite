@@ -1,8 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDeleteRequest",
-  "fields": [
-    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
-    {"order": 1, "type": "java.lang.String", "name": "snpName"},
-    {"order": 2, "type": "java.lang.String", "name": "snpPath"}
-  ]
-}

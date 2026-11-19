@@ -17,6 +17,7 @@
 
 package org.apache.ignite.compatibility.testsuites;
 
+import org.apache.ignite.compatibility.cdc.CdcEventSerializationCompatibilityTest;
 import org.apache.ignite.compatibility.clients.JavaThinCompatibilityStoragePathTest;
 import org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest;
 import org.apache.ignite.compatibility.clients.JdbcThinCompatibilityTest;
@@ -56,6 +57,7 @@ import org.junit.runners.Suite;
     CompoundIndexCompatibilityTest.class,
     SnapshotCompatibilityTest.class,
     CheckpointMapSnapshotCompatibilityTest.class,
+    CdcEventSerializationCompatibilityTest.class,
     TcpDiscoveryDifferentClusterVersionsTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {

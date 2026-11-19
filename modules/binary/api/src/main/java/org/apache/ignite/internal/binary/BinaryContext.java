@@ -332,6 +332,20 @@ public class BinaryContext {
     }
 
     /**
+     * @param clsName Class name.
+     * @return Class loaded by the configured class loader or {@code null} if it is not available to it.
+     * @see org.apache.ignite.configuration.IgniteConfiguration#getClassLoader()
+     */
+    @Nullable private Class<?> loadClassOrNull(String clsName) {
+        try {
+            return CommonUtils.resolveClassLoader(null, clsLdr).loadClass(clsName);
+        }
+        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+            return null;
+        }
+    }
+
+    /**
      * @param globalNameMapper Name mapper.
      * @param globalIdMapper ID mapper.
      * @param globalSerializer Serializer.
@@ -370,7 +384,7 @@ public class BinaryContext {
                         String affField = affFields.remove(clsName0);
 
                         if (affField == null) {
-                            Class<?> cls = ClassLoaderUtils.classForName(clsName0);
+                            Class<?> cls = loadClassOrNull(clsName0);
 
                             if (cls != null)
                                 affField = affFldNameProvider.apply(cls);
@@ -384,7 +398,7 @@ public class BinaryContext {
                     String affField = affFields.remove(clsName);
 
                     if (affField == null) {
-                        Class<?> cls = ClassLoaderUtils.classForName(clsName);
+                        Class<?> cls = loadClassOrNull(clsName);
 
                         if (cls != null)
                             affField = affFldNameProvider.apply(cls);
@@ -1115,14 +1129,7 @@ public class BinaryContext {
         @Nullable Map<String, Integer> enumMap) throws BinaryObjectException {
         assert mapper != null;
 
-        Class<?> cls = null;
-
-        try {
-            cls = CommonUtils.resolveClassLoader(null, classLoader()).loadClass(clsName);
-        }
-        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-            // No-op.
-        }
+        Class<?> cls = loadClassOrNull(clsName);
 
         String typeName = mapper.typeName(clsName);
 
@@ -1389,8 +1396,20 @@ public class BinaryContext {
 
             registerUserClassName(typeId, typeName, writer.failIfUnregistered(), false, JAVA_ID);
 
-            updateMetadata(typeId, new BinaryMetadata(typeId, typeName, fieldsMeta, affFieldName,
-                Collections.singleton(curSchema), false, null), writer.failIfUnregistered());
+            BinaryMetadata newMeta = new BinaryMetadata(
+                typeId,
+                typeName,
+                fieldsMeta,
+                affFieldName,
+                Collections.singleton(curSchema),
+                false,
+                null
+            );
+
+            if (meta != null)
+                newMeta = BinaryUtils.mergeMetadata(((BinaryTypeImpl)meta).metadata(), newMeta);
+
+            updateMetadata(typeId, newMeta, writer.failIfUnregistered());
 
             schemaReg.addSchema(curSchema.schemaId(), curSchema);
         }

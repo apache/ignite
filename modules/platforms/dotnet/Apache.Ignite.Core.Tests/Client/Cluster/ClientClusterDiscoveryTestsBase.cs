@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
     using System;
     using System.Linq;
     using System.Net;
+    using System.Net.NetworkInformation;
     using Apache.Ignite.Core.Client;
     using NUnit.Framework;
 
@@ -159,7 +160,19 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                     count, client.GetConnections().Count());
             }
 
-            var cluster = Ignition.GetAll().First().GetCluster();
+            var ignite = Ignition.GetAll().First();
+            var cluster = ignite.GetCluster();
+            
+            var localIpAddresses = new[] {IPAddress.Loopback, IPAddress.IPv6Loopback};
+
+            if (string.IsNullOrEmpty(ignite.GetConfiguration().Localhost))
+            {
+                // Discovery can connect through a non-loopback interface when Localhost is not set.
+                localIpAddresses = localIpAddresses.Concat(NetworkInterface.GetAllNetworkInterfaces()
+                    .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+                    .Select(a => a.Address))
+                    .ToArray();
+            }
 
             foreach (var connection in client.GetConnections())
             {
@@ -177,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Client.Cluster
                 CollectionAssert.Contains(ipAddresses, remoteEndPoint.Address);
 
                 var localEndPoint = (IPEndPoint) connection.LocalEndPoint;
-                CollectionAssert.Contains(new[] {IPAddress.Loopback, IPAddress.IPv6Loopback}, localEndPoint.Address);
+                CollectionAssert.Contains(localIpAddresses, localEndPoint.Address);
             }
         }
     }

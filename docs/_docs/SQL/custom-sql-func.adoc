@@ -66,7 +66,7 @@ With custom SQL function you can get access to application attributes set on the
 
 NOTE: Creating custom functions in the system schema is forbidden. Creating a custom function in schema 'PUBLIC' is forbidden if the function name interferes with a standard function like 'TYPEOF' or 'SUBSTRING'.
 
-NOTE: The table functions and application attributes are currently available only with link:SQL/sql-calcite[Calcite, window=_blank].
+NOTE: The table functions and application attributes are not available with the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine, window=_blank].
 
 NOTE: With link:SQL/sql-calcite[Calcite, window=_blank], a custom SQL function can execute nested SQL queries through Ignite APIs such as `SqlFieldsQuery` only when the blocking query task executor is enabled with the `-DIGNITE_CALCITE_USE_QUERY_BLOCKING_TASK_EXECUTOR=true` system property. The default striped query task executor can lead to deadlocks for queries started from user-defined functions.
 

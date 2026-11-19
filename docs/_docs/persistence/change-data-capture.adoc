@@ -49,8 +49,12 @@ On startup event processing will be continued from the last saved state.
 |Name |Description | Default value
 | `DataRegionConfiguration#cdcEnabled` | Flag to enable CDC on the server node. | `false`
 | `DataStorageConfiguration#cdcWalPath` | Path to the CDC directory | `"db/wal/cdc"`
+| `DataStorageConfiguration#cdcWalDirectoryMaxSize` | Maximum size of the CDC directory in bytes. If adding a segment would exceed the limit, the CDC link is skipped and the changes in that segment are lost. | `0` (no limit)
 | `DataStorageConfiguration#walForceArchiveTimeout` | Timeout to forcefully archive the WAL segment even it is not complete. | `-1` (disabled)
 |===
+
+NOTE: CDC links are hard links to WAL archive segments, so `cdcWalPath` must be on the same file system as `walArchivePath`, and the space retained by CDC is not bounded by `maxWalArchiveSize`.
+See link:server-node-file-system-layout#account-for-hard-links[Server Node File System Layout] for the capacity planning rules.
 
 === CDC Application
 

@@ -3586,6 +3586,9 @@ public class ZookeeperDiscoveryImpl {
         ).get();
 
         stats.onNodeJoined();
+
+        if (joinedNode.isClient())
+            stats.onClientNodeJoined();
     }
 
     /**

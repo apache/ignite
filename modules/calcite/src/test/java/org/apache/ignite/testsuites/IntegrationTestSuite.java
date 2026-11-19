@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.CollectIn
 import org.apache.ignite.internal.processors.query.calcite.integration.CorrelatesIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DateTimeTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.DecimalHashJoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DistributedJoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.DynamicParametersIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.ExpiredEntriesIntegrationTest;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinar
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.LitmusCheckIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalDateTimeSupportTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LocalQueryIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.MemoryQuotasIntegrationTest;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.Operators
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionPruneTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.PartitionsReservationIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryBlockingTaskExecutorIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.QueryCleanupRaceIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryMetadataIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.QueryWithPartitionsIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.RecursiveCteIntegrationTest;
@@ -187,6 +190,9 @@ import org.junit.platform.suite.api.Suite;
     SystemColumnsScanTest.class,
     BulkOperationDeadlockIntegrationTest.class,
     SelectForUpdateIntegrationTest.class,
+    LitmusCheckIntegrationTest.class,
+    QueryCleanupRaceIntegrationTest.class,
+    DecimalHashJoinIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }

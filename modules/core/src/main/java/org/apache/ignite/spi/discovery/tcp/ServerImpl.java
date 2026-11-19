@@ -63,7 +63,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -5075,6 +5074,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.verified() && !locNodeId.equals(nodeId) && state != CONNECTING && fireEvt) {
                 spi.stats.onNodeJoined();
 
+                if (node.isClient())
+                    spi.stats.onClientNodeJoined();
+
                 // Make sure that node with greater order will never get EVT_NODE_JOINED
                 // on node with less order.
                 assert node.internalOrder() > locNode.internalOrder() : "Invalid order [node=" + node +
@@ -6295,16 +6297,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    if (spi.isSslEnabled()) {
-                        SSLServerSocket sslSock = (SSLServerSocket)spi.sslSrvSockFactory
-                            .createServerSocket(port, 0, spi.locHost);
-
-                        sslSock.setNeedClientAuth(true);
-
-                        srvrSock = sslSock;
-                    }
-                    else
-                        srvrSock = new ServerSocket(port, 0, spi.locHost);
+                    srvrSock = new ServerSocket(port, 0, spi.locHost);
 
                     if (log.isInfoEnabled()) {
                         log.info("Successfully bound to TCP port [port=" + port +
@@ -6348,6 +6341,28 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         blockingSectionEnd();
+                    }
+
+                    if (spi.isSslEnabled()) {
+                        try {
+                            SSLSocket sslSock = (SSLSocket)spi.sslSocketFactory()
+                                .createSocket(sock, sock.getInetAddress().getHostAddress(), sock.getPort(), true);
+
+                            sock = sslSock;
+
+                            sslSock.setUseClientMode(false);
+                            sslSock.setNeedClientAuth(true);
+                        }
+                        catch (IOException | RuntimeException e) {
+                            LT.warn(log, "Failed to set up TLS on an accepted discovery socket [rmtAddr=" +
+                                sock.getRemoteSocketAddress() + ']', e);
+
+                            U.closeQuiet(sock);
+
+                            onIdle();
+
+                            continue;
+                        }
                     }
 
                     if (log.isInfoEnabled()) {

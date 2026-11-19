@@ -124,6 +124,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.GridTestUtils.waitForNextClockTick;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -746,7 +747,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
             long blockedMills = U.currentTimeMillis();
 
-            assertTrue(waitForCondition(() -> U.currentTimeMillis() > blockedMills, getTestTimeout()));
+            waitForNextClockTick();
 
             for (int i = 0; i < G.allGrids().size(); ++i) {
                 if (stoppedNodes0.contains(i))

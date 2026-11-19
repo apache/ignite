@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.metadata.BuiltInMetadata;
 import org.apache.calcite.rel.metadata.ReflectiveRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMdMinRowCount;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.util.BuiltInMethod;
 
 import static org.apache.calcite.rel.metadata.RelMdUtil.literalValueApproximatedByDouble;
 
@@ -33,8 +33,8 @@ import static org.apache.calcite.rel.metadata.RelMdUtil.literalValueApproximated
 public class IgniteMdMinRowCount extends RelMdMinRowCount {
     /** Metadata provider. */
     public static final RelMetadataProvider SOURCE =
-        ReflectiveRelMetadataProvider.reflectiveSource(
-            BuiltInMethod.MIN_ROW_COUNT.method, new IgniteMdMinRowCount());
+        ReflectiveRelMetadataProvider.reflectiveSource(new IgniteMdMinRowCount(),
+            BuiltInMetadata.MinRowCount.Handler.class);
 
     /** {@inheritDoc} */
     @Override public Double getMinRowCount(Sort rel, RelMetadataQuery mq) {

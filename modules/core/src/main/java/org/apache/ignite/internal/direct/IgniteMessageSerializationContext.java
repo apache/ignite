@@ -29,9 +29,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.MessageSerializationContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteComponentFeatureSet;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteCoreFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeature;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteFeatureSet;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.IgniteNodeFeatureSet;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.internal.UnsupportedNodeVersionException;
@@ -45,14 +47,25 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
     @GridToStringInclude
     private final Map<String, ComponentMessageSerializationContext> ctxByComponent;
 
+    /** Core component context, kept to skip the map lookup. */
+    @GridToStringExclude
+    private final ComponentMessageSerializationContext coreCtx;
+
+    /** Checked for every message, so resolved once. */
+    @GridToStringExclude
+    private final boolean includeRawFields;
+
     /** */
     private IgniteMessageSerializationContext(Map<String, ComponentMessageSerializationContext> ctxByComponent) {
         this.ctxByComponent = ctxByComponent;
+
+        coreCtx = ctxByComponent.get(IgniteCoreFeature.COMPONENT_NAME);
+        includeRawFields = includeFieldIntroducedBy(RAW_FIELDS_FEATURE);
     }
 
     /** {@inheritDoc} */
     @Override public boolean includeRawFields() {
-        return includeFieldIntroducedBy(RAW_FIELDS_FEATURE);
+        return includeRawFields;
     }
 
     /** {@inheritDoc} */
@@ -67,7 +80,9 @@ public class IgniteMessageSerializationContext implements MessageSerializationCo
 
     /** */
     private ComponentMessageSerializationContext componentContext(String cmpName) {
-        ComponentMessageSerializationContext cmpCtx = ctxByComponent.get(cmpName);
+        ComponentMessageSerializationContext cmpCtx = cmpName == IgniteCoreFeature.COMPONENT_NAME
+            ? coreCtx
+            : ctxByComponent.get(cmpName);
 
         if (cmpCtx == null) {
             throw new IllegalStateException("A field is gated by a feature of an undeclared component" +

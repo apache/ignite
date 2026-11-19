@@ -503,7 +503,7 @@ public class GridReduceQueryExecutor {
                         H2Utils.bindParameters(stmt, F.asList(rdc.parameters(params)));
 
                         qryInfo = new ReduceH2QueryInfo(stmt, qry.originalSql(),
-                            ctx.localNodeId(), qryId, qryInitiatorId, qryReqId);
+                            ctx.localNodeId(), qryId, qryInitiatorId, params, qryReqId);
 
                         h2.heavyQueriesTracker().startTracking(qryInfo);
 

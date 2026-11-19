@@ -23,7 +23,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * This is an utility class for 'splitting' locking of some
@@ -50,49 +49,12 @@ public class GridStripedReadWriteLock {
     }
 
     /**
-     * Gets concurrency level.
-     *
-     * @return Concurrency level.
-     */
-    public int concurrencyLevel() {
-        return locks.length;
-    }
-
-    /**
-     * Gets all locks.
-     *
-     * @return All locks.
-     */
-    public ReadWriteLock[] getAllLocks() {
-        return locks;
-    }
-
-    /**
      * Returns {@link Lock} object for the given key.
      * @param key Key.
      * @return Lock.
      */
     public ReadWriteLock getLock(int key) {
         return locks[U.safeAbs(key) % locks.length];
-    }
-
-    /**
-     * Returns {@link Lock} object for the given key.
-     * @param key Key.
-     * @return Lock.
-     */
-    public ReadWriteLock getLock(long key) {
-        return locks[U.safeAbs((int)(key % locks.length))];
-    }
-
-    /**
-     * Returns lock for object.
-     *
-     * @param o Object.
-     * @return Lock.
-     */
-    public ReadWriteLock getLock(@Nullable Object o) {
-        return o == null ? locks[0] : getLock(o.hashCode());
     }
 
     /** {@inheritDoc} */

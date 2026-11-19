@@ -110,7 +110,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
     /** Input stream. */
     private final BinaryInputStream in;
 
-    /** Class loaded. */
+    /** Class loader. */
     private final ClassLoader ldr;
 
     /** */
@@ -183,7 +183,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
-     * @param hnds Context.
+     * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
     public BinaryReaderExImpl(BinaryContext ctx,
@@ -205,7 +205,7 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
-     * @param hnds Context.
+     * @param hnds Reader handles or {@code null} to start a new handles context.
      * @param skipHdrCheck Whether to skip header check.
      * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
@@ -1318,7 +1318,16 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
 
     /** {@inheritDoc} */
     @Nullable @Override public Object readObjectDetached(boolean deserialize) throws BinaryObjectException {
-        return unmarshal(in, ctx, ldr, new BinaryReaderHandlesHolder(null), true, deserialize);
+        BinaryReaderHandles prevHnds = hnds;
+
+        hnds = null;
+
+        try {
+            return unmarshal(in, ctx, ldr, this, true, deserialize);
+        }
+        finally {
+            hnds = prevHnds;
+        }
     }
 
     /** {@inheritDoc} */
@@ -2066,67 +2075,67 @@ public final class BinaryReaderExImpl extends BinaryReaderHandlesHolder implemen
                 return readDouble();
 
             case GridBinaryMarshaller.STRING:
-                return BinaryUtils.doReadString(in());
+                return BinaryUtils.doReadString(in);
 
             case GridBinaryMarshaller.DECIMAL:
-                return doReadDecimal(in());
+                return doReadDecimal(in);
 
             case GridBinaryMarshaller.UUID:
-                return doReadUuid(in());
+                return doReadUuid(in);
 
             case GridBinaryMarshaller.TIME:
-                return doReadTime(in());
+                return doReadTime(in);
 
             case GridBinaryMarshaller.TIMESTAMP:
-                return doReadTimestamp(in());
+                return doReadTimestamp(in);
 
             case GridBinaryMarshaller.DATE:
-                return doReadDate(in());
+                return doReadDate(in);
 
             case GridBinaryMarshaller.BOOLEAN_ARR:
-                return doReadBooleanArray(in());
+                return doReadBooleanArray(in);
 
             case GridBinaryMarshaller.BYTE_ARR:
-                return BinaryUtils.doReadByteArray(in());
+                return BinaryUtils.doReadByteArray(in);
 
             case GridBinaryMarshaller.CHAR_ARR:
-                return doReadCharArray(in());
+                return doReadCharArray(in);
 
             case GridBinaryMarshaller.SHORT_ARR:
-                return doReadShortArray(in());
+                return doReadShortArray(in);
 
             case GridBinaryMarshaller.INT_ARR:
-                return doReadIntArray(in());
+                return doReadIntArray(in);
 
             case GridBinaryMarshaller.LONG_ARR:
-                return doReadLongArray(in());
+                return doReadLongArray(in);
 
             case GridBinaryMarshaller.FLOAT_ARR:
-                return doReadFloatArray(in());
+                return doReadFloatArray(in);
 
             case GridBinaryMarshaller.DOUBLE_ARR:
-                return doReadDoubleArray(in());
+                return doReadDoubleArray(in);
 
             case GridBinaryMarshaller.STRING_ARR:
-                return BinaryUtils.doReadStringArray(in());
+                return BinaryUtils.doReadStringArray(in);
 
             case GridBinaryMarshaller.DECIMAL_ARR:
-                return doReadDecimalArray(in());
+                return doReadDecimalArray(in);
 
             case GridBinaryMarshaller.UUID_ARR:
-                return doReadUuidArray(in());
+                return doReadUuidArray(in);
 
             case GridBinaryMarshaller.TIME_ARR:
-                return doReadTimeArray(in());
+                return doReadTimeArray(in);
 
             case GridBinaryMarshaller.TIMESTAMP_ARR:
-                return doReadTimestampArray(in());
+                return doReadTimestampArray(in);
 
             case GridBinaryMarshaller.DATE_ARR:
-                return doReadDateArray(in());
+                return doReadDateArray(in);
 
             default:
-                in().position(in().position() - 1);
+                in.position(in.position() - 1);
 
                 if (binObjAllow) {
                     Object res = readObjectDetached();

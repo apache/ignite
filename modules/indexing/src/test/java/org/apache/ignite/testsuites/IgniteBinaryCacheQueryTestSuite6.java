@@ -18,13 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AffinityAliasKeyTest;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapBatchIndexingMultiTypeTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.IgniteBinaryObjectFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDeleteSqlQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheDuplicateEntityConfigurationSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinPartitionedAndReplicatedCollocationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheJoinQueryWithAffinityKeyTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapEvictQueryTest;
@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteSqlBigIntegerKeyTest;
 import org.apache.ignite.internal.processors.query.h2.sql.SqlUnsupportedSelfTest;
 import org.apache.ignite.internal.sql.SqlParserCreateIndexSelfTest;
+import org.apache.ignite.internal.sql.SqlParserKillLockSelfTest;
 import org.apache.ignite.internal.sql.SqlParserKillQuerySelfTest;
 import org.apache.ignite.internal.sql.SqlParserSetStreamingSelfTest;
 import org.apache.ignite.internal.sql.SqlParserViewSelfTest;
@@ -100,6 +101,7 @@ import org.junit.runners.Suite;
     SqlParserCreateIndexSelfTest.class,
     SqlParserSetStreamingSelfTest.class,
     SqlParserKillQuerySelfTest.class,
+    SqlParserKillLockSelfTest.class,
     SqlParserViewSelfTest.class,
     ClientConnectorConfigurationValidationSelfTest.class,
     SqlSchemaSelfTest.class,
@@ -119,7 +121,7 @@ import org.junit.runners.Suite;
     IgniteCacheSqlQueryErrorSelfTest.class,
     IgniteCacheSqlDmlErrorSelfTest.class,
     SqlUnsupportedSelfTest.class,
-    IgniteCacheDuplicateEntityConfigurationSelfTest.class,
+    CacheConfigurationQueryEntityTest.class,
     IncorrectQueryEntityTest.class,
     IgniteDynamicSqlRestoreTest.class,
     IgniteSqlSplitterSelfTest.class,

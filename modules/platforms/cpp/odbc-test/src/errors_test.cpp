@@ -26,7 +26,6 @@
 #include <string>
 #include <algorithm>
 
-#include <boost/regex.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
@@ -192,7 +191,23 @@ BOOST_AUTO_TEST_CASE(TestSyntaxError)
 {
     StartAdditionalNode("Node1");
 
-    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
+
+    SQLCHAR req[] = "INSERT INTO TestType(_key VALUES(1)";
+
+    SQLRETURN ret;
+
+    ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "42000");
+}
+
+BOOST_AUTO_TEST_CASE(TestColumnNotFound)
+{
+    StartAdditionalNode("Node1");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
 
     SQLCHAR req[] = "INSERT INTO TestType(_key, fasf) VALUES(1, 'some')";
 
@@ -201,7 +216,23 @@ BOOST_AUTO_TEST_CASE(TestSyntaxError)
     ret = SQLExecDirect(stmt, req, SQL_NTS);
 
     BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
-    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "42000");
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "42S22");
+}
+
+BOOST_AUTO_TEST_CASE(TestSchemaNotFound)
+{
+    StartAdditionalNode("Node1");
+
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=PUBLIC");
+
+    SQLCHAR req[] = "SELECT * FROM \"NoSuchSchema\".UNKNOWN_TABLE";
+
+    SQLRETURN ret;
+
+    ret = SQLExecDirect(stmt, req, SQL_NTS);
+
+    BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+    BOOST_CHECK_EQUAL(GetOdbcErrorState(SQL_HANDLE_STMT, stmt), "3F000");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

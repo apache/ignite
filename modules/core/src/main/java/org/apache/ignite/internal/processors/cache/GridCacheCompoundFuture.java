@@ -29,9 +29,6 @@ public abstract class GridCacheCompoundFuture<T, R> extends GridCompoundFuture<T
     /** Future start time. */
     private final long startTime = U.currentTimeMillis();
 
-    /** Future end time. */
-    private volatile long endTime;
-
     /**
      * @param rdc Reducer.
      */
@@ -42,22 +39,5 @@ public abstract class GridCacheCompoundFuture<T, R> extends GridCompoundFuture<T
     /** {@inheritDoc} */
     @Override public long startTime() {
         return startTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long duration() {
-        long endTime = this.endTime;
-
-        return (endTime == 0 ? U.currentTimeMillis() : endTime) - startTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
-        if (super.onDone(res, err, cancel)) {
-            endTime = U.currentTimeMillis();
-            return true;
-        }
-
-        return false;
     }
 }

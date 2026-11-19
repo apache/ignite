@@ -345,19 +345,12 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     }
 
     /**
-     * @return Entries.
-     */
-    public Collection<GridDhtCacheEntry> entries() {
-        return F.view(entries, F.notNull());
-    }
-
-    /**
      * Need of synchronization here is explained in the field's {@link GridDhtLockFuture#entries} comment.
      *
      * @return Copy of entries collection.
      */
     private synchronized Collection<GridDhtCacheEntry> entriesCopy() {
-        return new ArrayList<>(entries());
+        return new ArrayList<>(entries);
     }
 
     /**
@@ -436,7 +429,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             lockVer,
             null,
             lockTimeout(),
-            /*reenter*/false,
             inTx(),
             implicitSingle(),
             false
@@ -455,10 +447,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         synchronized (this) {
-            entries.add(c == null || c.reentry() ? null : entry);
+            entries.add(entry);
 
-            if (c != null && !c.reentry())
-                pendingLocks.add(entry.key());
+            pendingLocks.add(entry.key());
         }
 
         // Double check if the future has already timed out.
@@ -628,9 +619,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             while (true) {
                 GridDistributedCacheEntry entry = entries.get(i);
 
-                if (entry == null)
-                    break; // While.
-
                 try {
                     CacheLockCandidates owners = entry.readyLock(lockVer);
 
@@ -706,7 +694,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             }
 
             if (isEmpty)
-                map(entries());
+                map(entries);
 
             return true;
         }

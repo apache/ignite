@@ -28,7 +28,7 @@
                     <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
                         <property name="persistenceEnabled" value="true"/>
 
-                        <!-- enable mertrics for the default data region -->
+                        <!-- enable metrics for the default data region -->
                         <!--property name="metricsEnabled" value="true"/-->
                         <!-- other properties -->
                     </bean>

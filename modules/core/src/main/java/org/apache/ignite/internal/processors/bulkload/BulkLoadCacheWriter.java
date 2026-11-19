@@ -24,6 +24,9 @@ import org.apache.ignite.lang.IgniteInClosure;
  * A proxy, which stores given key+value pair to a cache.
  */
 public abstract class BulkLoadCacheWriter implements IgniteInClosure<IgniteBiTuple<?, ?>>, AutoCloseable {
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = -7675353958190114556L;
+
     /**
      * Returns number of entry updates made by the writer.
      *

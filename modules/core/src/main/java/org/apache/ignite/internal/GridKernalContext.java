@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -297,6 +298,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Port processor.
      */
     public GridPortProcessor ports();
+
+    /** */
+    public SslFactoryRegistry ssl();
 
     /**
      * Gets schedule processor.

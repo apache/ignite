@@ -545,8 +545,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param tx Transaction.
      * @param isRead {@code True} for read operations.
      * @param retval Flag to return value.
-     * @param isolation Transaction isolation.
-     * @param invalidate Invalidate flag.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @return Locks future.
@@ -558,8 +556,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteTxLocalEx tx,
         boolean isRead,
         boolean retval,
-        TransactionIsolation isolation,
-        boolean invalidate,
         long createTtl,
         long accessTtl);
 
@@ -3163,8 +3159,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             tx,
             /*isRead*/true,
             /*retval*/false,
-            tx.isolation(),
-            /*invalidate*/false,
             /*createTtl*/0L,
             /*accessTtl*/0L);
 
@@ -6129,6 +6123,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      */
     protected abstract static class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
+        /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = 3734584972859205191L;
+
         /** */
         protected final CacheMetricsImpl metrics;
 

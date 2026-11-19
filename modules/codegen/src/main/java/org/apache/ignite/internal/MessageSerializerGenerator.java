@@ -388,7 +388,14 @@ public class MessageSerializerGenerator extends MessageCompanionGenerator {
         code.add(EMPTY);
 
         if (hasGatedFields(fields)) {
+            code.add(indentedLine("if (!rawFields.isEmpty())"));
+
+            indent++;
+
             code.add(indentedLine("rawFields.removeIf(f -> consumeKnownField(msg, f, reader, ctx));"));
+
+            indent--;
+
             code.add(EMPTY);
         }
 
