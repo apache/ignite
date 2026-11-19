@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -30,6 +30,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -200,13 +201,13 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Tests that creating a cache with this schema name does not create SCHEMA_INJECTED,
-     * and a row is readable through that schema.
+     * Tests that a schema name with a quote does not create SCHEMA_INJECTED,
+     * a row is readable through that schema, and destroying the cache drops the schema.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testSchemaNameIsNotExecuted() throws Exception {
+    public void testSchemaNameWithQuote() throws Exception {
         startGrid(0);
 
         String schemaName = "A\";CREATE TABLE PUBLIC.SCHEMA_INJECTED(ID INT);--";
@@ -225,16 +226,22 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
 
         assertEquals(1, rows.size());
         assertEquals("v", rows.get(0).get(0));
+
+        ignite(0).destroyCache(cache.getName());
+
+        assertH2TableAbsent("SCHEMA_INJECTED");
+
+        assertFalse("Schema is not dropped in H2", h2SchemaExists(schemaName));
     }
 
     /**
-     * Tests that creating a cache with this table name does not create TABLE_INJECTED,
-     * and a row is readable through that table.
+     * Tests that a table name with a quote does not create TABLE_INJECTED,
+     * a row is readable through that table, and destroying the cache drops the table.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testTableNameIsNotExecuted() throws Exception {
+    public void testTableNameWithQuote() throws Exception {
         startGrid(0);
 
         String tblName = "A\";CREATE TABLE PUBLIC.TABLE_INJECTED(ID INT);--";
@@ -260,19 +267,135 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
 
         assertEquals(1, rows.size());
         assertEquals("v", rows.get(0).get(0));
+
+        ignite(0).destroyCache(cache.getName());
+
+        assertH2TableAbsent("TABLE_INJECTED");
+
+        assertFalse("Table is not dropped in H2", h2TableExists(tblName));
+    }
+
+    /**
+     * Tests that creating a cache with this column name does not create COLUMN_INJECTED,
+     * the index on that column is created, and a row is readable through that column.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testColumnNameWithQuote() throws Exception {
+        startGrid(0);
+
+        String colName = "C\" VARCHAR);CREATE TABLE PUBLIC.COLUMN_INJECTED(ID INT);--";
+
+        String quotedCol = "\"" + colName.replace("\"", "\"\"") + "\"";
+
+        QueryEntity entity = new QueryEntity(Integer.class.getName(), Fact.class.getName())
+            .setTableName("FACT")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), colName)
+            .setIndexes(Collections.singletonList(new QueryIndex("name").setName("NAME_IDX")));
+
+        IgniteCache<Integer, Fact> cache = ignite(0).createCache(new CacheConfiguration<Integer, Fact>("colCache")
+            .setSqlSchema("COL_SCHEMA")
+            .setQueryEntities(Collections.singletonList(entity)));
+
+        assertH2TableAbsent("COLUMN_INJECTED");
+
+        assertTrue("Index is not created in H2", h2IndexExists("COL_SCHEMA", "NAME_IDX"));
+
+        cache.put(1, new Fact(1, "v"));
+
+        List<List<?>> rows = cache.query(new SqlFieldsQuery(
+            "select " + quotedCol + " from COL_SCHEMA.FACT where " + quotedCol + " = ?").setArgs("v")).getAll();
+
+        assertEquals(1, rows.size());
+        assertEquals("v", rows.get(0).get(0));
+    }
+
+    /**
+     * Tests that creating and dropping an index with this name does not create INDEX_INJECTED,
+     * and the index is created and dropped in H2.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testIndexNameWithQuote() throws Exception {
+        startGrid(0);
+
+        String idxName = "I\";CREATE TABLE PUBLIC.INDEX_INJECTED(ID INT);--";
+
+        String quotedIdx = "\"" + idxName.replace("\"", "\"\"") + "\"";
+
+        QueryEntity entity = new QueryEntity(Integer.class.getName(), Fact.class.getName())
+            .setTableName("FACT")
+            .addQueryField("id", Integer.class.getName(), null)
+            .addQueryField("name", String.class.getName(), null)
+            .setIndexes(Collections.singletonList(new QueryIndex("name").setName(idxName)));
+
+        IgniteCache<Integer, Fact> cache = ignite(0).createCache(new CacheConfiguration<Integer, Fact>("idxCache")
+            .setSqlSchema("IDX_SCHEMA")
+            .setQueryEntities(Collections.singletonList(entity)));
+
+        assertH2TableAbsent("INDEX_INJECTED");
+
+        assertTrue("Index is not created in H2", h2IndexExists("IDX_SCHEMA", idxName));
+
+        cache.query(new SqlFieldsQuery("DROP INDEX IDX_SCHEMA." + quotedIdx)).getAll();
+
+        assertH2TableAbsent("INDEX_INJECTED");
+
+        assertFalse("Index is not dropped in H2", h2IndexExists("IDX_SCHEMA", idxName));
     }
 
     /**
      * @param tblName Table name.
      */
     private void assertH2TableAbsent(String tblName) throws Exception {
+        assertFalse("Unexpected H2 table: " + tblName, h2TableExists(tblName));
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @return {@code True} if H2 has the schema.
+     */
+    private boolean h2SchemaExists(String schemaName) throws Exception {
+        return h2RowExists(
+            "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?",
+            schemaName);
+    }
+
+    /**
+     * @param tblName Table name.
+     * @return {@code True} if H2 has the table.
+     */
+    private boolean h2TableExists(String tblName) throws Exception {
+        return h2RowExists(
+            "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?",
+            tblName);
+    }
+
+    /**
+     * @param schemaName Schema name.
+     * @param idxName Index name.
+     * @return {@code True} if H2 has the index.
+     */
+    private boolean h2IndexExists(String schemaName, String idxName) throws Exception {
+        return h2RowExists(
+            "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.INDEXES WHERE TABLE_SCHEMA = ? AND INDEX_NAME = ?",
+            schemaName, idxName);
+    }
+
+    /** */
+    private boolean h2RowExists(String sql, String... args) throws Exception {
         IgniteH2Indexing idx = (IgniteH2Indexing)ignite(0).context().query().getIndexing();
 
-        try (H2PooledConnection conn = idx.connections().connection()) {
-            try (Statement stmt = conn.connection().createStatement();
-                 ResultSet rs = stmt.executeQuery(
-                     "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '" + tblName + "'")) {
-                assertFalse(rs.next());
+        try (H2PooledConnection conn = idx.connections().connection();
+             PreparedStatement stmt = conn.connection().prepareStatement(sql)) {
+            for (int i = 0; i < args.length; i++)
+                stmt.setString(i + 1, args[i]);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
             }
         }
     }
