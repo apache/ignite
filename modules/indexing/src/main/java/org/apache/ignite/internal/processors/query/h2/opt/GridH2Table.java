@@ -1127,11 +1127,11 @@ public class GridH2Table extends TableBase {
 
             // And now, let's add new columns
             for (QueryField col : cols) {
-                if (doesColumnExist(col.name()))
+                if (doesColumnExist(col.alias()))
                     return;
 
                 try {
-                    Column c = new Column(col.name(), DataType.getTypeFromClass(Class.forName(col.typeName())));
+                    Column c = new Column(col.alias(), DataType.getTypeFromClass(Class.forName(col.typeName())));
 
                     c.setNullable(col.isNullable());
 
