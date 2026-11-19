@@ -462,7 +462,7 @@ public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexi
                         SchemaOperationException opEx = e.getCause(SchemaOperationException.class);
 
                         assertEquals(SchemaOperationException.CODE_CACHE_ALREADY_INDEXED, opEx.code());
-                        assertEquals("Cache is already indexed: " + POI_CACHE_NAME, opEx.getMessage());
+                        assertEquals("Cache is already indexed (already supports SQL): " + POI_CACHE_NAME, opEx.getMessage());
                     }
 
                     return null;
