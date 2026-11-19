@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
@@ -199,5 +200,39 @@ public class CommunicationTcpUtils {
             "rmtNode=" + nodeToFail +
             ", err=" + err +
             ", connectErrs=" + X.getSuppressedList(err) + ']');
+    }
+
+    /**
+     * Calculates the total timeout that bounds the repeated connection attempts to the node (each
+     * attempt consisting of a socket connect, a TCP handshake and the NIO session registration): the
+     * failure detection timeout if it is enabled, otherwise the total backoff timeout of the connection
+     * timeout strategy.
+     *
+     * <p>This is a budget over the repeated attempts, not a single end-to-end deadline of one attempt:
+     * the socket connect is bounded by its own connect timeout, and the deadline covering the TCP
+     * handshake and the NIO session registration is armed after the connect with the window the backoff
+     * strategy allocated to it.
+     *
+     * <p>The client pool uses the same value as the total reserve budget of a client reservation:
+     * this bounds the waits for connection attempts within a reservation, but does not bound time
+     * spent inside a synchronous connection requestor call, whose duration is outside the pool's
+     * control.
+     *
+     * @param cfg           SPI configuration.
+     * @param stateProvider Cluster state provider.
+     * @param node          Target node.
+     * @return Total timeout in milliseconds.
+     */
+    public static long totalConnectionEstablishmentTimeout(
+        TcpCommunicationConfiguration cfg,
+        ClusterStateProvider stateProvider,
+        ClusterNode node
+    ) {
+        return cfg.failureDetectionTimeoutEnabled()
+            ? (node.isClient() ? stateProvider.clientFailureDetectionTimeout() : cfg.failureDetectionTimeout())
+            : ExponentialBackoffTimeoutStrategy.totalBackoffTimeout(
+            cfg.connectionTimeout(),
+            cfg.maxConnectionTimeout(),
+            cfg.reconCount());
     }
 }

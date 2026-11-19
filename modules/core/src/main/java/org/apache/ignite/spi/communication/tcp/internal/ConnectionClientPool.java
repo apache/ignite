@@ -156,11 +156,23 @@ public class ConnectionClientPool {
     /** Stopping flag (set to {@code true} when SPI gets stopping signal). */
     private volatile boolean stopping = false;
 
+    /**
+     * Lock that orders the pool's {@link #stop()} with the two critical phases of
+     * {@link #reserveClient(ClusterNode, int)}: the insertion of a new connect future (the stop check
+     * and the insertion happen under the lock, so a future can never end up in the pool after the stop
+     * without the stop having completed it) and the publication of a newly established client (the
+     * creating thread decides under the lock whether its client may be handed out through the shared
+     * future at all, and publishes it only if the stop has not started in between). {@link #stop()}
+     * itself sets the {@link #stopping} flag and completes the still pending connect futures under the
+     * same lock.
+     */
+    private final Object stopLock = new Object();
+
     /** Scheduled executor service which closed the socket if handshake timeout is out. **/
     private final ScheduledExecutorService handshakeTimeoutExecutorService;
 
     /** Enable forcible node kill. */
-    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
+    private final boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /** */
@@ -185,7 +197,7 @@ public class ConnectionClientPool {
         TcpCommunicationConfiguration cfg,
         AttributeNames attrs,
         IgniteLogger log,
-        TcpCommunicationMetricsListener metricsLsnr,
+        @Nullable TcpCommunicationMetricsListener metricsLsnr,
         Supplier<ClusterNode> locNodeSupplier,
         Function<UUID, ClusterNode> nodeGetter,
         Supplier<MessageFormatter> msgFormatterSupplier,
@@ -227,20 +239,25 @@ public class ConnectionClientPool {
      *
      */
     public void stop() {
-        this.stopping = true;
+        // Set the flag and complete the still pending connect futures under the stop lock: a creating
+        // thread decides under the same lock whether its client may be handed out through the shared
+        // future at all, so the shutdown's future completions must be ordered with that decision — a
+        // future this method completes here can never be completed with a client afterwards.
+        synchronized (stopLock) {
+            stopping = true;
+
+            for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
+                // First completion wins: if the creating thread completed the future first, this call
+                // has no effect.
+                fut.onDone(new IgniteSpiException("SPI is being stopped."));
+            }
+        }
 
         metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
 
         metrics.values().forEach(NodeConnectionMetrics::unregister);
 
         metrics.clear();
-
-        for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
-            if (fut instanceof ConnectionRequestFuture) {
-                // There's no way it would be done by itself at this point.
-                fut.onDone(new IgniteSpiException("SPI is being stopped."));
-            }
-        }
 
         handshakeTimeoutExecutorService.shutdown();
     }
@@ -277,6 +294,20 @@ public class ConnectionClientPool {
             if (log.isDebugEnabled())
                 log.debug("The node client is going to reserve a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + "]");
 
+            // Total budget for the whole reservation: the same overall timeout that bounds a connection
+            // establishment, so that threads waiting on a connect future are released within that budget
+            // instead of blocking indefinitely. The budget bounds only the time spent waiting for a
+            // connection to be established; a client that already exists is returned regardless of the
+            // budget. The wait for a peer-initiated (inverse) connection after a failed direct attempt is
+            // not covered by this budget: it has its own bounded window, because the failed direct
+            // attempts have already consumed it.
+            long totalReserveTimeout =
+                CommunicationTcpUtils.totalConnectionEstablishmentTimeout(cfg, clusterStateProvider, node);
+
+            // Use a monotonic clock for the budget: the system wall clock can be adjusted, which would make
+            // the elapsed-time based give-up check unreliable.
+            long reserveStartNanos = System.nanoTime();
+
             while (true) {
                 GridCommunicationClient[] curClients = clients.get(nodeId);
 
@@ -284,15 +315,49 @@ public class ConnectionClientPool {
                     curClients[connIdx] : null;
 
                 if (client == null) {
-                    if (stopping)
-                        throw new IgniteSpiException("Node is stopping.");
+                    // The reserve budget bounds waiting for a connection to be established, not the
+                    // availability of an existing client: check it only when no client is available, so
+                    // that a client established by a concurrent thread in the meantime is returned even
+                    // if the budget has already elapsed.
+                    if (reserveElapsedMillis(reserveStartNanos) >= totalReserveTimeout)
+                        throw reserveTimeoutException(node, totalReserveTimeout);
 
                     // Do not allow concurrent connects.
                     GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
 
                     ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
 
-                    GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
+                    // The stop check and the connect-future insertion must be ordered with stop(),
+                    // which sets the stopping flag and completes the still pending connect futures
+                    // under the same lock: either this thread sees the flag and bails out before
+                    // inserting its future, or stop() sees the inserted future and completes it with
+                    // the stop error — a connect future can never be left in the pool after the stop
+                    // without the stop having completed it, so every thread waiting on a connect
+                    // future is released by the stop.
+                    GridFutureAdapter<GridCommunicationClient> oldFut;
+
+                    synchronized (stopLock) {
+                        if (stopping)
+                            throw new IgniteSpiException("Node is stopping.");
+
+                        oldFut = clientFuts.putIfAbsent(connKey, fut);
+                    }
+
+                    // Client established by this thread itself. When the thread reserving a connection is also
+                    // the one that creates it, it can return that client directly instead of waiting on the
+                    // shared future. The establishment already respected the connection deadline, so re-entering
+                    // the wait/budget loop below (meant for threads waiting on another thread's future) could only
+                    // reject a valid client once the reservation budget has elapsed. The fast path is taken only
+                    // when this thread won the completion race for the shared future: the client is published
+                    // only after that completion, so a concurrent waiter can never take a client whose future
+                    // was completed with a stop error; if stop() completed it first, the client is dropped and
+                    // closed without ever being published, and the error carried by the future is propagated.
+                    GridCommunicationClient ownClient = null;
+
+                    // Set when the pool's stop() has started right after this thread won the completion
+                    // race for the shared connect future: the client is dropped and closed instead of
+                    // being published, and the stop is reported to the caller.
+                    boolean stopRaceWon = false;
 
                     if (oldFut == null) {
                         try {
@@ -305,19 +370,18 @@ public class ConnectionClientPool {
                                 client0 = createCommunicationClient(node, connIdx);
 
                                 if (client0 != null) {
-                                    addNodeClient(node, connIdx, client0);
-
-                                    if (client0 instanceof GridTcpNioCommunicationClient) {
-                                        GridTcpNioCommunicationClient tcpClient = ((GridTcpNioCommunicationClient)client0);
-
-                                        if (tcpClient.session().closeTime() > 0 && removeNodeClient(nodeId, client0)) {
-                                            if (log.isDebugEnabled()) {
-                                                log.debug("Session was closed after client creation, will retry " +
-                                                    "[node=" + node + ", client=" + client0 + ']');
-                                            }
-
-                                            client0 = null;
+                                    if (client0 instanceof GridTcpNioCommunicationClient
+                                        && ((GridTcpNioCommunicationClient)client0).session().closeTime() > 0) {
+                                        // The session was closed after client creation: drop the client before
+                                        // it can be published and retry the establishment.
+                                        if (log.isDebugEnabled()) {
+                                            log.debug("Session was closed after client creation, will retry " +
+                                                "[node=" + node + ", client=" + client0 + ']');
                                         }
+
+                                        client0.forceClose();
+
+                                        client0 = null;
                                     }
                                 }
                                 else {
@@ -329,12 +393,58 @@ public class ConnectionClientPool {
                                 }
                             }
 
-                            fut.onDone(client0);
+                            // The publication decision — whether this client may be handed out through
+                            // the shared future at all — must fall before the future is completed, and
+                            // the decision together with the completion and the publication is
+                            // coordinated with stop() by the stop lock: stop() sets the stopping flag
+                            // and completes the still pending connect futures under the same lock, so
+                            // either the decision happens before the stop (the future is completed with
+                            // the client, the client is published, and a concurrent waiter may take it)
+                            // or the stop happens before the decision (the future is never completed
+                            // with this client, which is dropped and closed, and the wait loop below
+                            // propagates the outcome the future carries). A waiter can therefore never
+                            // take a client that the creating thread closes afterwards, and the node
+                            // client slot only ever holds a client whose creator completed the future
+                            // successfully.
+                            synchronized (stopLock) {
+                                if (stopping) {
+                                    if (client0 != null)
+                                        client0.forceClose();
+
+                                    stopRaceWon = true;
+                                }
+                                else if (fut.onDone(client0)) {
+                                    if (client0 != null) {
+                                        GridCommunicationClient published = addNodeClient(node, connIdx, client0);
+
+                                        if (published != client0)
+                                            // A concurrent establishment claimed the slot before this client could
+                                            // be published: the shared future already carries this client, so this
+                                            // thread adopts the published client, and a waiter still holding this
+                                            // one finds it closed (if it wrapped a different session) and
+                                            // re-reserves to the published client.
+                                            client0 = published;
+                                    }
+
+                                    ownClient = client0;
+                                }
+                                else if (client0 != null)
+                                    client0.forceClose();
+                            }
                         }
                         catch (NodeUnreachableException e) {
                             log.warning(e.getMessage());
 
                             fut = handleUnreachableNodeException(node, connIdx, fut, e);
+
+                            // The method returns only if the inverse connection has been established within
+                            // its own bounded wait window, so the returned future is already done: take the
+                            // client directly, like the own-client fast path above, instead of re-entering
+                            // the wait/budget loop below. That loop bounds threads waiting on another
+                            // thread's in-progress connection; the reservation budget has already been
+                            // consumed by the failed direct attempts, so re-entering it would reject a
+                            // valid client.
+                            ownClient = fut.get();
                         }
                         catch (Throwable e) {
                             if (e instanceof NodeUnreachableException)
@@ -355,33 +465,85 @@ public class ConnectionClientPool {
                     else
                         fut = oldFut;
 
-                    long clientReserveWaitTimeout = registry != null ? registry.getSystemWorkerBlockedTimeout() / 3
-                        : cfg.connectionTimeout() / 3;
+                    // The pool's stop() has started right after this thread won the completion race for
+                    // the shared connect future: the client was dropped instead of being published, so
+                    // report the stop instead of returning it — the wait loop below must not hand out
+                    // the client the future carries.
+                    if (stopRaceWon)
+                        throw new IgniteSpiException("SPI is being stopped.");
 
-                    long currTimeout = System.currentTimeMillis();
+                    if (ownClient != null)
+                        client = ownClient;
 
-                    // This cycle will eventually quit when future is completed by concurrent thread reserving client.
-                    while (true) {
-                        try {
-                            client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
+                    if (client == null) {
+                        long perWaitTimeout = registry != null ?
+                            registry.getSystemWorkerBlockedTimeout() / 3 : cfg.connectionTimeout() / 3;
 
-                            break;
-                        }
-                        catch (IgniteFutureTimeoutCheckedException ignored) {
-                            currTimeout += clientReserveWaitTimeout;
+                        long currTimeout = System.currentTimeMillis();
 
-                            if (log.isDebugEnabled()) {
-                                log.debug(
-                                    "Still waiting for reestablishing connection to node " +
-                                        "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
-                                );
+                        // This cycle will eventually quit when future is completed by concurrent thread reserving client.
+                        while (true) {
+                            // A concurrent thread may have established the client while this thread was
+                            // waiting: return it instead of waiting further or giving up, even if the
+                            // reserve budget has already elapsed — the budget bounds waiting for a
+                            // connection, not the availability of an existing client.
+                            GridCommunicationClient[] curClients0 = clients.get(nodeId);
+
+                            GridCommunicationClient curClient = curClients0 != null && connIdx < curClients0.length ?
+                                curClients0[connIdx] : null;
+
+                            if (curClient != null) {
+                                client = curClient;
+
+                                break;
                             }
 
-                            if (registry != null) {
-                                GridWorker wrkr = registry.worker(Thread.currentThread().getName());
+                            // Recompute the remaining budget on every iteration and cap the individual
+                            // wait by it, so that the total reserve budget is enforced even when a single
+                            // wait would overshoot it. When the per-wait timeout is not configured (0),
+                            // e.g. because the system worker blocked timeout is set to a non-positive
+                            // value, wait the full remaining budget instead of aborting before it has
+                            // elapsed.
+                            long remainingReserveBudget = totalReserveTimeout - reserveElapsedMillis(reserveStartNanos);
 
-                                if (wrkr != null)
-                                    wrkr.updateHeartbeat();
+                            long clientReserveWaitTimeout = perWaitTimeout > 0 ?
+                                Math.min(perWaitTimeout, remainingReserveBudget) : remainingReserveBudget;
+
+                            if (clientReserveWaitTimeout <= 0) {
+                                // The budget is exhausted: if the future completed in the meantime,
+                                // propagate the outcome it carries — the error the connection
+                                // establishment produced — instead of the generic reserve timeout,
+                                // which would mask the real cause.
+                                if (fut.isDone()) {
+                                    client = fut.get();
+
+                                    break;
+                                }
+
+                                throw reserveTimeoutException(node, totalReserveTimeout);
+                            }
+
+                            try {
+                                client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
+
+                                break;
+                            }
+                            catch (IgniteFutureTimeoutCheckedException ignored) {
+                                currTimeout += clientReserveWaitTimeout;
+
+                                if (log.isDebugEnabled()) {
+                                    log.debug(
+                                        "Still waiting for reestablishing connection to node " +
+                                            "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
+                                    );
+                                }
+
+                                if (registry != null) {
+                                    GridWorker wrkr = registry.worker(Thread.currentThread().getName());
+
+                                    if (wrkr != null)
+                                        wrkr.updateHeartbeat();
+                                }
                             }
                         }
                     }
@@ -417,10 +579,39 @@ public class ConnectionClientPool {
     }
 
     /**
+     * @param startNanos Monotonic start timestamp from {@link System#nanoTime()}.
+     * @return Elapsed time in milliseconds, computed from the monotonic clock only.
+     */
+    private static long reserveElapsedMillis(long startNanos) {
+        return (System.nanoTime() - startNanos) / 1_000_000L;
+    }
+
+    /**
+     * @param node                Node to reserve a client to.
+     * @param totalReserveTimeout Total reserve budget in milliseconds.
+     * @return Exception that reports the exhausted reserve budget.
+     */
+    private static IgniteSpiException reserveTimeoutException(ClusterNode node, long totalReserveTimeout) {
+        return new IgniteSpiException("Failed to reserve a client to node " + node + " within " +
+            totalReserveTimeout + " ms");
+    }
+
+    /**
      * Handles {@link NodeUnreachableException}. This means that the method will try to trigger client itself to open connection.
      * The only possible way of doing this is to use {@link TcpCommunicationConfiguration#connectionRequestor()}'s trigger and wait.
      * Specifics of triggers implementation technically should be considered unknown, but for now it's not true and we
      * expect that {@link NodeUnreachableException} won't be thrown in {@link IgniteDiscoveryThread}.
+     *
+     * <p>The wait for the peer-initiated (inverse) connection is bounded by its own window (the failure
+     * detection timeout, or the connection timeout when the failure detection timeout is disabled)
+     * instead of the reservation budget of {@link #reserveClient(ClusterNode, int)}: the failed direct
+     * connection attempts that produced the {@link NodeUnreachableException} have already consumed that
+     * budget, so capping the wait by its remainder would suppress the inverse-connection protocol
+     * altogether. The synchronous {@code connectionRequestor().request(node, connIdx)} call precedes the
+     * bounded wait and its duration is not covered by that window either, so this path relies on the
+     * requestor returning promptly ({@link ConnectionRequestor#request(ClusterNode, int)}): a requestor
+     * that blocked there indefinitely would leave the triggering thread unreleased by the reservation
+     * budget as well.</p>
      *
      * @param node Node to open connection to.
      * @param connIdx Connection index.
@@ -462,6 +653,10 @@ public class ConnectionClientPool {
             try {
                 cfg.connectionRequestor().request(node, connIdx);
 
+                // The wait for the inverse connection gets its own bounded window (the failure
+                // detection timeout, or the connection timeout when the failure detection timeout is
+                // disabled) instead of the reservation budget, which the failed direct attempts have
+                // already consumed. The request call above is not covered by this window.
                 long failTimeout = cfg.failureDetectionTimeoutEnabled()
                     ? cfg.failureDetectionTimeout()
                     : cfg.connectionTimeout();
@@ -557,11 +752,22 @@ public class ConnectionClientPool {
     }
 
     /**
+     * Adds a client to the node's client slot, unless a concurrent establishment for the same
+     * (node, connIdx) has already claimed it: an inbound connection and a parallel outgoing
+     * reservation can both reach publication for the same slot, and the first one to claim it
+     * wins. The losing client is a duplicate of the same logical connection and is disposed of:
+     * a client wrapping a different session than the winner is force-closed, so that only one
+     * live connection per (node, connIdx) remains, while a duplicate wrapper of the very same
+     * session is abandoned without closing, since closing it would close the session the
+     * winner still uses.
+     *
      * @param node Node.
      * @param connIdx Connection index.
      * @param addClient Client to add.
+     * @return The client occupying the slot after the call: {@code addClient} if it was added, or
+     *         the client that already occupied the slot.
      */
-    public void addNodeClient(ClusterNode node, int connIdx, GridCommunicationClient addClient) {
+    public GridCommunicationClient addNodeClient(ClusterNode node, int connIdx, GridCommunicationClient addClient) {
         assert cfg.connectionsPerNode() > 0 : cfg.connectionsPerNode();
         assert connIdx == addClient.connectionIndex() : addClient;
 
@@ -576,16 +782,25 @@ public class ConnectionClientPool {
             assert !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
                 || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
 
-            return;
+            return addClient;
         }
 
         for (; ; ) {
             GridCommunicationClient[] curClients = clients.get(node.id());
 
-            assert curClients == null || curClients[connIdx] == null : "Client already created [node=" + node.id() +
-                ", connIdx=" + connIdx +
-                ", client=" + addClient +
-                ", oldClient=" + curClients[connIdx] + ']';
+            GridCommunicationClient existing =
+                curClients != null && connIdx < curClients.length ? curClients[connIdx] : null;
+
+            if (existing != null) {
+                if (log.isInfoEnabled())
+                    log.info("Concurrent establishment claimed the client slot first, the duplicate is " +
+                        "disposed of [nodeId=" + node.id() + ", connIdx=" + connIdx +
+                        ", duplicate=" + addClient + ", kept=" + existing + ']');
+
+                closeDuplicateClient(addClient, existing);
+
+                return existing;
+            }
 
             GridCommunicationClient[] newClients = curClients == null
                 ? new GridCommunicationClient[cfg.connectionsPerNode()]
@@ -608,9 +823,27 @@ public class ConnectionClientPool {
                 if (log.isDebugEnabled())
                     log.debug("New node client were added [nodeId=" + node.id() + ", connIdx=" + connIdx + ", client=" + addClient + "]");
 
-                break;
+                return addClient;
             }
         }
+    }
+
+    /**
+     * Disposes of the client that lost the publication race for its (node, connIdx) slot: a
+     * client wrapping a different session than the slot's client is force-closed, a duplicate
+     * wrapper of the very same session is abandoned without closing, since closing it would
+     * close the session the winner still uses.
+     *
+     * @param duplicate Client that lost the race.
+     * @param kept Client that occupies the slot.
+     */
+    private void closeDuplicateClient(GridCommunicationClient duplicate, GridCommunicationClient kept) {
+        if (duplicate instanceof GridTcpNioCommunicationClient
+            && kept instanceof GridTcpNioCommunicationClient
+            && ((GridTcpNioCommunicationClient)duplicate).session() == ((GridTcpNioCommunicationClient)kept).session())
+            return;
+
+        duplicate.forceClose();
     }
 
     /**

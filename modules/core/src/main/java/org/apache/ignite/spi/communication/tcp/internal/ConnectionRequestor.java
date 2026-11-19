@@ -25,6 +25,11 @@ public interface ConnectionRequestor {
     /**
      * Request opening of TCP connection from node {@code node} with index {@code connIdx}.
      *
+     * <p>Implementations must return promptly: this method is invoked synchronously from the
+     * connection-reservation path ({@link ConnectionClientPool}), where its duration is not covered by
+     * the reservation budget. It is a trigger only: the bounded wait for the peer-initiated (inverse)
+     * connection to actually be established is performed separately by the caller.</p>
+     *
      * @param node Node.
      * @param connIdx Connection index.
      */
