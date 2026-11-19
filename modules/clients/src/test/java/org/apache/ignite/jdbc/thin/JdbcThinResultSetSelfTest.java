@@ -26,6 +26,7 @@ import java.net.URL;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.NClob;
@@ -1880,6 +1881,31 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
                 rs.getRow();
             }
         });
+    }
+
+    /**
+     * Tests that metadata result sets, which are created without an associated statement (stmt == null),
+     * report a usable (not closed) state, in line with {@link ResultSet#isClosed()} semantics.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMetadataResultSetIsClosed() throws Exception {
+        DatabaseMetaData meta = stmt.getConnection().getMetaData();
+
+        ResultSet rs = meta.getTables(null, null, "%", null);
+
+        // Metadata result sets are created without a statement and must be usable, not reported as closed.
+        assertFalse("Metadata result set must not be reported as closed", rs.isClosed());
+
+        // The result set must be iterable/usable.
+        while (rs.next())
+            rs.getString("TABLE_NAME");
+
+        // Explicitly closing the metadata result set must mark it as closed.
+        rs.close();
+
+        assertTrue("Explicitly closed metadata result set must be reported as closed", rs.isClosed());
     }
 
     /**
