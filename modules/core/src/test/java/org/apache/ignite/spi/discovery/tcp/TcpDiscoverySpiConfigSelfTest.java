@@ -17,11 +17,19 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import org.apache.commons.collections.CollectionUtils;
+
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  *
@@ -65,5 +73,26 @@ public class TcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<Tcp
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAddressesNoPort() throws Exception {
+        IgniteConfiguration cfg = getConfiguration();
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+        ipFinder.registerAddresses(Collections.singleton(
+                new InetSocketAddress("localhost", 0)));
+        spi.setIpFinder(ipFinder);
+        spi.setLocalPortRange(1);
+        cfg.setDiscoverySpi(spi);
+        Collection<InetSocketAddress> addresses = spi.registeredAddresses();
+        Collection<InetSocketAddress> expectedAddresses =
+                Arrays.asList(new InetSocketAddress("localhost", 47500),
+                        new InetSocketAddress("localhost", 47501));
+
+        assertTrue(CollectionUtils.isEqualCollection(addresses, expectedAddresses));
     }
 }
