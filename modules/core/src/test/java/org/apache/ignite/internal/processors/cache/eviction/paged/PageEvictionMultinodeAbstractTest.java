@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.BitSet;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,6 +31,9 @@ import org.junit.Test;
  *
  */
 public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbstractTest {
+    /** Number of entries per cache: enough data for every node to evict, a node of a partitioned cache keeps about a half of it. */
+    static final int MULTINODE_ENTRIES = ENTRIES * 3 / 2;
+
     /** Cache modes. */
     private static final CacheMode[] CACHE_MODES = {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
@@ -86,7 +90,12 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
     protected void createCacheAndTestEviction(CacheConfiguration<Object, Object> cfg) throws Exception {
         IgniteCache<Object, Object> cache = clientGrid().getOrCreateCache(cfg);
 
-        for (int i = 1; i <= ENTRIES; i++) {
+        int entries = MULTINODE_ENTRIES;
+
+        // Keys that are in the cache unless evicted.
+        BitSet keys = new BitSet(entries + 1);
+
+        for (int i = 1; i <= entries; i++) {
             ThreadLocalRandom r = ThreadLocalRandom.current();
 
             if (r.nextInt() % 5 == 0)
@@ -94,23 +103,36 @@ public abstract class PageEvictionMultinodeAbstractTest extends PageEvictionAbst
             else
                 cache.put(i, new TestObject(r.nextInt(PAGE_SIZE / 4 - 50))); // Fits in one page.
 
+            keys.set(i);
+
             if (r.nextInt() % 7 == 0)
                 cache.get(r.nextInt(i)); // Touch.
-            else if (r.nextInt() % 11 == 0)
-                cache.remove(r.nextInt(i)); // Remove.
-            else if (r.nextInt() % 13 == 0)
-                cache.put(r.nextInt(i), new TestObject(r.nextInt(PAGE_SIZE / 2))); // Update.
+            else if (r.nextInt() % 11 == 0) {
+                int key = r.nextInt(i);
 
-            if (i % (ENTRIES / 10) == 0)
+                cache.remove(key); // Remove.
+
+                keys.clear(key);
+            }
+            else if (r.nextInt() % 13 == 0) {
+                int key = r.nextInt(i);
+
+                cache.put(key, new TestObject(r.nextInt(PAGE_SIZE / 2))); // Update.
+
+                keys.set(key);
+            }
+
+            if (i % (entries / 10) == 0)
                 System.out.println(">>> Entries put: " + i);
         }
 
         int resultingSize = cache.size(CachePeekMode.PRIMARY);
 
-        System.out.println(">>> Resulting size: " + resultingSize);
+        System.out.println(">>> Resulting size: " + resultingSize + ", keys: " + keys.cardinality());
 
-        // Eviction started, no OutOfMemory occurred, success.
-        assertTrue(resultingSize < ENTRIES * 71 / 77);
+        // Eviction started (some of the keys are missing), no OutOfMemory occurred, success.
+        assertTrue("Eviction must have evicted entries [size=" + resultingSize + ", keys=" + keys.cardinality() + ']',
+            resultingSize < keys.cardinality());
 
         clientGrid().destroyCache(cfg.getName());
     }
