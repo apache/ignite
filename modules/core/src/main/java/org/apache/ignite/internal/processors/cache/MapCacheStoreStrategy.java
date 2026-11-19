@@ -110,6 +110,9 @@ public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
 
     /** Serializable {@link #map} backed cache store factory */
     public static class MapStoreFactory implements Factory<CacheStore<Object, Object>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         @Override public CacheStore<Object, Object> create() {
             return new MapCacheStore();
