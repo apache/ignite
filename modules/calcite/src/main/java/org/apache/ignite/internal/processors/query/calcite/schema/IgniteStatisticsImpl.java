@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.STATISTICS_CACHE_SIZE_TASK_FEATURE;
@@ -41,17 +42,20 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
-    /** */
-    private static final int STATS_CLI_UPDATE_THRESHOLD = 200;
+    /** Minimal interval between row count refresh attempts, in milliseconds. */
+    public static final long STATS_REFRESH_INTERVAL = 2_000;
 
     /** */
     private static final long LOCAL_CACHE_SIZE_TIMEOUT = 1_000;
 
     /** */
-    private static final long DFLT_ROW_CNT = 1_000;
+    public static final long DFLT_ROW_CNT = 1_000;
 
     /** */
-    AtomicInteger cliReqCnt = new AtomicInteger();
+    private final AtomicBoolean updateInProgress = new AtomicBoolean();
+
+    /** Time of the last row count refresh attempt, {@code 0} if there were none. */
+    volatile long lastRefreshTs;
 
     /** */
     private volatile long primaryRowCnt = DFLT_ROW_CNT;
@@ -135,15 +139,23 @@ public class IgniteStatisticsImpl implements Statistic {
      * Refreshes table stats if they are possibly outdated, must be called only in client mode.
      */
     private void refreshStatsIfNeededEx() {
-        if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
+        if (updateInProgress.compareAndSet(false, true)) {
             try {
+                if (U.currentTimeMillis() - lastRefreshTs < STATS_REFRESH_INTERVAL)
+                    return;
+
                 Long size = localCacheSize(desc.cacheInfo().cacheContext());
 
                 if (size != null)
-                    primaryRowCnt = size;
+                    primaryRowCnt = Math.max(size, DFLT_ROW_CNT);
+
+                lastRefreshTs = U.currentTimeMillis();
             }
             catch (IgniteCheckedException ignore) {
                 // No-op.
+            }
+            finally {
+                updateInProgress.set(false);
             }
         }
     }

@@ -103,7 +103,7 @@ public class IgniteStatisticsImplRollingUpgradeTest extends AbstractRollingUpgra
         CacheTableImpl tbl = (CacheTableImpl)proc.schemaHolder().schema("PUBLIC").getTable("TEST");
         IgniteStatisticsImpl stat = (IgniteStatisticsImpl)tbl.getStatistic();
 
-        stat.cliReqCnt.set(0);
+        stat.lastRefreshTs = 0;
 
         return stat.getRowCount();
     }
