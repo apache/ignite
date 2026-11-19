@@ -379,7 +379,7 @@ Key fields for IgniteConfiguration (NamedTuple):
 
 #### TcpDiscoverySpi
     Configures TCP-based discovery.
-     - Parameters: ip_finder, port (default 47500), port_range (default 100), local_address.
+     - Parameters: ip_finder, port (default 47500), port_range (default 100), local_address, network_timeout (default None, Ignite's default).
      - Type: Returns 'TCP'.
      - Behavior: Calls ip_finder.prepare_on_start() during service startup.
 
