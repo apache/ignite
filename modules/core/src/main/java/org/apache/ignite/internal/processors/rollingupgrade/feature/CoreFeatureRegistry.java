@@ -114,4 +114,16 @@ public class CoreFeatureRegistry {
 
     /** Feature that introduces the cache size estimation task for SQL statistics. */
     public static final IgniteFeature STATISTICS_CACHE_SIZE_TASK_FEATURE = new IgniteCoreFeature(5);
+
+    /**
+     * Feature that deprecates {@code GridDistributedTxFinishRequest#threadId}, {@code GridNearTxFinishResponse#nearThreadId},
+     * {@code GridNearGetRequest#ver} and {@code GridNearGetResponse#ver}.
+     */
+    public static final IgniteFeature UNUSED_CACHE_MSG_FIELDS_DEPRECATED_FEATURE = new IgniteCoreFeature(6);
+
+    /** Feature that deprecates {@code GridDistributedTxFinishRequest#taskNameHash}. */
+    public static final IgniteFeature TX_FINISH_TASK_NAME_HASH_DEPRECATED_FEATURE = new IgniteCoreFeature(7);
+
+    /** Feature that deprecates {@code GridDhtTxFinishRequest#nearNodeId}. */
+    public static final IgniteFeature DHT_TX_FINISH_NEAR_NODE_ID_DEPRECATED_FEATURE = new IgniteCoreFeature(8);
 }

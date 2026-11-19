@@ -68,11 +68,6 @@ public interface BinaryObjectEx extends BinaryObject {
         throw new UnsupportedOperationException("Not array");
     }
 
-    /** @return {@code true} if binary object stores array. */
-    public default boolean isArray() {
-        return false;
-    }
-
     /**
      * @return Enum class name.
      */

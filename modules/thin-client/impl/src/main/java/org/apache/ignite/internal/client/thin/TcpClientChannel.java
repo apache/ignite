@@ -77,6 +77,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.thin.ClientUtils.awaitFutureResult;
 import static org.apache.ignite.internal.client.thin.ClientUtils.createClientConnectionException;
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.CONNECTION_ID;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.HEARTBEAT;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.USER_ATTRIBUTES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersion.LATEST_VER;
@@ -123,6 +124,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
     /** Server node ID. */
     private volatile UUID srvNodeId;
+
+    /** Server-assigned connection ID. */
+    private volatile @Nullable Long connId;
 
     /** Server topology version. */
     private volatile AffinityTopologyVersion srvTopVer;
@@ -253,7 +257,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
         assert protocolCtx != null : "Protocol context after handshake is null";
 
-        connDesc = new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId);
+        connDesc = new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId, connId);
 
         heartbeatTimer = protocolCtx.isFeatureSupported(HEARTBEAT) && cfg.getHeartbeatEnabled()
                 ? initHeartbeat(cfg.getHeartbeatInterval())
@@ -273,9 +277,9 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** {@inheritDoc} */
     @Override public void onDisconnected(@Nullable Exception e) {
         if (e == null)
-            log.info("Client disconnected");
+            log.info("Client disconnected [srvNodeId=" + srvNodeId + ", connectionId=" + connId + ']');
         else
-            log.warning("Client disconnected: " + e.getMessage(), e);
+            log.warning("Client disconnected [srvNodeId=" + srvNodeId + ", connectionId=" + connId + "]: " + e.getMessage(), e);
 
         close(e);
     }
@@ -437,7 +441,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             return res;
         }
         catch (IgniteCheckedException e) {
-            log.warning("Failed to process response: " + e.getMessage(), e);
+            log.warning("Failed to process response [srvNodeId=" + srvNodeId + ", connectionId=" + connId
+                + ", requestId=" + reqId + "]: " + e.getMessage(), e);
 
             RuntimeException err = convertException(e);
 
@@ -473,7 +478,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                 fut.complete(res);
             }
             catch (Throwable t) {
-                log.warning("Failed to process response: " + t.getMessage(), t);
+                log.warning("Failed to process response [srvNodeId=" + srvNodeId + ", connectionId=" + connId
+                    + ", requestId=" + reqId + "]: " + t.getMessage(), t);
 
                 RuntimeException err = convertException(t);
 
@@ -738,7 +744,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             }
 
             eventListener.onHandshakeStart(new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
-                new ProtocolContext(ver).toString(), null));
+                new ProtocolContext(ver).toString(), null, null));
 
             handshakeReq(ver, user, pwd, userAttrs);
 
@@ -763,11 +769,15 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                             srvNodeId = reader.readUuid();
                         }
 
+                        if (protocolCtx.isFeatureSupported(CONNECTION_ID))
+                            connId = reader.readLong();
+
                         if (log.isDebugEnabled())
-                            log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId + ']');
+                            log.debug("Handshake succeeded [protocolVersion=" + protocolCtx.version() + ", srvNodeId=" + srvNodeId
+                                + ", connectionId=" + connId + ']');
 
                         eventListener.onHandshakeSuccess(
-                            new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId),
+                            new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), protocolCtx.toString(), srvNodeId, connId),
                             System.nanoTime() - startTime
                         );
 
@@ -806,7 +816,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
 
                         if (resultErr != null) {
                             ConnectionDescription connDesc = new ConnectionDescription(sock.localAddress(), sock.remoteAddress(),
-                                new ProtocolContext(ver).toString(), null);
+                                new ProtocolContext(ver).toString(), null, null);
 
                             long elapsedNanos = System.nanoTime() - startTime;
 
@@ -832,7 +842,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
                     err = createClientConnectionException(e, sock.remoteAddress());
 
                 eventListener.onHandshakeFail(
-                    new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null),
+                    new ConnectionDescription(sock.localAddress(), sock.remoteAddress(), new ProtocolContext(ver).toString(), null, null),
                     System.nanoTime() - startTime,
                     err
                 );
