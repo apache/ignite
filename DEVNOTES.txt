@@ -17,7 +17,7 @@ Apache Ignite Maven Build Instructions
         ./mvnw clean install -Pall-java,licenses -DskipTests
 
    or if you have to build .NET part as well, use the following command:
-   (Note that 'doxygen', `docfx`, '.NET 6 SDK', 'PowerShell' should be installed before running this command.)
+   (Note that 'doxygen', `docfx`, '.NET 10 SDK', 'PowerShell' should be installed before running this command.)
 
         ./mvnw clean install -Pall-java,licenses,build-dotnet -DskipTests -DclientDocs
 
@@ -45,7 +45,7 @@ Apache Ignite with LGPL Maven Build Instructions
         ./mvnw clean install -Pall-java,licenses -DskipTests
 
    or if you have to build .NET part as well, use the following command:
-   (Note that 'doxygen', `docfx`, '.NET 6 SDK', 'PowerShell' should be installed before running this command.)
+   (Note that 'doxygen', `docfx`, '.NET 10 SDK', 'PowerShell' should be installed before running this command.)
 
         ./mvnw clean install -Pall-java,licenses,build-dotnet -DskipTests -DclientDocs
 
