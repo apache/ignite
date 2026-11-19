@@ -41,7 +41,6 @@ import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptLattice;
 import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptMaterialization;
-import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitDef;
@@ -140,7 +139,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     private final CalciteCatalogReader catalogReader;
 
     /** */
-    private RelOptPlanner planner;
+    private VolcanoPlannerExt planner;
 
     /** */
     private SqlValidator validator;
@@ -376,6 +375,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
     /** {@inheritDoc} */
     @Override public RelNode transform(int programIdx, RelTraitSet targetTraits, RelNode rel) {
+        planner().checkCancel();
+
         return programs.get(programIdx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
@@ -388,6 +389,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      * @return The root of the new RelNode tree.
      */
     public <T extends RelNode> T transform(PlannerPhase phase, RelTraitSet targetTraits, RelNode rel) {
+        planner().checkCancel();
+
         return (T)phase.getProgram(ctx).run(planner(), rel, targetTraits.simplify(), materializations(), latices());
     }
 
@@ -397,7 +400,7 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     /** */
-    private RelOptPlanner planner() {
+    private VolcanoPlannerExt planner() {
         if (planner == null) {
             VolcanoPlannerExt planner = new VolcanoPlannerExt(frameworkCfg.getCostFactory(), ctx);
             planner.setExecutor(rexExecutor);
@@ -601,6 +604,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             /** {@inheritDoc} */
             @Override public RelNode visit(RelNode other) {
+                planner().checkCancel();
+
                 RelNode next = super.visit(other);
 
                 return replaceMap.isEmpty() ? next : next.accept(rexShuttle);
@@ -621,6 +626,13 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
      */
     public RelNode extractConjunctionOverDisjunctionCommonPart(RelNode rel) {
         return new RelHomogeneousShuttle() {
+            /** {@inheritDoc} */
+            @Override public RelNode visit(RelNode other) {
+                planner().checkCancel();
+
+                return super.visit(other);
+            }
+
             /** {@inheritDoc} */
             @Override public RelNode visit(LogicalFilter filter) {
                 RexNode condition = transform(filter.getCluster().getRexBuilder(), filter.getCondition());
@@ -800,12 +812,8 @@ public class IgnitePlanner implements Planner, RelOptTable.ViewExpander {
 
             long timeout = ctx.plannerTimeout();
 
-            if (timeout > 0) {
-                long startTs = ctx.startTs();
-
-                if (U.currentTimeMillis() - startTs > timeout)
-                    cancelFlag.set(true);
-            }
+            if (timeout > 0 && System.nanoTime() - ctx.startNanos > U.millisToNanos(timeout))
+                cancelFlag.set(true);
 
             super.checkCancel();
         }
