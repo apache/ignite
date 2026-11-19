@@ -186,10 +186,15 @@ public class WalRecordsConsumer<K, V> {
      *
      * @param cdcReg CDC metric registry.
      * @param cdcConsumerReg CDC consumer metric registry.
+     * @param cacheNames The iterator containing previously handled cache names.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg) throws IgniteCheckedException {
-        consumer.start(cdcConsumerReg);
+    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, Iterator<String> cacheNames)
+            throws IgniteCheckedException {
+        if (consumer instanceof CdcConsumerEx)
+            ((CdcConsumerEx)consumer).start(cdcConsumerReg, cacheNames);
+        else
+            consumer.start(cdcConsumerReg);
 
         evtsCnt = cdcReg.longMetric(EVTS_CNT, "Count of events processed by the consumer");
         lastEvtTs = cdcReg.longMetric(LAST_EVT_TIME, "Time of the last event process");
@@ -200,7 +205,7 @@ public class WalRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl)}.
+     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl, Iterator)}.
      */
     public void stop() {
         consumer.stop();
