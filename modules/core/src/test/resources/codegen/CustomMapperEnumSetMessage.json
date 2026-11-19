@@ -1,0 +1,7 @@
+{
+  "class": "org.apache.ignite.internal.CustomMapperEnumSetMessage",
+  "fields": [
+    {"order": 0, "type": "java.util.EnumSet<org.apache.ignite.transactions.TransactionIsolation>", "name": "isolationSet", "annotations": ["@org.apache.ignite.internal.CustomMapper(\"org.apache.ignite.internal.TransactionIsolationEnumMapper\")"]},
+    {"order": 1, "type": "java.util.Collection<java.util.EnumSet<org.apache.ignite.transactions.TransactionIsolation>>", "name": "isolations", "annotations": ["@org.apache.ignite.internal.CustomMapper(\"org.apache.ignite.internal.TransactionIsolationEnumMapper\")"]}
+  ]
+}
