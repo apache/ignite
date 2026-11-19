@@ -1236,8 +1236,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         try {
             long deficit = deficit(limitPages, reserved);
 
-            // An insert evicts only for its own claim and the missing part of the pool.
-            long share = claimPages + Math.max(0, deficit - countedPages(reserved));
+            // An insert evicts for its own claim and restores the rest of the deficit, at most a half of the pool.
+            long share = deficit < claimPages ? deficit :
+                claimPages + Math.min(dataRegion.config().getEmptyPagesPoolSize() / 2, deficit - claimPages);
 
             long backoffNanos = EVICTION_BACKOFF_START_NANOS;
 
