@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareWrapper;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -145,7 +146,7 @@ public class ServiceDeploymentManager {
 
             U.cancel(depTaskHandler);
 
-            U.join(depTaskHandler, log);
+            U.join(depTaskHandler, CommonUtils.DFLT_WAIT_TO_STOP_TIMOEUT, log);
 
             depTaskHandler.clearQueue();
 
