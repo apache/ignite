@@ -112,7 +112,8 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         @Override public boolean registerClassName(
             byte platformId,
             int typeId,
-            String clsName
+            String clsName,
+            boolean failIfUnregistered
         ) {
             if (Objects.equals(clsName, UnregisteredClass.class.getName()))
                 return false;
@@ -124,7 +125,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) {
-            return registerClassName(platformId, typeId, clsName);
+            return registerClassName(platformId, typeId, clsName, false);
         }
 
         /** {@inheritDoc} */
