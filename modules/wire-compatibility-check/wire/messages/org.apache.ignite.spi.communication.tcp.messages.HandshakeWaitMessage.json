@@ -1,5 +1,0 @@
-{
-  "class": "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage",
-  "annotations": ["@org.apache.ignite.internal.ImmutableSchema"],
-  "fields": []
-}

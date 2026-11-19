@@ -1,8 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.managers.encryption.MasterKeyChangeRequest",
-  "fields": [
-    {"order": 0, "type": "java.util.UUID", "name": "reqId"},
-    {"order": 1, "type": "byte[]", "name": "encKeyName"},
-    {"order": 2, "type": "byte[]", "name": "digest"}
-  ]
-}

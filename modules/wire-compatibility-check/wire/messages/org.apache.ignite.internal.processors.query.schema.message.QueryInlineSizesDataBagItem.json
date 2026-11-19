@@ -1,6 +1,0 @@
-{
-  "class": "org.apache.ignite.internal.processors.query.schema.message.QueryInlineSizesDataBagItem",
-  "fields": [
-    {"order": 0, "type": "java.util.Map<java.lang.String,java.lang.Integer>", "name": "sizes"}
-  ]
-}
