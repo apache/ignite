@@ -121,7 +121,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         // Return value flag is true because we choose to bring values for explicit locks.
         return lockAllAsync(ctx.cacheKeysView(keys),
             timeout,
-            timeout,
+            /*waitTimeout*/0,
             tx,
             false,
             /*retval*/true,

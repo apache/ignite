@@ -730,7 +730,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (err != null)
             success = false;
 
-        if (!success && err == null && (versionedLock || CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)))
+        if (!success && err == null && versionedLock)
             return onComplete(false, true, false);
 
         return onComplete(success, true);
@@ -1117,7 +1117,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 keepBinary,
                                                 clientFirst,
                                                 true,
-                                                inTx() ? tx.label() : null);
+                                                inTx() ? tx.label() : null,
+                                                skipLocked);
 
                                             mapping.request(req);
                                         }
@@ -1239,7 +1240,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         }
 
         req.waitTimeout(remainingWaitTimeout);
-        req.skipLocked(skipLocked);
 
         if (node.isLocal()) {
             req.miniId(-1);
@@ -1468,6 +1468,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         tx.entry(cctx.txKey(key)).versionedLockResult(locked);
 
         if (!locked) {
+            assert skipLocked;
+
             GridCacheEntryEx entry = cctx.near().peekEx(key);
 
             try {

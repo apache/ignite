@@ -100,11 +100,6 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         }
     }
 
-    /** @param skipLocked Whether per-key rejections allow the remaining locks to be attempted. */
-    public void skipLocked(boolean skipLocked) {
-        setFlag(skipLocked, SKIP_LOCKED_FLAG_MASK);
-    }
-
     /** @return Whether the request permits partial lock acquisition. */
     public boolean skipLocked() {
         return isFlag(SKIP_LOCKED_FLAG_MASK);
@@ -145,6 +140,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      * @param txLbl Transaction label.
+     * @param skipLocked Whether the request permits partial lock acquisition.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -171,7 +167,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean keepBinary,
         boolean firstClientReq,
         boolean nearCache,
-        @Nullable String txLbl
+        @Nullable String txLbl,
+        boolean skipLocked
     ) {
         super(
             cacheId,
@@ -207,6 +204,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
         setFlag(nearCache, NEAR_CACHE_FLAG_MASK);
+        setFlag(skipLocked, SKIP_LOCKED_FLAG_MASK);
     }
 
     /**

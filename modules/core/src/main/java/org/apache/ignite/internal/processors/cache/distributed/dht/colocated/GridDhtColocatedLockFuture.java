@@ -664,7 +664,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (err != null)
             success = false;
 
-        if (!success && err == null && (versionedLock || CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)))
+        if (!success && err == null && versionedLock)
             return onComplete(false, true, false);
 
         return onComplete(success, true);
@@ -1152,7 +1152,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         keepBinary,
                                         clientFirst,
                                         false,
-                                        inTx() ? tx.label() : null);
+                                        inTx() ? tx.label() : null,
+                                        skipLocked);
 
                                     mapping.request(req);
                                 }
@@ -1285,7 +1286,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             lockLocally(mappedKeys, req.topologyVersion(), remainingWaitTimeout);
         else {
             req.waitTimeout(remainingWaitTimeout);
-            req.skipLocked(skipLocked);
 
             final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
@@ -1801,6 +1801,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     tx.entry(cctx.txKey(k)).versionedLockResult(res.lockResult(i));
 
                     if (!res.lockResult(i)) {
+                        assert skipLocked;
+
                         i++;
 
                         continue;

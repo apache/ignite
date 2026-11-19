@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
@@ -387,8 +386,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 rejectEntry(entry);
             }
             catch (GridCacheEntryRemovedException ignored) {
-                tx.entry(entry.txKey()).versionedLockResult(false);
-                pendingLocks.remove(entry.key());
+                // rejectEntry records the rejection before accessing the lock candidate.
+                assert !entry.hasLockCandidateUnsafe(lockVer) :
+                    "Obsolete entry still has a lock candidate [entry=" + entry + ", lockVer=" + lockVer + ']';
             }
         }
 
@@ -503,8 +503,11 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 else
                     rejectVersionedLocks();
             }
-            else if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout))
+            else if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
+                // Initiators without VERSIONED_TX_LOCK_FEATURE can send waitTimeout without expectedVersions.
+                // Remove this branch when compatibility with those initiators is dropped.
                 onComplete(false, false, false, false);
+            }
             else
                 onFailed();
 
@@ -682,7 +685,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         for (int i = 0; i < entries.size(); i++) {
             while (true) {
-                GridDistributedCacheEntry entry = entries.get(i);
+                GridDhtCacheEntry entry = entries.get(i);
 
                 if (rejected(entry))
                     break;
@@ -699,7 +702,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                     return;
                                 }
 
-                                rejectEntry((GridDhtCacheEntry)entry);
+                                rejectEntry(entry);
 
                                 break;
                             }
@@ -871,7 +874,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         }
 
         try {
-            if (err == null && !stopping && (success || versionedEntries.isEmpty()))
+            if (err == null && !stopping && success)
                 loadMissingFromStore();
         }
         finally {

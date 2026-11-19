@@ -311,14 +311,12 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /**
-     * Checks a conditional lock after this transaction became the MVCC owner and before acknowledging the lock.
-     * The entry mutex protects both the owner test and the data-version comparison. After it is released, the
-     * transaction's MVCC ownership prevents another transactional writer from changing the version until unlock.
-     * Merely registering an MVCC candidate is not sufficient: a preceding owner may commit while it is waiting.
+     * Checks MVCC lock ownership, value presence, data version, and expiration under the entry mutex.
      *
-     * @param lockVer Transaction lock version (not the expected data version).
+     * @param lockVer MVCC lock version.
      * @param expVer Expected data version.
-     * @return Whether this transaction owns a present entry with the expected version.
+     * @return {@code True} if {@code lockVer} owns the lock and the entry has an unexpired
+     *     value with the expected version at the time of the check.
      * @throws GridCacheEntryRemovedException If the entry is obsolete.
      */
     boolean checkLockVersion(GridCacheVersion lockVer, GridCacheVersion expVer)
