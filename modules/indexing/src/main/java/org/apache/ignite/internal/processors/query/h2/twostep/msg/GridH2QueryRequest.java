@@ -77,6 +77,9 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
     /** Bit offset of the former data page scan flag. */
     private static final int FLAG_DATA_PAGE_SCAN_SHIFT = 6;
 
+    /** Mask of the former data page scan flag. */
+    private static final int FLAG_DATA_PAGE_SCAN_MASK = 0b11 << FLAG_DATA_PAGE_SCAN_SHIFT;
+
     /** */
     @Order(0)
     long reqId;
@@ -330,6 +333,9 @@ public class GridH2QueryRequest extends AbstractMessage implements GridCacheQuer
      */
     public GridH2QueryRequest flags(int flags) {
         assert flags >= 0 && flags <= 255 : flags;
+
+        // Former data page scan flag is not supported.
+        flags &= ~FLAG_DATA_PAGE_SCAN_MASK;
 
         this.flags = (byte)flags;
 
