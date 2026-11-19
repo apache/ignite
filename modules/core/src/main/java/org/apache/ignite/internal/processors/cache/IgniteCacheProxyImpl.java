@@ -127,9 +127,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** Context. */
     private volatile GridCacheContext<K, V> ctx;
 
-    /** Old context. */
-    private transient volatile GridCacheContext<K, V> oldContext;
-
     /** Delegate. */
     @GridToStringInclude
     private volatile IgniteInternalCache<K, V> delegate;
@@ -212,65 +209,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Context.
      */
     @Override public GridCacheContext<K, V> context() {
-        return getContextSafe();
-    }
-
-    /**
-     * @return Context or throw restart exception.
-     */
-    private GridCacheContext<K, V> getContextSafe() {
-        while (true) {
-            GridCacheContext<K, V> ctx = this.ctx;
-
-            if (ctx == null) {
-                checkRestart();
-
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteException(new InterruptedException());
-            }
-            else
-                return ctx;
-        }
-    }
-
-    /**
-     * @return Delegate or throw restart exception.
-     */
-    private IgniteInternalCache<K, V> getDelegateSafe() {
-        while (true) {
-            IgniteInternalCache<K, V> delegate = this.delegate;
-
-            if (delegate == null) {
-                checkRestart();
-
-                if (Thread.currentThread().isInterrupted())
-                    throw new IgniteException(new InterruptedException());
-            }
-            else
-                return delegate;
-        }
-    }
-
-    /**
-     * @return Context.
-     */
-    public GridCacheContext<K, V> context0() {
-        GridCacheContext<K, V> ctx = this.ctx;
-
-        if (ctx == null) {
-            synchronized (this) {
-                ctx = this.ctx;
-
-                if (ctx == null) {
-                    ctx = oldContext;
-
-                    assert ctx != null;
-
-                    return ctx;
-                }
-            }
-        }
-
         return ctx;
     }
 
@@ -293,28 +231,28 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return ctx.cache().clusterMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics(ClusterGroup grp) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return ctx.cache().clusterMetrics(grp);
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return ctx.cache().localMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         CacheConfiguration cfg = ctx.config();
 
@@ -356,7 +294,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             if (isAsync()) {
@@ -374,7 +312,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p,
         @Nullable Object... args) throws CacheException {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
@@ -386,7 +324,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -402,14 +340,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> localLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p,
         @Nullable Object... args) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.localLoadCacheAsync(p, args));
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -427,7 +365,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndPutIfAbsentAsync(K key, V val) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAndPutIfAbsentAsync(key, val));
     }
@@ -439,15 +377,15 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(final Collection<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
-        GridCacheContext<K, V> ctx = getContextSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return new CacheLockImpl<>(ctx.gate(), delegate, ctx.operationContextPerCall(), keys);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return byCurrThread ? delegate.isLockedByThread(key) : delegate.isLocked(key);
     }
@@ -465,7 +403,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         @Nullable final IgniteClosure<Cache.Entry<K, V>, R> transformer,
         @Nullable ClusterGroup grp
     ) throws IgniteCheckedException {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
@@ -503,7 +441,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> query(final Query query, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         final CacheQuery qry;
 
@@ -616,7 +554,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Local node cluster group.
      */
     private ClusterGroup projection(boolean loc) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return loc ? ctx.kernalContext().grid().cluster().forLocal() : null;
     }
@@ -631,7 +569,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     @SuppressWarnings("unchecked")
     private QueryCursor<Cache.Entry<K, V>> queryContinuous(AbstractContinuousQuery qry, boolean loc, boolean keepBinary) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         assert qry instanceof ContinuousQuery || qry instanceof ContinuousQueryWithTransformer;
 
@@ -755,7 +693,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         A.notNull(qry, "qry");
         try {
@@ -781,7 +719,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         A.notNull(qry, "qry");
         try {
@@ -823,7 +761,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public <T, R> QueryCursor<R> query(Query<T> qry, IgniteClosure<T, R> transformer) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         A.notNull(qry, "qry");
         A.notNull(transformer, "transformer");
@@ -873,7 +811,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (args == null)
             return;
 
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         for (int i = 0; i < args.length; i++)
             args[i] = ctx.cacheObjects().binary().toBinary(args[i]);
@@ -886,7 +824,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @throws CacheException If query indexing disabled for sql query.
      */
     private void validate(Query qry) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         if (!QueryUtils.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
             !(qry instanceof ContinuousQuery) && !(qry instanceof ContinuousQueryWithTransformer) &&
@@ -909,7 +847,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return delegate.localEntries(peekModes);
@@ -921,42 +859,42 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public QueryMetrics queryMetrics() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return delegate.context().queries().metrics();
     }
 
     /** {@inheritDoc} */
     @Override public void resetQueryMetrics() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         delegate.context().queries().resetMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public Collection<? extends QueryDetailMetrics> queryDetailMetrics() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return delegate.context().queries().detailMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public void resetQueryDetailMetrics() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         delegate.context().queries().resetDetailMetrics();
     }
 
     /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         delegate.evictAll(keys);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return delegate.localPeek(key, peekModes);
@@ -968,7 +906,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -986,14 +924,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Integer> sizeAsync(CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.sizeAsync(peekModes));
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1011,14 +949,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.sizeLongAsync(peekModes));
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong(int part, CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1036,14 +974,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Long> sizeLongAsync(int part, CachePeekMode... peekModes) throws CacheException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.sizeLongAsync(part, peekModes));
     }
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return delegate.localSize(peekModes);
@@ -1055,7 +993,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public long localSizeLong(CachePeekMode... peekModes) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return delegate.localSizeLong(peekModes);
@@ -1067,7 +1005,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public long localSizeLong(int part, CachePeekMode... peekModes) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return delegate.localSizeLong(part, peekModes);
@@ -1079,7 +1017,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public V get(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1097,14 +1035,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAsync(key));
     }
 
     /** {@inheritDoc} */
     @Override public CacheEntry<K, V> getEntry(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1122,14 +1060,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<CacheEntry<K, V>> getEntryAsync(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getEntryAsync(key));
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1147,14 +1085,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAllAsync(keys));
     }
 
     /** {@inheritDoc} */
     @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1172,14 +1110,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getEntriesAsync(keys));
     }
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAllOutTx(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1197,7 +1135,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAllOutTxAsync(keys));
     }
@@ -1207,7 +1145,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Values map.
      */
     public Map<K, V> getAll(Collection<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1225,7 +1163,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         if (isAsync()) {
             setFuture(delegate.containsKeyAsync(key));
@@ -1238,14 +1176,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.containsKeyAsync(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsKeys(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         if (isAsync()) {
             setFuture(delegate.containsKeysAsync(keys));
@@ -1258,7 +1196,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeysAsync(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.containsKeysAsync(keys));
     }
@@ -1269,7 +1207,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         boolean replaceExisting,
         @Nullable final CompletionListener completionLsnr
     ) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         IgniteInternalFuture<?> fut = ctx.cache().loadAll(keys, replaceExisting);
 
@@ -1291,7 +1229,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void put(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1317,7 +1255,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Internal future.
      */
     private IgniteInternalFuture<Void> putAsync0(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         IgniteInternalFuture<Boolean> fut = delegate.putAsync(key, val);
 
@@ -1337,7 +1275,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public V getAndPut(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1355,14 +1293,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndPutAsync(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAndPutAsync(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> map) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1377,14 +1315,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.putAllAsync(map));
     }
 
     /** {@inheritDoc} */
     @Override public boolean putIfAbsent(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1402,14 +1340,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putIfAbsentAsync(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.putIfAbsentAsync(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1427,14 +1365,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.removeAsync(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V oldVal) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1452,14 +1390,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key, V oldVal) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.removeAsync(key, oldVal));
     }
 
     /** {@inheritDoc} */
     @Override public V getAndRemove(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1477,14 +1415,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndRemoveAsync(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAndRemoveAsync(key));
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1502,14 +1440,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.replaceAsync(key, oldVal, newVal));
     }
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1527,14 +1465,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.replaceAsync(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public V getAndReplace(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1552,14 +1490,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAndReplaceAsync(K key, V val) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.getAndReplaceAsync(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1574,14 +1512,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> removeAllAsync(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.removeAllAsync(keys));
     }
 
     /** {@inheritDoc} */
     @Override public void removeAll() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1596,14 +1534,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> removeAllAsync() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.removeAllAsync());
     }
 
     /** {@inheritDoc} */
     @Override public void clear(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1618,14 +1556,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.clearAsync(key));
     }
 
     /** {@inheritDoc} */
     @Override public void clearAll(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1640,14 +1578,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAllAsync(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.clearAllAsync(keys));
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1662,21 +1600,21 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> clearAsync() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return (IgniteFuture<Void>)createFuture(delegate.clearAsync());
     }
 
     /** {@inheritDoc} */
     @Override public void localClear(K key) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         delegate.clearLocally(key);
     }
 
     /** {@inheritDoc} */
     @Override public void localClearAll(Set<? extends K> keys) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         for (K key : keys)
             delegate.clearLocally(key);
@@ -1685,7 +1623,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
         throws EntryProcessorException {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1719,7 +1657,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Internal future.
      */
     private <T> IgniteInternalFuture<T> invokeAsync0(K key, EntryProcessor<K, V, T> entryProcessor, Object[] args) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         IgniteInternalFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
 
@@ -1761,7 +1699,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         EntryProcessor<K, V, T> entryProcessor,
         Object... args
     ) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync())
@@ -1782,7 +1720,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         EntryProcessor<K, V, T> entryProcessor,
         Object... args
     ) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1801,7 +1739,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor, Object... args) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.invokeAllAsync(keys, entryProcessor, args));
     }
@@ -1812,7 +1750,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         CacheEntryProcessor<K, V, T> entryProcessor,
         Object... args
     ) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1831,7 +1769,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         CacheEntryProcessor<K, V, T> entryProcessor, Object... args) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.invokeAllAsync(keys, entryProcessor, args));
     }
@@ -1840,7 +1778,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             if (isAsync()) {
@@ -1859,7 +1797,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return createFuture(delegate.invokeAllAsync(map, args));
     }
@@ -1888,9 +1826,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> destroyAsync() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicDestroyCache(cacheName, false, true, false, null), exec());
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicDestroyCache(cacheName, false, true), exec());
     }
 
     /** {@inheritDoc} */
@@ -1900,14 +1838,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> closeAsync() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicCloseCache(cacheName), exec());
     }
 
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return isProxyClosed() || ctx.kernalContext().cache().context().closed(ctx);
     }
@@ -1917,7 +1855,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         if (clazz.isAssignableFrom(getClass()))
             return (T)this;
         else if (clazz.isAssignableFrom(IgniteEx.class)) {
-            GridCacheContext<K, V> ctx = getContextSafe();
+            GridCacheContext<K, V> ctx = this.ctx;
 
             return (T)ctx.grid();
         }
@@ -1927,7 +1865,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -1941,7 +1879,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void deregisterCacheEntryListener(CacheEntryListenerConfiguration<K, V> lsnrCfg) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             ctx.continuousQueries().cancelJCacheQuery(lsnrCfg);
@@ -1953,7 +1891,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             return ctx.cache().igniteIterator();
@@ -1965,8 +1903,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<K, V> createAsyncInstance() {
-        GridCacheContext<K, V> ctx = getContextSafe();
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return new IgniteCacheProxyImpl<K, V>(
                 ctx,
@@ -2039,20 +1977,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private RuntimeException cacheException(Exception e) {
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
-        if (X.hasCause(e, IgniteCacheRestartingException.class)) {
-            IgniteCacheRestartingException restartingEx = X.cause(e, IgniteCacheRestartingException.class);
-
-            if (restartingEx.restartFuture() == null) {
-                if (restartFut == null)
-                    restartFut = suspend();
-
-                assert restartFut != null;
-
-                throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut, exec()), cacheName);
-            }
-            else
-                throw restartingEx;
-        }
+        if (X.hasCause(e, IgniteCacheRestartingException.class))
+            throw X.cause(e, IgniteCacheRestartingException.class);
 
         if (restartFut != null) {
             if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class))
@@ -2091,8 +2017,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Internal proxy.
      */
     @Override public GridCacheProxyImpl<K, V> internalProxy() {
-        GridCacheContext<K, V> ctx = getContextSafe();
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return new GridCacheProxyImpl<>(ctx, delegate, ctx.operationContextPerCall());
     }
@@ -2113,14 +2039,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         return delegate.lostPartitions();
     }
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(boolean enabled) {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
@@ -2132,7 +2058,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void clearStatistics() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         try {
             ctx.kernalContext().cache().clearStatistics(Collections.singleton(getName()));
@@ -2144,7 +2070,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public void preloadPartition(int part) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             delegate.preloadPartition(part);
@@ -2156,7 +2082,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> preloadPartitionAsync(int part) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return (IgniteFuture<Void>)createFuture(delegate.preloadPartitionAsync(part));
@@ -2168,7 +2094,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public boolean localPreloadPartition(int part) {
-        IgniteInternalCache<K, V> delegate = getDelegateSafe();
+        IgniteInternalCache<K, V> delegate = this.delegate;
 
         try {
             return delegate.localPreloadPartition(part);
@@ -2198,14 +2124,14 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> rebalance() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         return new IgniteFutureImpl<>(ctx.preloader().forceRebalance(), exec());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> indexReadyFuture() {
-        GridCacheContext<K, V> ctx = getContextSafe();
+        GridCacheContext<K, V> ctx = this.ctx;
 
         IgniteInternalFuture fut = ctx.shared().kernalContext().query().indexRebuildFuture(ctx.cacheId());
 
@@ -2249,36 +2175,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     public boolean isRestarting() {
         return restartFut.get() != null;
-    }
-
-    /**
-     * Suspend this cache proxy.
-     * To make cache proxy active again, it's needed to restart it.
-     */
-    public GridFutureAdapter<Void> suspend() {
-        while (true) {
-            GridFutureAdapter<Void> curFut = this.restartFut.get();
-
-            if (curFut == null) {
-                GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
-
-                if (this.restartFut.compareAndSet(null, restartFut)) {
-                    synchronized (this) {
-                        if (!restartFut.isDone()) {
-                            if (oldContext == null) {
-                                oldContext = ctx;
-                                delegate = null;
-                                ctx = null;
-                            }
-                        }
-                    }
-
-                    return restartFut;
-                }
-            }
-            else
-                return curFut;
-        }
     }
 
     /**
@@ -2326,7 +2222,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             this.restartFut.compareAndSet(restartFut, null);
 
             this.ctx = ctx;
-            oldContext = null;
             this.delegate = delegate;
 
             restartFut.onDone();

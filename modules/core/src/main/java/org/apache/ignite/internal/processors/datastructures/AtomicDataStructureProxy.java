@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
 import javax.cache.processor.EntryProcessorException;
-import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -28,8 +27,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -42,9 +39,6 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
 
     /** Removed flag. */
     protected volatile boolean rmvd;
-
-    /** Suspended future. */
-    private volatile GridFutureAdapter<Void> suspendFut;
 
     /** Check removed flag. */
     private volatile boolean rmvCheck;
@@ -121,11 +115,6 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         if (rmvd)
             throw removedError();
 
-        GridFutureAdapter<Void> suspendFut0 = suspendFut;
-
-        if (suspendFut0 != null && !suspendFut0.isDone())
-            throw suspendedError();
-
         if (rmvCheck) {
             try {
                 rmvd = cacheView.get(key) == null;
@@ -180,13 +169,6 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
         return new IgniteException("Sequence was removed from cache: " + name);
     }
 
-    /**
-     * @return Error.
-     */
-    private IllegalStateException suspendedError() {
-        throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(suspendFut), ctx.name());
-    }
-
     /** {@inheritDoc} */
     @Override public boolean onRemoved() {
         return rmvd = true;
@@ -198,21 +180,6 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     }
 
     /** {@inheritDoc} */
-    @Override public void suspend() {
-        suspendFut = new GridFutureAdapter<>();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void restart(IgniteInternalCache cache) {
-        invalidateLocalState();
-
-        cacheView = cache;
-        ctx = cache.context();
-        rmvCheck = true;
-        suspendFut.onDone();
-    }
-
-    /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
         this.ctx = kctx.cache().<GridCacheInternalKey, V>context().cacheContext(ctx.cacheId());
         this.cacheView = ctx.cache();
@@ -221,13 +188,6 @@ public abstract class AtomicDataStructureProxy<V extends AtomicDataStructureValu
     /** {@inheritDoc} */
     @Override public void onDeActivate(GridKernalContext kctx) {
         // No-op.
-    }
-
-    /**
-     * Invalidates local state.
-     */
-    protected void invalidateLocalState() {
-        // No-op
     }
 
 }

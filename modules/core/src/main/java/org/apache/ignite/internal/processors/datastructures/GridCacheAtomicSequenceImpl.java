@@ -252,12 +252,6 @@ public final class GridCacheAtomicSequenceImpl extends AtomicDataStructureProxy<
     }
 
     /** {@inheritDoc} */
-    @Override protected void invalidateLocalState() {
-        locVal = 0;
-        upBound = -1;
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
         try {
             if (rmvd)
