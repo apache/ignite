@@ -36,7 +36,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicAbstractUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
@@ -60,6 +63,8 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         if (SUPPLIER.equals(gridName)) {
             DataRegionConfiguration regCfg = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration();
@@ -141,6 +146,40 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             },
             IgniteOutOfMemoryException.class
         );
+    }
+
+    /** */
+    @Test
+    public void testRefusedUpdateRemappedOnStaleTopology() throws Exception {
+        IgniteEx srv = startGrid(0);
+
+        createCache(srv, DEFAULT_CACHE_NAME);
+
+        IgniteEx client = startClientGrid(1);
+
+        TestRecordingCommunicationSpi clientSpi = TestRecordingCommunicationSpi.spi(client);
+
+        clientSpi.blockMessages((node, msg) -> msg instanceof GridNearAtomicAbstractUpdateRequest);
+
+        IgniteFuture<Void> fut = client.cache(DEFAULT_CACHE_NAME).putAsync(1, new byte[(int)(regionMaxSize(srv) * 2)]);
+
+        clientSpi.waitForBlocked();
+
+        TestRecordingCommunicationSpi srvSpi = TestRecordingCommunicationSpi.spi(srv);
+
+        srvSpi.record((node, msg) -> msg instanceof GridNearAtomicUpdateResponse &&
+            ((GridNearAtomicUpdateResponse)msg).remapTopologyVersion() != null);
+
+        startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        clientSpi.stopBlock();
+
+        // The value fits no node, so the remapped update is refused.
+        GridTestUtils.assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteOutOfMemoryException.class);
+
+        assertFalse(srvSpi.recordedMessages(true).isEmpty());
     }
 
     /** */
@@ -485,7 +524,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
                 db.releaseInRegion(region, smallReserved);
             }
 
-            // Reservations that gave up return the pages they accumulated.
+            // Reservations that gave up release their claims.
             assertEquals(0, freeList.reservedPages());
 
             // The stall is not a time window: once the timeout passes, best-effort reservations still do not wait.

@@ -1812,12 +1812,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long batchReserved = 0;
 
-        boolean admitted = false;
+        IgniteCheckedException reserveErr = null;
 
         try {
-            batchReserved = reserveBatchSpace(req);
-
-            admitted = true;
+            try {
+                batchReserved = reserveBatchSpace(req);
+            }
+            catch (IgniteCheckedException e) {
+                reserveErr = e;
+            }
 
             // If batch store update is enabled, we need to lock all entries.
             // First, need to acquire locks on cache entries, then check filter.
@@ -1864,6 +1867,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             }
 
                             if (!remap) {
+                                if (reserveErr != null)
+                                    throw reserveErr;
+
                                 update(node, locked, req, res, updDhtRes, taskName);
 
                                 dhtFut = updDhtRes.dhtFuture();
@@ -1945,7 +1951,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res.remapTopologyVersion(ctx.topology().lastTopologyChangeVersion());
         }
         catch (Throwable e) {
-            if (!admitted && X.hasCause(e, IgniteOutOfMemoryException.class)) {
+            if (e == reserveErr && X.hasCause(e, IgniteOutOfMemoryException.class)) {
                 // An expected refusal of the page reservation (see reserveBatchSpace): nothing has been changed, the
                 // keys are reported as failed to the client. No stack trace: under a sustained overload every update
                 // is refused, and the message already names the region and the ways out.
