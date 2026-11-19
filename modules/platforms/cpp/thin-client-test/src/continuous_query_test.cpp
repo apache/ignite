@@ -114,7 +114,7 @@ template<typename K, typename V>
 class Listener : public CacheEntryEventListener<K, V>
 {
 public:
-    enum { DEFAULT_WAIT_TIMEOUT = 1000 };
+    enum { DEFAULT_WAIT_TIMEOUT = 3000 };
 
     /**
      * Default constructor.
