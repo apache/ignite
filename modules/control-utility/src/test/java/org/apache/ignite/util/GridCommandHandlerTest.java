@@ -109,6 +109,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpConfiguration;
 import org.apache.ignite.internal.processors.cache.warmup.BlockedWarmUpStrategy;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpTestPluginProvider;
@@ -697,12 +698,22 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         IgniteEx igniteEx,
         String clusterName
     ) {
-        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+        String prompt = "Warning: the command will deactivate a cluster \"" + clusterName + "\".";
+
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, prompt, "--deactivate");
 
         igniteEx.cluster().state(ACTIVE);
         assertTrue(igniteEx.cluster().state().active());
 
-        deactivateWithCheckClusterNameInConfirmation(igniteEx, clusterName);
+        deactivateWithCheckClusterNameInConfirmation(igniteEx, prompt, "--deactivate");
+
+        igniteEx.cluster().state(ACTIVE);
+
+        deactivateWithCheckClusterNameInConfirmation(
+            igniteEx,
+            "Warning: the command will change state of cluster with name \"" + clusterName + "\" to INACTIVE.",
+            "--set-state", "INACTIVE"
+        );
     }
 
     /**
@@ -710,23 +721,19 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
      * confirmation.
      *
      * @param igniteEx Node.
-     * @param clusterName Cluster name to check in the confirmation message.
+     * @param prompt Confirmation message with the cluster name.
+     * @param cmd Deactivation command.
      * */
-    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String clusterName) {
+    private void deactivateWithCheckClusterNameInConfirmation(IgniteEx igniteEx, String prompt, String... cmd) {
         autoConfirmation = false;
         injectTestSystemOut();
         injectTestSystemIn(CONFIRM_MSG);
 
-        assertEquals(EXIT_CODE_OK, execute("--deactivate"));
+        assertEquals(EXIT_CODE_OK, execute(cmd));
         assertFalse(igniteEx.cluster().state().active());
 
-        if (cliCommandHandler()) {
-            assertContains(
-                log,
-                testOut.toString(),
-                "Warning: the command will deactivate a cluster \"" + clusterName + "\"."
-            );
-        }
+        if (cliCommandHandler())
+            assertContains(log, testOut.toString(), prompt);
     }
 
     /**
@@ -1779,6 +1786,14 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         U.awaitQuiet(lockLatch);
 
+        UUID client0Id = clients[0].cluster().localNode().id();
+
+        GridCacheVersion client0TxVer = ((IgniteEx)prim).context().cache().context().tm().activeTransactions().stream()
+            .filter(tx -> client0Id.equals(tx.originatingNodeId()))
+            .findFirst()
+            .get()
+            .xidVersion();
+
         commitLatch.countDown();
 
         primSpi.waitForBlocked(clients.length);
@@ -1792,7 +1807,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
                 if (m instanceof GridDhtTxFinishRequest) {
                     GridDhtTxFinishRequest r = (GridDhtTxFinishRequest)m;
 
-                    return !r.nearNodeId().equals(clients[0].cluster().localNode().id());
+                    return !r.version().equals(client0TxVer);
                 }
 
                 return true;

@@ -1168,7 +1168,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                                 qry.context().schemaName(),
                                 fragment.serialized(),
                                 ectx.topologyVersion(),
-                                fragmentDesc,
+                                nodeId.equals(locNodeId) ? fragmentDesc : fragmentDesc.preparedToSend(),
                                 fragmentsPerNode.get(nodeId).intValue(),
                                 qry.parameters(),
                                 parametersMarshalled,

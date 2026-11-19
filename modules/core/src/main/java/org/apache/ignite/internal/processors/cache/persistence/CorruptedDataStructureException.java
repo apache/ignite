@@ -23,6 +23,9 @@ import org.jetbrains.annotations.Nullable;
  * Abstract exception when {@link DataStructure} are corrupted.
  */
 public abstract class CorruptedDataStructureException extends IgniteCheckedException {
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = -8777414584459528686L;
+
     /** Cache group id. */
     protected final int grpId;
 

@@ -912,6 +912,9 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
 
     /** Wraps closure with CacheOperationContext awared of application attributes. */
     protected abstract class UpdateReplyClosureContextAware implements GridDhtAtomicCache.UpdateReplyClosure {
+        /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = 4477554794302874132L;
+
         /** */
         @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
             CacheOperationContext prevOpCtx = cctx.operationContextPerCall();

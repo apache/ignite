@@ -25,10 +25,11 @@ import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.waitForNextClockTick;
 
 /**
  * A base for tests that check the behaviour of scan queries run on a data set that is modified concurrently.
@@ -110,16 +111,15 @@ public abstract class ScanQueryConcurrentUpdatesAbstractTest extends GridCommonA
      * Tests behaviour of scan queries with entries expired and modified concurrently.
      *
      * @param cache Cache to test.
+     * @throws Exception If failed.
      */
-    private void testExpiringDataset(IgniteCache<Integer, Integer> cache) {
+    private void testExpiringDataset(IgniteCache<Integer, Integer> cache) throws Exception {
         int iterations = 100;
         int recordsNum = 100;
 
         try {
             for (int i = 0; i < iterations; i++) {
                 updateCache(cache, recordsNum);
-
-                long updateTime = U.currentTimeMillis();
 
                 List<Cache.Entry<Integer, Integer>> res = cache.query(new ScanQuery<Integer, Integer>()).getAll();
 
@@ -128,8 +128,7 @@ public abstract class ScanQueryConcurrentUpdatesAbstractTest extends GridCommonA
                 for (Cache.Entry<Integer, Integer> e : res)
                     assertEquals(e.getKey(), e.getValue());
 
-                while (U.currentTimeMillis() == updateTime)
-                    doSleep(10L);
+                waitForNextClockTick();
             }
         }
         finally {
@@ -195,14 +194,14 @@ public abstract class ScanQueryConcurrentUpdatesAbstractTest extends GridCommonA
 
     /** */
     @Test
-    public void testPartitionedShortExpiry() {
+    public void testPartitionedShortExpiry() throws Exception {
         testExpiringDataset(createCache("partitioned_short_expiry",
             CacheMode.PARTITIONED, new Duration(TimeUnit.MILLISECONDS, 1)));
     }
 
     /** */
     @Test
-    public void testReplicatedShortExpiry() {
+    public void testReplicatedShortExpiry() throws Exception {
         testExpiringDataset(createCache("partitioned_short_expiry",
             CacheMode.REPLICATED, new Duration(TimeUnit.MILLISECONDS, 1)));
     }

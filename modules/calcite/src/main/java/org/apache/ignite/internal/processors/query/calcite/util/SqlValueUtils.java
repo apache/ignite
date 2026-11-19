@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.util;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -64,6 +65,9 @@ public final class SqlValueUtils {
 
         if (left.getClass().isArray() && right.getClass().isArray())
             return Arrays.deepEquals(new Object[] {left}, new Object[] {right});
+
+        if (left instanceof BigDecimal && right instanceof BigDecimal)
+            return ((BigDecimal)left).compareTo((BigDecimal)right) == 0;
 
         return left.equals(right);
     }
@@ -125,6 +129,9 @@ public final class SqlValueUtils {
 
         if (val.getClass().isArray())
             return Arrays.deepHashCode(new Object[] {val});
+
+        if (val instanceof BigDecimal)
+            return ((BigDecimal)val).stripTrailingZeros().hashCode();
 
         return val.hashCode();
     }

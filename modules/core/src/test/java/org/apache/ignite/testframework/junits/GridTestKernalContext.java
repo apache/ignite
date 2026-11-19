@@ -68,7 +68,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     public GridTestKernalContext(IgniteLogger log, IgniteConfiguration cfg) {
         super(new GridLoggerProxy(log, null, null, null),
                 new IgniteKernal(null),
-                cfg,
+                cfg.setGridLogger(log),
                 new GridKernalGatewayImpl(null),
                 cfg.getPluginProviders() != null && cfg.getPluginProviders().length > 0 ?
                     Arrays.asList(cfg.getPluginProviders()) : U.allPluginProviders(),
@@ -80,8 +80,6 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         GridTestUtils.setFieldValue(grid(), "cfg", config());
         GridTestUtils.setFieldValue(grid(), "ctx", this);
         GridTestUtils.setFieldValue(grid(), "distrOpCtx", new DistributedOperationContext());
-
-        config().setGridLogger(log);
 
         if (cfg.getMetricExporterSpi() == null || cfg.getMetricExporterSpi().length == 0)
             cfg.setMetricExporterSpi(new NoopMetricExporterSpi());

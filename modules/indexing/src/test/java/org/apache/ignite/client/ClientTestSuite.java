@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import org.apache.ignite.client.thin.ExtraColumnInH2RowsTest;
 import org.apache.ignite.internal.client.thin.AffinityMetricsTest;
 import org.apache.ignite.internal.client.thin.AtomicLongTest;
+import org.apache.ignite.internal.client.thin.BinaryMetadataChannelFailureTest;
 import org.apache.ignite.internal.client.thin.BlockingTxOpsTest;
 import org.apache.ignite.internal.client.thin.CacheAsyncTest;
 import org.apache.ignite.internal.client.thin.CacheConfigurationTest;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.client.thin.ThinClientPartitionAwarenessUnstab
 import org.apache.ignite.internal.client.thin.ThinClientPutAllConflictKeepBinaryTest;
 import org.apache.ignite.internal.client.thin.TimeoutTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionEventListenerTest;
+import org.apache.ignite.internal.client.thin.events.IgniteClientConnectionIdTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientLifecycleEventListenerTest;
 import org.apache.ignite.internal.client.thin.events.IgniteClientRequestEventListenerTest;
 import org.junit.runner.RunWith;
@@ -104,6 +106,7 @@ import org.junit.runners.Suite;
     ThinClientPutAllConflictKeepBinaryTest.class,
     MetadataRegistrationTest.class,
     IgniteClientConnectionEventListenerTest.class,
+    IgniteClientConnectionIdTest.class,
     IgniteClientRequestEventListenerTest.class,
     IgniteClientLifecycleEventListenerTest.class,
     ThinClientEnpointsDiscoveryTest.class,
@@ -117,6 +120,7 @@ import org.junit.runners.Suite;
     ReliableChannelDuplicationTest.class,
     CacheExceptionsTest.class,
     CacheConfigurationTest.class,
+    BinaryMetadataChannelFailureTest.class,
 })
 public class ClientTestSuite {
     // No-op.

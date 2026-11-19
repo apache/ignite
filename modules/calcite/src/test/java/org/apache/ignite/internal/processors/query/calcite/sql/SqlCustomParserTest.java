@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWra
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillLock;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
@@ -904,6 +905,23 @@ public class SqlCustomParserTest extends GridCommonAbstractWrapperTest {
         assertParserThrows("kill query '" + UUID.randomUUID() + "_a1233415'", SqlParseException.class);
         assertParserThrows("kill query '123' '123'", SqlParseException.class);
         assertParserThrows("kill query", SqlParseException.class);
+    }
+
+    /**
+     * Test kill lock query parsing.
+     */
+    @Test
+    public void killLock() throws Exception {
+        IgniteSqlKill killTask;
+
+        IgniteUuid xid = IgniteUuid.randomUuid();
+        killTask = parse("kill lock '" + xid + "'");
+        assertTrue(killTask instanceof IgniteSqlKillLock);
+        assertEquals(xid.toString(), stringValue(((IgniteSqlKillLock)killTask).xid()));
+
+        assertParserThrows("kill lock '1233415'", SqlParseException.class);
+        assertParserThrows("kill lock 10000", SqlParseException.class);
+        assertParserThrows("kill lock", SqlParseException.class);
     }
 
     /**

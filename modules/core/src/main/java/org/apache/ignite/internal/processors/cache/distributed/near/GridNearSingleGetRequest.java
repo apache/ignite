@@ -42,7 +42,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** */
     private static final int NEED_VER_FLAG_MASK = 0x08;
 
-    /** */
+    /** Entry info flag, unused since 2.20. Nodes of older versions still read it, so the bit must not be reused. */
     private static final int NEED_ENTRY_INFO_FLAG_MASK = 0x10;
 
     /** */
@@ -230,13 +230,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      */
     public boolean needVersion() {
         return (flags & NEED_VER_FLAG_MASK) != 0;
-    }
-
-    /**
-     * @return {@code True} if full entry information is needed.
-     */
-    public boolean needEntryInfo() {
-        return (flags & NEED_ENTRY_INFO_FLAG_MASK) != 0;
     }
 
     /**

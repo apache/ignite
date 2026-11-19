@@ -159,7 +159,7 @@ public class IgniteMock implements IgniteEx {
         try {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
                 /** */
-                private final SslFactoryRegistry ssl = new SslFactoryRegistry();
+                private final SslFactoryRegistry ssl = new SslFactoryRegistry(this);
 
                 /** {@inheritDoc} */
                 @Override public SslFactoryRegistry ssl() {
@@ -241,16 +241,6 @@ public class IgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean eventUserRecordable(int type) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allEventsUserRecordable(int[] types) {
         return false;
     }
 

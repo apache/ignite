@@ -40,8 +40,10 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -69,9 +71,13 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.CacheLockView;
 import org.apache.ignite.util.deque.FastSizeDeque;
@@ -81,6 +87,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENE
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -1142,6 +1149,62 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Find node holding the lock in the cluster and forcibly releases explicit lock by lock ID.
+     *
+     * @param xid Lock ID.
+     * @return {@code True} if the lock was found and released on any node.
+     */
+    public boolean releaseExplicitLockGlobal(IgniteUuid xid) {
+        try {
+            return cctx.kernalContext().closure().broadcast(
+                new ReleaseExplicitLock(),
+                xid,
+                options(cctx.kernalContext().cluster().get().nodes())
+            ).get().stream().anyMatch(v -> v);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(U.convertException(e));
+        }
+    }
+
+    /**
+     * Forcibly releases explicit lock by lock ID.
+     *
+     * @param xid Lock ID.
+     * @return {@code True} if the lock was found and released.
+     */
+    public boolean releaseExplicitLock(IgniteUuid xid) {
+        for (GridCacheExplicitLockSpan span : activeExplicitLocks()) {
+            for (GridCacheMvccCandidate cand : span.candidates()) {
+                if (xid.equals(BinaryUtils.asIgniteUuid(cand.version()))) {
+                    // Check permissions.
+                    if (cctx.kernalContext().security().enabled()) {
+                        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cand.key().cacheId());
+
+                        // Cache context may be absent if the cache was stopped concurrently.
+                        if (cacheCtx == null)
+                            continue;
+
+                        try {
+                            // Allowed for admins.
+                            cctx.kernalContext().security().authorize(SecurityPermission.ADMIN_OPS);
+                        }
+                        catch (SecurityException e) {
+                            // Follback to cache permission check.
+                            cacheCtx.checkSecurity(SecurityPermission.CACHE_READ);
+                        }
+                    }
+
+                    // Xid identifies the lock of one thread, all keys of the lock are released at once.
+                    return releaseExplicitLock(cand.threadId(), cand.version());
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Forcibly releases explicit lock acquired or awaited by the thread on all keys of the lock.
      * <p>
      * The lock future is cancelled first: if the lock is not acquired yet (or acquired on a part of the keys only),
@@ -1622,6 +1685,23 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
          */
         public long getAndIncrement() {
             return val++;
+        }
+    }
+
+    /**
+     * Closure to cancel explicit lock by XID.
+     */
+    private static class ReleaseExplicitLock implements IgniteClosure<IgniteUuid, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Boolean apply(IgniteUuid xid) {
+            return ignite.context().cache().context().mvcc().releaseExplicitLock(xid);
         }
     }
 }

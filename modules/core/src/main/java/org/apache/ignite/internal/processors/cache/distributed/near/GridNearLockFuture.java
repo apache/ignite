@@ -137,6 +137,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Time when the first primary batch starts, or zero before mapping. */
+    private long lockWaitStartTime;
+
     /** Transaction. */
     @GridToStringExclude
     private final GridNearTxLocal tx;
@@ -356,7 +359,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             threadId,
             lockVer,
             topVer,
-            lockTimeout(),
+            timeout,
             !inTx(),
             inTx(),
             implicitSingleTx(),
@@ -371,16 +374,11 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         entries.add(entry);
 
-        if (c == null && lockTimeout() < 0) {
+        if (c == null && timeout < 0) {
             if (log.isDebugEnabled())
                 log.debug("Failed to acquire lock with negative timeout: " + entry);
 
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
-                onComplete(false, true, false);
-            }
-            else {
-                onFailed();
-            }
+            onFailed();
 
             return null;
         }
@@ -817,7 +815,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (isDone()) // Possible due to async rollback.
             return;
 
-        if (lockTimeout() > 0) {
+        if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);
@@ -1088,7 +1086,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 isolation(),
                                                 isInvalidate(),
                                                 timeout,
-                                                waitTimeout,
                                                 mappedKeys.size(),
                                                 inTx() ? tx.size() : mappedKeys.size(),
                                                 inTx() && tx.syncMode() == FULL_SYNC,
@@ -1205,6 +1202,21 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         final GridNearLockRequest req = map.request();
         final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
         final ClusterNode node = map.node();
+
+        long remainingWaitTimeout = waitTimeout;
+
+        if (waitTimeout > 0) {
+            long now = U.currentTimeMillis();
+
+            if (lockWaitStartTime == 0)
+                lockWaitStartTime = now;
+
+            long elapsed = now - lockWaitStartTime;
+
+            remainingWaitTimeout = elapsed < waitTimeout ? waitTimeout - elapsed : -1;
+        }
+
+        req.waitTimeout(remainingWaitTimeout);
 
         if (node.isLocal()) {
             req.miniId(-1);
@@ -1421,13 +1433,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     }
 
     /**
-     * @return Timeout value for this lock future.
-     */
-    private long lockTimeout() {
-        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
-    }
-
-    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1435,7 +1440,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(lockTimeout());
+            super(timeout);
         }
 
         /** Requested keys. */
@@ -1447,20 +1452,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                 log.debug("Timed out waiting for lock response: " + this);
 
             timedOut = true;
-
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
-                synchronized (GridNearLockFuture.this) {
-                    requestedKeys = requestedKeys0();
-
-                    clear(); // Stop response processing.
-                }
-
-                synchronized (this) {
-                    onComplete(false, true, false);
-                }
-
-                return;
-            }
 
             txLockTimedOut = true;
 
