@@ -356,11 +356,33 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     public abstract void onDhtResponse(UUID nodeId, GridDhtAtomicNearResponse res);
 
     /**
+     * Completes the future without removing it from the pending atomic futures.
+     *
      * @param ret Result.
      * @param err Error.
-     * @param futId Not null ID if need remove future.
      */
-    final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, @Nullable Long futId) {
+    final void completeFuture(@Nullable GridCacheReturn ret, Throwable err) {
+        completeFuture(ret, err, false, 0);
+    }
+
+    /**
+     * Completes the future and removes it from the pending atomic futures.
+     *
+     * @param ret Result.
+     * @param err Error.
+     * @param futId ID of the future to remove.
+     */
+    final void completeFuture(@Nullable GridCacheReturn ret, Throwable err, long futId) {
+        completeFuture(ret, err, true, futId);
+    }
+
+    /**
+     * @param ret Result.
+     * @param err Error.
+     * @param rmv Whether to remove the future from the pending atomic futures.
+     * @param futId ID of the future to remove, if {@code rmv}.
+     */
+    private void completeFuture(@Nullable GridCacheReturn ret, Throwable err, boolean rmv, long futId) {
         Object retval = ret == null
             ? null
             : (this.retval || op == TRANSFORM)
@@ -373,7 +395,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
 
-        if (futId != null)
+        if (rmv)
             cctx.mvcc().removeAtomicFuture(futId);
 
         super.onDone(retval, err);
@@ -383,10 +405,12 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
     @Override public final boolean onDone(@Nullable Object res, @Nullable Throwable err) {
         assert err != null : "onDone should be called only to finish future with error on cache/node stop";
 
-        Long futId = null;
+        boolean rmv = false;
+        long futId = 0;
 
         synchronized (this) {
             if (futureMapped()) {
+                rmv = true;
                 futId = this.futId;
 
                 topVer = AffinityTopologyVersion.ZERO;
@@ -395,7 +419,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
         }
 
         if (super.onDone(null, err)) {
-            if (futId != null)
+            if (rmv)
                 cctx.mvcc().removeAtomicFuture(futId);
 
             return true;
