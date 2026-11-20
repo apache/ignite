@@ -104,7 +104,7 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
                     key = keyType.get(pageAddr, off + fieldOff, maxSize);
 
                 if (key == null) {
-                    IndexRow row = io.getLookupRow(tree, pageAddr, idx);
+                    IndexRow row = tree.getRowForSearch(io, pageAddr, idx);
 
                     key = row.key(keyIdx);
                 }
@@ -186,7 +186,7 @@ class IndexQueryCriteriaClosure implements BPlusTree.TreeRowClosure<IndexRow, In
                     cmp = rowCmp.compareKey(pageAddr, off, maxSize, o.key(keyIdx), keyType);
 
                 if (cmp == COMPARE_UNSUPPORTED || cmp == CANT_BE_COMPARE)
-                    currRow = tree.getRow(io, pageAddr, idx);
+                    currRow = tree.getRowForSearch(io, pageAddr, idx);
                 else
                     return cmp;
             }
