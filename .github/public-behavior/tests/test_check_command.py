@@ -27,12 +27,12 @@ PUBLIC_API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
 HEAD = "a" * 40
 
 
-def run_checker(file_pages, *, changed_files=None):
+def run_checker(file_pages, *, changed_files=None, title=""):
     """Run the workflow command with a fork PR event and GitHub responses for its list of files."""
     repo = "apache/ignite"
     pull = f"repos/{repo}/pulls/42"
     pr = {
-        "number": 42, "user": {"login": "contributor"}, "labels": [],
+        "number": 42, "title": title,
         "head": {"repo": {"full_name": "contributor/ignite"}, "sha": HEAD},
         "base": {"repo": {"full_name": repo}, "sha": "b" * 40},
         "changed_files": sum(map(len, file_pages)) if changed_files is None else changed_files,
@@ -85,12 +85,20 @@ class CheckCommandTest(unittest.TestCase):
         self.assertIn("This PR adds or updates an RFC.", summary)
         self.assertIn(empty["filename"], summary)
 
+    def test_existing_rfc_can_be_updated_in_another_ticket(self):
+        path = "rfcs/IGNITE-123-cache-timeout.md"
+        result, summary = run_checker([[{"filename": path, "status": "modified"}]], title="IGNITE-456 Amend the RFC")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(path, summary)
+
     def test_invalid_rfc_filename_fails_with_an_example(self):
-        result, summary = run_checker([[{"filename": "rfcs/cache-timeout.md", "status": "added"}]])
+        result, summary = run_checker([[{"filename": "rfcs/cache-timeout.md", "status": "added"},
+                                        {"filename": PUBLIC_API, "status": "modified"}]])
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Invalid RFC filename: rfcs/cache-timeout.md.", summary)
         self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", summary)
         self.assertIn("Invalid RFC filename", result.stderr)
+        self.assertIn("Check results, errors and calls", summary)
 
     def test_incomplete_file_list_requires_a_complete_pr(self):
         """Given an API file count mismatch, the job stops before review and explains GitHub's limit."""

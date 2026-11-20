@@ -32,11 +32,11 @@ MARKER = re.compile(
     r"(?P<outcome>success|failure) (?P<fingerprint>[a-f0-9]{64}) -->\n"
 )
 JOB_CONCLUSIONS = {"success", "failure", "timed_out"}
-RESOLVED = f"## {report_title(True)}\n\nThe issues from the previous public behavior check are resolved."
+RESOLVED = f"## {report_title(True)}\n\nThe check passed. There is nothing left to flag in this PR."
 RERUN = (
     "## Public behavior changes need a fresh check\n\n"
     "GitHub still shows a failed job. The current PR passed when the reporter checked again.\n\n"
-    "### For the author\n\nRerun **Public behavior changes** from the Checks tab.\n\n"
+    "### For the author\n\nEdit the PR description or push a commit to start a fresh check.\n\n"
     "### For the reviewer\n\nWait for **Public behavior changes** to pass on this commit."
 )
 TIMEOUT = (
@@ -67,12 +67,6 @@ def matches(pr, run, repo):
         and head["ref"] == run["head_branch"] and head["sha"] == run["head_sha"]
         and (not run["pull_requests"] or any(link["number"] == pr["number"] for link in run["pull_requests"]))
     )
-
-
-def metadata(pr):
-    marked = any(label["name"] == "public-behavior-change" for label in pr["labels"])
-    state = (pr["head"]["sha"], pr["base"]["sha"], marked)
-    return hashlib.sha256(json.dumps(state).encode()).hexdigest()
 
 
 def recorded_job(root, run):
@@ -117,7 +111,7 @@ def prepare(repo, run, destination):
     if not matches(pr, run, repo):
         return
     event = {"number": pr["number"], "head": {"sha": pr["head"]["sha"]}, "base": {"sha": pr["base"]["sha"]}}
-    context = {"pull_request": event, "metadata": metadata(pr), "source_conclusion": conclusion}
+    context = {"pull_request": event, "source_conclusion": conclusion}
     destination.write_text(json.dumps(context), encoding="utf-8")
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
         print(f"pr_number={int(pr['number'])}", f"base_sha={pr['base']['sha']}", f"conclusion={conclusion}", sep="\n", file=out)
@@ -187,7 +181,7 @@ def publish(repo, run, context, summary_file, outcome):
         return
 
     current = api(route)
-    if not matches(current, run, repo) or metadata(current) != context["metadata"]:
+    if not matches(current, run, repo) or current["base"]["sha"] != context["pull_request"]["base"]["sha"]:
         return
     if newer_run(repo, run, current):
         return

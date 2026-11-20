@@ -46,7 +46,7 @@ jobs:
       - name: Find the open PR at the checked revision
         id: source
         run: python3 .github/public-behavior/post_pr_comment.py prepare "$RUNNER_TEMP/public-behavior-pr.json"
-      # Use the same trusted checker revision as the PR check.
+      # Recheck the current PR using its trusted base revision.
       - uses: actions/checkout@v4
         if: steps.source.outputs.pr_number != '' && steps.source.outputs.conclusion != 'timed_out'
         with:

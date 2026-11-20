@@ -40,7 +40,7 @@ def rules_reference():
         process = f"{project}/pull/13760/files#diff-964c536dd887c02e46887244405c46d2d8b5e15dc7a4480eb3a33fb64844b15a"
     return (
         f"The check flags known files. Reviewers decide whether a change affects [Ignite's public contracts]({scope}). "
-        f"Before merge, the reviewer checks any vote required by the [RFC process]({process})."
+        f"The [RFC process]({process}) describes the review rules."
     )
 
 
@@ -55,7 +55,6 @@ def report(passed, reason, author, reviewer, paths=(), *, advisory=False):
         "### For the reviewer", f"<p>{escape(reviewer, quote=False)}</p>",
     ]
 
-    paths = sorted(set(paths))
     if paths:
         shown = [_one_line(path) for path in paths[:8]]
         log.extend(["Files to review:", *("  - " + path for path in shown)])

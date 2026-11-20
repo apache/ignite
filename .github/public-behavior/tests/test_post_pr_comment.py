@@ -32,7 +32,7 @@ RUN = {"status": "completed", "conclusion": "failure", "event": "pull_request",
        "pull_requests": [], "display_title": "Public behavior changes for PR #42"}
 PR = {"state": "open", "number": 42, "head": {"ref": "proposal", "sha": RUN["head_sha"], "repo": FORK},
       "base": {"ref": "master", "sha": "b" * 40, "repo": RUN["repository"]},
-      "title": "IGNITE-123 Proposal", "body": "", "labels": []}
+      "title": "IGNITE-123 Proposal", "body": ""}
 BOT = {"login": "github-actions[bot]", "type": "Bot"}
 ADVISORY_TITLE = "Public behavior to review"
 CHECKS_LINK = f"[Open PR checks](https://github.com/{REPO}/pull/42/checks)"
@@ -150,7 +150,7 @@ class PostPrCommentTest(unittest.TestCase):
         self.assertIn("Include the Jira number in the filename.", self.comments[-1]["body"])
         self.publish(context, "success", "RFC filename checked.")
         self.assertEqual(self.writes, ["POST", "POST", "DELETE", "POST", "DELETE"])
-        self.assertIn("resolved", self.comments[-1]["body"])
+        self.assertIn("The check passed. There is nothing left to flag in this PR.", self.comments[-1]["body"])
         self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(len(self.writes), 5)
@@ -181,7 +181,8 @@ class PostPrCommentTest(unittest.TestCase):
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(self.writes[-2:], ["POST", "DELETE"])
         self.assertEqual(len(self.comments), 1)
-        self.assertIn(rc.RESOLVED, self.comments[0]["body"])
+        self.assertIn("There is nothing left to flag in this PR.", self.comments[0]["body"])
+        self.assertNotIn("issues", self.comments[0]["body"])
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(self.writes, ["POST", "POST", "DELETE", "POST", "DELETE"])
 
@@ -211,7 +212,7 @@ class PostPrCommentTest(unittest.TestCase):
         context = self.prepare()
         self.publish(context, "success", "RFC filename checked.", original="failure")
         self.assertEqual(self.writes, ["POST"])
-        self.assertIn("fresh check", self.comments[-1]["body"])
+        self.assertIn("Edit the PR description or push a commit to start a fresh check.", self.comments[-1]["body"])
         self.assertIn(CHECKS_LINK, self.comments[-1]["body"])
         self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.assertNotIn(rc.RESOLVED, self.comments[-1]["body"])
@@ -249,11 +250,10 @@ class PostPrCommentTest(unittest.TestCase):
         self.publish(context, "success", "RFC filename checked.", original="failure")
         self.assertEqual(self.writes, [])
 
-    def test_skips_stale_pr_metadata(self):
-        """When the head, base or public behavior label changes, discard the outdated report."""
+    def test_skips_a_stale_pr_revision(self):
+        """When the head or base commit changes, discard the outdated report."""
         context = self.prepare()
-        changes = {"head": dict(PR["head"], sha="c" * 40), "base": dict(PR["base"], sha="c" * 40),
-                   "labels": [{"name": "public-behavior-change"}]}
+        changes = {"head": dict(PR["head"], sha="c" * 40), "base": dict(PR["base"], sha="c" * 40)}
         for field, value in changes.items():
             with self.subTest(field=field):
                 self.pr = dict(PR, **{field: value})
@@ -261,11 +261,10 @@ class PostPrCommentTest(unittest.TestCase):
                 self.assertEqual(self.writes, [])
 
     def test_unrelated_edits_keep_the_report_current(self):
-        """A new PR title, description or unrelated label does not change the advice."""
+        """When the PR title and description change, the report still applies to the same revision."""
         context = self.prepare()
         self.pr["title"] = "IGNITE-456 Update the original RFC"
         self.pr["body"] = "Added steps to test the fix."
-        self.pr["labels"] = [{"name": "documentation"}]
         self.publish(context, "failure", "Use the required RFC filename.")
         self.assertEqual(self.writes, ["POST"])
 

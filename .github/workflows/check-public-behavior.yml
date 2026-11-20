@@ -19,7 +19,7 @@ run-name: 'Public behavior changes for PR #${{ github.event.pull_request.number 
 on:
   pull_request:
     branches: [master]
-    types: [opened, reopened, synchronize, edited, labeled, unlabeled, ready_for_review]
+    types: [opened, reopened, synchronize, edited, ready_for_review]
 
 permissions:
   contents: read

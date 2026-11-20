@@ -66,29 +66,33 @@ def is_rfc_candidate(path):
     if not path.startswith("rfcs/") or filename.name.lower() in {"template.md", "readme.md"}:
         return False
     suffix = filename.suffix.lower()
-    return suffix == ".md" or (suffix in {"", ".txt"} and re.match(r"IGNITE-[0-9]+\b", filename.name) is not None)
+    if suffix == ".md":
+        return True
+    document_suffixes = {"", ".txt", ".markdown", ".mdown", ".mkd", ".adoc", ".asciidoc"}
+    return (filename.parent == Path("rfcs") and suffix in document_suffixes
+            and re.match(r"IGNITE-[0-9]+\b", filename.name) is not None)
 
 
-def check(pr, files):
+def check(files):
     changed = {path for f in files for path in (f["filename"], f.get("previous_filename")) if path}
     signals = {path: hint for path in sorted(changed) if (hint := contract_review(path))}
-    docs = {f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"])}
-    marked = any(label["name"] == "public-behavior-change" for label in pr["labels"])
-    paths = tuple(sorted(changed if marked else signals.keys() | docs))
-    for path in sorted(docs):
+    docs = sorted(f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"]))
+    if not signals and not docs:
+        return CheckResult(
+            "No changed file matches a known public-contract path.",
+            "Continue with the usual PR review.",
+            "Consider whether this change affects users in ways the file paths do not show.",
+        )
+
+    paths = (*docs, *signals)
+    code_hints = list(dict.fromkeys(signals.values()))
+    for path in docs:
         if not RFC_PATH.fullmatch(path):
             raise CheckError(
                 f"Invalid RFC filename: {path}.",
                 "Use rfcs/IGNITE-<ticket>-<short-title>.md, for example rfcs/IGNITE-12345-cache-timeout.md.",
-                "Check that the filename contains the proposal's Jira ticket number.", paths,
+                " ".join(["Check that the filename contains the proposal's Jira ticket number.", *code_hints]), paths,
             )
-
-    if not (docs or signals or marked):
-        return CheckResult(
-            "This PR does not add or update an RFC or touch a known public-contract path.",
-            "Continue with the usual PR review.",
-            "If another file changes public behavior, add the public-behavior-change label.",
-        )
 
     hints = []
     if docs:
@@ -96,18 +100,16 @@ def check(pr, files):
         author = "Discuss the proposal in this PR. Follow the RFC process for a new proposal or a change to the agreed plan."
         hints.append("For a new proposal or a changed plan, check the vote on dev@ and any later objections. "
                      "Wording-only edits need no new vote.")
-        if not (marked or signals):
+        if not signals:
             hints.append("A product RFC goes with its first implementation. A documentation or process RFC can stand alone.")
         hints.append("If this PR includes code, compare the implementation and its compatibility tests with the agreed plan.")
     else:
-        reason = ("The public-behavior-change label flags this PR for review."
-                  if marked else "This PR changes a file that may affect public behavior.")
-        reason += " This PR does not add or update an RFC."
+        reason = "This PR changes a file that may affect public behavior. This PR does not add or update an RFC."
         author = ("If public behavior changes, start from rfcs/TEMPLATE.md unless an approved RFC "
                   "or a process exception already covers the work.")
         hints.append("Check whether the code preserves the contract, follows an approved plan or needs an RFC.")
 
-    hints.extend(dict.fromkeys(signals.values()))
+    hints.extend(code_hints)
     return CheckResult(reason, author, " ".join(hints), paths, advisory=True)
 
 
@@ -128,7 +130,7 @@ def main():
             "Split PRs that exceed GitHub's limit of 3,000 files. For a smaller PR, rerun the job.",
             "Wait for a complete file list before assessing public-contract impact.",
         )
-    return check(pr, files)
+    return check(files)
 
 
 if __name__ == "__main__":

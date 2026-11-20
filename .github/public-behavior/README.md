@@ -21,17 +21,17 @@ This check helps reviewers spot changes to [Ignite's public contracts](../../rfc
 
 ## What appears in a PR
 
-- **A file may affect public behavior.** The check passes and the bot lists the files and what to review. For example, a client protocol change calls for checking old clients against the new server. If a change outside the known paths needs the same review, add the `public-behavior-change` label.
+- **A file may affect public behavior.** The bot matches changed paths to known public contracts. It lists the matching files, says whether the PR includes an RFC, and suggests what to review. For example, a client protocol change calls for checking old clients against the new server.
 - **The PR adds or updates an RFC.** The bot lists the file. Its name must follow `rfcs/IGNITE-<ticket>-<short-title>.md`, for example `rfcs/IGNITE-12345-cache-timeout.md`. An invalid name fails the check. The comment shows the file and how to rename it. To update an existing RFC under a new ticket, edit the original file and keep its name.
 - **The PR changes both code and an RFC.** Review the implementation and its compatibility tests against the plan. A wording fix in the RFC can accompany code that changes public behavior.
 
-The reviewer decides whether an RFC or an exception applies, checks any required vote on dev@, and approves the PR when satisfied.
+Changes outside the known paths can also affect users. The reviewer decides whether an RFC or an exception applies, checks any required vote on dev@, and approves the PR when satisfied.
 
-The check runs when a PR to `master` opens, reopens, becomes ready for review, or changes its code, details or labels. The result is available under **Checks**. When there is something to fix or review, the bot also comments in the PR. It replaces its comment when the advice changes and confirms when earlier issues are resolved. A clean PR with nothing to review gets no comment.
+The check runs when a PR to `master` opens, reopens, becomes ready for review, or changes its code or details. The result is available under **Checks**. When there is something to fix or review, the bot also comments in the PR. It replaces its comment when the advice changes and confirms when earlier issues are resolved. A clean PR with nothing to review gets no comment.
 
 ## Enabling the check on master
 
-1. Merge the public contract and process RFCs and the template, then merge the workflows. Create the `public-behavior-change` label.
+1. Merge the public contract and process RFCs and the template, then merge the workflows.
 2. On a fork PR, change a known public API file. Check that the job passes and the bot posts review guidance. Add an RFC named `rfcs/cache-timeout.md`, then rename it to `rfcs/IGNITE-12345-cache-timeout.md`. Check that the job fails and then passes, and that the bot replaces its warning.
 3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). To stop blocking merges on this check, remove it from the required checks.
 
