@@ -39,6 +39,7 @@ class JavaContracts {
     private final Map<String, List<Entry>> declarations = new TreeMap<>();
     private final Map<String, Map<String, String>> wireValues = new TreeMap<>();
     private final Map<String, Path> wireFiles = new HashMap<>();
+    private final Map<Path, CompilationUnitTree> units = new TreeMap<>();
     private final Map<Path, ClassTree> internalTypes = new TreeMap<>();
     private final Set<String> typesWithParents = new HashSet<>();
 
@@ -247,6 +248,7 @@ class JavaContracts {
                 Path path = root.relativize(Path.of(unit.getSourceFile().toUri()));
                 if (invalidFiles.contains(path.getFileName().toString()))
                     continue;
+                snapshot.units.put(path, unit);
                 String pkg = unit.getPackageName() == null ? "" : unit.getPackageName().toString();
                 for (Tree top : unit.getTypeDecls()) {
                     if (top instanceof ClassTree cls)
@@ -324,7 +326,13 @@ class JavaContracts {
         before.internalTypes.keySet().removeIf(path -> invalid.contains(path.getFileName().toString()));
         after.internalTypes.keySet().removeIf(path -> invalid.contains(path.getFileName().toString()));
         RestContracts.compare(before.internalTypes, after.internalTypes, JavaContracts::emit);
-        Set<String> registeredPaths = Set.copyOf(Arrays.asList(args).subList(2, args.length));
+        Set<String> options = Set.copyOf(Arrays.asList(args).subList(2, args.length));
+        before.units.keySet().removeIf(path -> invalid.contains(path.getFileName().toString()));
+        after.units.keySet().removeIf(path -> invalid.contains(path.getFileName().toString()));
+        if (!options.contains("--skip-cli-arguments"))
+            SubcommandArguments.compare(before.units, after.units, JavaContracts::emit);
+        if (!options.contains("--skip-view-columns"))
+            SystemViewColumns.compare(before.units, after.units, JavaContracts::emit);
         for (var entry : before.internalTypes.entrySet()) {
             Path file = entry.getKey();
             ClassTree old = entry.getValue();
@@ -334,7 +342,7 @@ class JavaContracts {
             var output = (java.util.function.Consumer<String>)(text -> emit(file, text));
             String owner = file.toString().replaceFirst("^.*/src/main/java/", "").replace('/', '.').replaceFirst("\\.java$", "");
             CliContracts.compare(file, old, now, output);
-            if (registeredPaths.contains(file.toString()))
+            if (options.contains(file.toString()))
                 RegisteredContracts.compare(old, now, output);
             FormatContracts.compare(owner, old, now, output);
         }

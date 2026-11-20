@@ -47,7 +47,7 @@ class CheckError(ValueError):
         self.result = CheckResult(reason, author, reviewer, paths, changes=changes)
 
 
-def api(route, *, pages=False, raw=False, full=False, exists=False, optional=False):
+def api(route, *, pages=False, raw=False, full=False, exists=False, optional=False, fields=None):
     args = ["gh", "api"]
     if exists:
         args.extend(["--method", "HEAD", "--silent"])
@@ -57,8 +57,11 @@ def api(route, *, pages=False, raw=False, full=False, exists=False, optional=Fal
         args.extend(["-H", "Accept: application/vnd.github.raw+json"])
     if full:
         args.extend(["-H", "Accept: application/vnd.github.full+json"])
+    args.append(route)
+    for key, value in (fields or {}).items():
+        args.extend(["-f", key + "=" + value])
     try:
-        response = subprocess.check_output([*args, route], stderr=subprocess.PIPE)
+        response = subprocess.check_output(args, stderr=subprocess.PIPE)
         if exists:
             return True
         if raw:

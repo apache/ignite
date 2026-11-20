@@ -22,6 +22,8 @@ import subprocess
 from tempfile import TemporaryDirectory
 from urllib.parse import quote
 
+from cli_sources import CLI_RULE_SOURCES, MANAGEMENT, NO_ARG, ROOT_REGISTRY, cli_packages, cli_package_sources
+from view_sources import VIEW_RULE_SOURCES, view_companions, supports_view_source
 from contract_paths import REST_SOURCES, SQL_ERRORS, SQL_STATES, java_contract_source
 from launcher_contracts import launcher_changes, supports_launcher
 from registered_contracts import supports_registered_contracts
@@ -35,21 +37,32 @@ def _candidate(path):
 
 
 def changed_contracts(files, repository, base, head, api):
+    touched = {name for item in files for name in (item["filename"], item.get("previous_filename")) if name}
+    view_sources = view_companions(touched)
     pairs = []
     for item in files:
         path = item["filename"]
         old = None if item["status"] in {"added", "copied"} else item.get("previous_filename", path)
         new = None if item["status"] == "removed" else path
         # We can compare a rename only when both locations are in a supported contract.
-        if all(_candidate(name) for name in (old, new) if name):
+        if all(_candidate(name) or name in view_sources for name in (old, new) if name):
             pairs.append((old, new))
     if not pairs:
         return {}
 
     old_paths = {old for old, _ in pairs if old}
     new_paths = {new for _, new in pairs if new}
-    touched = {name for item in files for name in (item["filename"], item.get("previous_filename")) if name}
-    companions = set()
+    skip_cli = bool(touched & CLI_RULE_SOURCES)
+    skip_views = bool(touched & VIEW_RULE_SOURCES)
+    # An argument change needs a registered command on both sides. New files are
+    # already in the PR diff and cannot establish a previous binding on their own.
+    packages = set() if skip_cli else cli_packages(old_paths) & cli_packages(new_paths)
+    companions = view_sources - touched
+    if packages:
+        if NO_ARG not in touched:
+            companions.add(NO_ARG)
+        if MANAGEMENT not in packages and ROOT_REGISTRY not in touched:
+            companions.add(ROOT_REGISTRY)
     if REST_SOURCES & (old_paths | new_paths):
         companions.update(REST_SOURCES - touched)
     if SQL_ERRORS in old_paths & new_paths and SQL_STATES not in touched:
@@ -74,13 +87,19 @@ def changed_contracts(files, repository, base, head, api):
         contents = sources.pop(("after", path))
         if contents is not None:
             sources["before", path] = sources["after", path] = contents
-    return compare_sources(pairs, sources)
+    # Unchanged files have the same contents on both sides of the PR. Read each package once,
+    # even if several of its subcommands or argument DTOs changed.
+    for package in sorted(packages):
+        for path, source in cli_package_sources(repository, revisions["before"], package, api).items():
+            if path not in touched:
+                sources["before", path] = sources["after", path] = source
+    return compare_sources(pairs, sources, skip_cli=skip_cli, skip_views=skip_views)
 
 
-def compare_sources(pairs, sources):
+def compare_sources(pairs, sources, *, skip_cli=False, skip_views=False):
     changes = defaultdict(list)
-    java = [(key, text) for key, text in sources.items() if java_contract_source(key[1])]
-    for path, fact in java_changes(java):
+    java = [(key, text) for key, text in sources.items() if java_contract_source(key[1]) or supports_view_source(key[1])]
+    for path, fact in java_changes(java, skip_cli=skip_cli, skip_views=skip_views):
         changes[path].append(fact)
 
     for old, new in pairs:
@@ -98,7 +117,7 @@ def compare_sources(pairs, sources):
     return dict(sorted(changes.items()))
 
 
-def java_changes(java):
+def java_changes(java, *, skip_cli=False, skip_views=False):
     if not java:
         return []
     # Only the trusted analyzer is executed. The two directories contain PR sources as data.
@@ -115,7 +134,11 @@ def java_changes(java):
         compiled.mkdir()
         subprocess.run(["javac", "-proc:none", "-d", str(compiled), *map(str, sorted(checker.glob("*.java")))],
                        check=True)
-        registered = sorted({path for (_, path), _ in java if supports_registered_contracts(path)})
-        run = subprocess.run(["java", "-cp", str(compiled), "JavaContracts", str(root / "before"), str(root / "after"), *registered],
+        options = sorted({path for (_, path), _ in java if supports_registered_contracts(path)})
+        if skip_cli:
+            options.append("--skip-cli-arguments")
+        if skip_views:
+            options.append("--skip-view-columns")
+        run = subprocess.run(["java", "-cp", str(compiled), "JavaContracts", str(root / "before"), str(root / "after"), *options],
                              text=True, stdout=subprocess.PIPE, check=True)
         return [line.split("\t", 1) for line in run.stdout.splitlines()]

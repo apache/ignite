@@ -15,6 +15,7 @@
 
 """Select source files for the static checks. A path match by itself is not a finding."""
 
+from cli_sources import cli_package
 from registered_contracts import supports_registered_contracts
 
 
@@ -44,6 +45,7 @@ _INTERNAL_SOURCES = {
     "internal/commandline/ArgumentParser.java",
     "internal/commandline/CommandHandler.java",
     "internal/management/IgniteCommandRegistry.java",
+    "internal/management/api/NoArg.java",
     "internal/binary/GridBinaryMarshaller.java",
     "internal/pagemem/wal/record/WALRecord.java",
     "internal/processors/cache/persistence/file/FilePageStore.java",
@@ -54,6 +56,8 @@ _INTERNAL_SOURCES = {
 
 
 def java_contract_source(path):
+    if cli_package(path):
+        return True
     module, source_root, java = path.partition("/src/main/java/org/apache/ignite/")
     if not source_root or not module.startswith("modules/") or not java.endswith(".java"):
         return False
