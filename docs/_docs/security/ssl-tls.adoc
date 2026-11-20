@@ -156,6 +156,12 @@ include::{javaFile}[tag=disable-validation,indent=0]
 ----
 --
 
+== Reloading Certificates Without Restarting Nodes
+
+If you configure an `SslContextFactory` that can reload its key and trust material, new TLS connections use the reloaded SSL context without restarting nodes.
+This applies to discovery, communication, client connector, binary REST, and Java thin-client connections.
+Existing connections continue to use the SSL context that was active when they were established.
+
 == Upgrading Certificates
 
 You can replace certificate files and reload them without restarting nodes that use `SslContextFactory`.
