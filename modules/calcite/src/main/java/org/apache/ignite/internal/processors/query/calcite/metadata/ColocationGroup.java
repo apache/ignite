@@ -64,6 +64,9 @@ public class ColocationGroup extends AbstractMessage {
      */
     private boolean primaryAssignment;
 
+    /** Partitions the assignments are filtered by. */
+    private @Nullable int[] partsFilter;
+
     /** Marshalled assignments serialization call holder. */
     @Order(2)
     @Nullable int[] marshalledAssignments;
@@ -274,22 +277,24 @@ public class ColocationGroup extends AbstractMessage {
             if (parts == null)
                 return this;
 
-            if (parts.length > 0) {
-                for (int i = 0; i < this.assignments.size(); ++i) {
-                    UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
+            for (int i = 0; i < this.assignments.size(); ++i)
+                assignments.add(Collections.emptyList());
 
-                    if (first != null)
-                        nodes.add(first);
+            for (int part : parts) {
+                UUID first = part < assignments.size() ? F.first(this.assignments.get(part)) : null;
 
-                    assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
+                if (first != null) {
+                    nodes.add(first);
+
+                    assignments.set(part, this.assignments.get(part));
                 }
             }
-            else {
-                for (int i = 0; i < this.assignments.size(); ++i)
-                    assignments.add(Collections.emptyList());
-            }
 
-            return new ColocationGroup(srcIds, new ArrayList<>(nodes), assignments);
+            ColocationGroup res = new ColocationGroup(srcIds, new ArrayList<>(nodes), assignments);
+
+            res.partsFilter = parts;
+
+            return res;
         }
 
         return this;
@@ -310,6 +315,12 @@ public class ColocationGroup extends AbstractMessage {
         // All primary partitions: the scan reserves them as a group.
         if (F.isEmpty(assignments) || primaryAssignment)
             return null;
+
+        if (partsFilter != null) {
+            return Arrays.stream(partsFilter)
+                .filter(p -> p < assignments.size() && Objects.equals(nodeId, F.first(assignments.get(p))))
+                .toArray();
+        }
 
         GridIntList parts = new GridIntList(assignments.size());
 
