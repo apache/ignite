@@ -400,7 +400,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
-        if (ldr == null)
+        if (!ctx.isCustomLoader(ldr))
             return deserialize();
 
         Marshallers.USE_CACHE.set(Boolean.FALSE);
