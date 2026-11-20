@@ -28,8 +28,6 @@ import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Collections;
 import java.util.Date;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
@@ -67,11 +65,6 @@ public class TestCertificateAuthority {
         cert = certificate(this.name, keys, notBefore, notAfter, true);
     }
 
-    /** Returns the subject of the CA certificate. */
-    public X500Principal subject() {
-        return name;
-    }
-
     /**
      * Creates a key store with one private key and its chain under the given alias.
      * The chain holds a leaf certificate with the given dates, signed by this CA, followed by the CA certificate.
@@ -91,15 +84,6 @@ public class TestCertificateAuthority {
         return store;
     }
 
-    /** Creates key managers for a certificate issued by this CA with the given validity dates. */
-    public KeyManager[] keyManagers(String alias, long notBefore, long notAfter) throws Exception {
-        KeyManagerFactory factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-
-        factory.init(keyStore(alias, notBefore, notAfter), PASSWORD);
-
-        return factory.getKeyManagers();
-    }
-
     /**
      * Creates a trust store that trusts only this CA.
      * It holds the CA certificate under the CA name.
@@ -108,16 +92,6 @@ public class TestCertificateAuthority {
         KeyStore store = emptyStore();
 
         store.setCertificateEntry(name.getName(), cert);
-
-        return store;
-    }
-
-    /** Creates a trust store containing each CA certificate, including CAs with the same subject. */
-    public static KeyStore trustStoreOf(TestCertificateAuthority... authorities) throws Exception {
-        KeyStore store = emptyStore();
-
-        for (int i = 0; i < authorities.length; i++)
-            store.setCertificateEntry(Integer.toString(i), authorities[i].cert);
 
         return store;
     }

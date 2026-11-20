@@ -160,8 +160,8 @@ include::{javaFile}[tag=disable-validation,indent=0]
 
 You can replace certificate files and reload them without restarting nodes that use `SslContextFactory`.
 The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] updates TCP transports on all server and thick-client nodes.
-This includes HTTPS of HTTP REST when it uses link:restapi#https[`httpSslFactory`].
-It does not reload HTTPS configured directly in Jetty XML or external client applications.
+It also reloads the link:restapi#https[HTTP REST endpoint] when the Jetty connector uses HTTPS.
+External clients reload their certificates separately.
 
 . Back up the key and trust store files before replacing them.
 Keep their configured paths, store types, and passwords unchanged; changing node configuration requires a restart.
@@ -177,15 +177,16 @@ The command asks for confirmation; use `--yes` to skip it.
 . Check the command result and the reload logs of any failed nodes, then verify a new connection with the replacement certificates.
 Established connections continue using their existing TLS context.
 
-If a factory fails to reload, it keeps its previous context, and that node stops reloading its remaining factories.
+If a factory fails to reload, that node stops reloading its remaining factories.
+Ignite SSL factories keep their previous context. For Jetty, see link:restapi#https[HTTP REST over HTTPS].
 Successful reloads remain in effect; other nodes continue independently.
 Check the affected node's log for error details.
 Correct the failed store and run the command again.
 To restore the previous certificates, restore the backed-up files and reload again while peers still trust those certificates.
 
-Custom factories must extend javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
+Custom factories for discovery, communication, client connector, and binary REST must extend javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
 They must reread key and trust data from their sources on reload and supply the updated context for new connections.
-If any factory on a node has another type, the command reports it as unsupported and reloads nothing on that node.
+If any of these transports uses another type of factory, the command reports it as unsupported and reloads nothing on that node.
 For these factories, follow the same trust-first sequence and restart affected nodes one at a time instead of running reload.
 If you configured `trustManagers` directly, the command reuses them instead of reloading a trust store.
 
@@ -193,8 +194,9 @@ If you configured `trustManagers` directly, the command reuses them instead of r
 
 Automatic hot reload lets nodes load replacement certificates without a reload command.
 You must supply the replacements: Ignite reads them from the configured source and does not issue certificates.
-Hot reload covers the same transports as <<Upgrading Certificates,manual reload>>.
-It does not update HTTPS configured directly in Jetty XML or external client applications.
+Ignite schedules updates for discovery, communication, client connector, and binary REST.
+For file-based HTTPS, you can configure Jetty's `KeyStoreScanner` in the Jetty XML file to reload when the key store changes.
+External clients manage their own updates.
 
 === Enable Hot Reload
 

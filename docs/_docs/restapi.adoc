@@ -85,16 +85,6 @@ The following table describes the properties of `ConnectorConfiguration` that ar
 |Yes
 |`null`
 
-|`setHttpSslFactory(Factory<SSLContext>)`
-|SSL context factory that enables HTTPS on the HTTP connector. See <<HTTPS>>.
-|Yes
-|`null`
-
-|`setHttpSslClientAuth(boolean)`
-|Whether HTTPS requires a client certificate that the trust store of `httpSslFactory` trusts. Requires `httpSslFactory`.
-|Yes
-|`false`
-
 |`setMessageInterceptor(...)`
 |The interceptor transforms all objects exchanged via REST protocol. For example, if you use custom serialisation on client you can write an interceptor to transform binary representations received from the client to Java objects and later access them from Java code directly.
 |Yes
@@ -116,30 +106,11 @@ include::code-snippets/xml/jetty.xml[tags=, indent=0]
 
 === HTTPS
 
-To serve HTTPS with an SSL context factory, set `ConnectorConfiguration.setHttpSslFactory(...)`.
-The factory applies to the built-in HTTP connector or to the connector of the Jetty XML configuration.
-The node fails to start if the connector already configures TLS or its default connection factory is not Jetty's `HttpConnectionFactory`.
-To require client certificates, also set `setHttpSslClientAuth(true)`.
-
-New connections use exactly the protocols and cipher suites that the factory enables; Jetty does not exclude any of them.
-Jetty checks that the host name in each request matches the server certificate.
-Issue the certificate for the host name or IP address that clients use, or turn the check off with a `SecureRequestCustomizer` whose `sniHostCheck` is `false` in the Jetty XML configuration.
-
-The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] and link:security/ssl-tls#automatic-certificate-hot-reload[automatic hot reload] apply to this factory like to the other transports.
-New connections use the reloaded certificates, and established connections stay open.
-
-HTTPS configured directly in the Jetty XML configuration keeps working, but Ignite does not reload it.
-To move it to a factory, make the following changes together before restarting each node.
-
-. Configure an Ignite `SslContextFactory` with the key and trust stores from Jetty.
-If the XML specifies only a key store, Jetty also uses it as the trust store. Set the same file, type, and password for both stores in Ignite.
-Ignite uses the key store password to open the private keys. If Jetty uses a different `keyManagerPassword`, prepare a copy of the key store whose private keys use the store password.
-. On the factory, call `setProtocols(...)` and `setCipherSuites(...)` with the protocols and cipher suites the connector currently enables.
-Use the names that remain after Jetty applies its defaults and any include or exclude patterns in the XML.
-. Remove the `sslContextFactory` constructor argument from the Jetty `ServerConnector` if it has one.
-If the XML lists connection factories explicitly, remove the `SslConnectionFactory` and make `HttpConnectionFactory` the default.
-. Set the factory with `setHttpSslFactory(...)`.
-If the Jetty configuration has `needClientAuth=true`, also call `setHttpSslClientAuth(true)` to keep requiring client certificates.
+Configure the HTTPS connector and its key and trust stores in the Jetty XML file selected by `setJettyPath(...)`.
+After replacing the stores, run the link:tools/control-script#reloading-tls-certificates[`--ssl reload` command].
+After a successful reload, new HTTPS connections use the replacement certificates and established connections stay open.
+If the standard Jetty SSL factory fails to read a replacement store, new HTTPS connections fail.
+Restore a valid store at the configured path and run the command again.
 
 === Security
 

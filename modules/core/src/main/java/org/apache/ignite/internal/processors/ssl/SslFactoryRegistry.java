@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,6 +30,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,28 +61,39 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /** */
-    public synchronized void register(String transport, Factory<SSLContext> factory) {
+    public void register(String transport, Factory<SSLContext> factory) {
+        add(transport, factory, factory instanceof AbstractSslContextFactory sslFactory ? sslFactory::init : null);
+    }
+
+    /**
+     * Registers a transport that reloads its own TLS factory. The same factory shared by several transports is reloaded once.
+     *
+     * @param transport Transport name.
+     * @param factory Active TLS factory.
+     * @param reload Reloads the factory.
+     */
+    public void registerReloadable(String transport, Object factory, RunnableX reload) {
+        add(transport, factory, reload);
+    }
+
+    /** */
+    private synchronized void add(String transport, Object factory, @Nullable Runnable reload) {
         for (int i = 0; i < factories.size(); i++) {
             RegisteredFactory registered = factories.get(i);
 
             if (registered.factory == factory) {
-                factories.set(i, new RegisteredFactory(factory, registered.transports + ", " + transport));
+                factories.set(i, new RegisteredFactory(factory, registered.transports + ", " + transport, registered.reloadAction));
 
                 return;
             }
         }
 
-        factories.add(new RegisteredFactory(factory, transport));
+        factories.add(new RegisteredFactory(factory, transport, reload));
     }
 
-    /** @return Registered factories in registration order, each with its transports joined by commas. */
-    public List<Entry<Factory<SSLContext>, String>> factories() {
-        List<Entry<Factory<SSLContext>, String>> res = new ArrayList<>(factories.size());
-
-        for (RegisteredFactory registered : factories)
-            res.add(Map.entry(registered.factory, registered.transports));
-
-        return res;
+    /** @return Registered factories in registration order. */
+    public List<RegisteredFactory> factories() {
+        return List.copyOf(factories);
     }
 
     /** {@inheritDoc} */
@@ -159,20 +168,39 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /** Registered factory with its transports and hot reload state. The hourly check and manual reload hold its monitor. */
-    private class RegisteredFactory {
+    public class RegisteredFactory {
         /** */
-        private final Factory<SSLContext> factory;
+        private final Object factory;
 
         /** */
         private final String transports;
 
         /** */
+        private final Runnable reloadAction;
+
+        /** */
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private RegisteredFactory(Factory<SSLContext> factory, String transports) {
+        private RegisteredFactory(Object factory, String transports, @Nullable Runnable reload) {
             this.factory = factory;
             this.transports = transports;
+            reloadAction = reload;
+        }
+
+        /** @return The registered factory. */
+        public Object factory() {
+            return factory;
+        }
+
+        /** @return Names of transports that use this factory. */
+        public String transports() {
+            return transports;
+        }
+
+        /** @return Whether this factory supports manual reload. */
+        public boolean supportsReload() {
+            return reloadAction != null;
         }
 
         /** @return The factory if hot reload is enabled for it, {@code null} otherwise. */
@@ -246,10 +274,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
 
         /** */
-        private synchronized void reload() {
+        public synchronized void reload() {
             manualReloadAttempts.incrementAndGet();
 
-            ((AbstractSslContextFactory)factory).init();
+            reloadAction.run();
 
             AbstractSslContextFactory sslFactory = hotReloadFactory();
 

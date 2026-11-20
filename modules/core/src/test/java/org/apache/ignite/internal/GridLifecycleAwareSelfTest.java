@@ -30,9 +30,6 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.plugin.segmentation.SegmentationResolver;
 import org.apache.ignite.testframework.junits.common.GridAbstractLifecycleAwareSelfTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-
-import static org.apache.ignite.testframework.GridTestUtils.sslFactory;
 
 /**
  * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support in {@link org.apache.ignite.configuration.IgniteConfiguration}.
@@ -74,11 +71,18 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
     }
 
-    /** SSL context factory that counts starts and stops. */
+    /**
+     */
     private static class TestContextFactory extends TestLifecycleAware implements Factory<SSLContext> {
+        /**
+         */
+        TestContextFactory() {
+            super(null);
+        }
+
         /** {@inheritDoc} */
         @Override public SSLContext create() {
-            return sslFactory().create();
+            return null;
         }
     }
 
@@ -147,12 +151,6 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         lifecycleAwares.add(ctxFactory);
 
-        TestContextFactory httpSslFactory = new TestContextFactory();
-
-        clientCfg.setHttpSslFactory(httpSslFactory);
-
-        lifecycleAwares.add(httpSslFactory);
-
         TestLifecycleBean lifecycleBean = new TestLifecycleBean();
 
         cfg.setLifecycleBeans(lifecycleBean);
@@ -166,35 +164,5 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         lifecycleAwares.add(testLog.lifecycleAware());
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-
-        super.afterTest();
-    }
-
-    /**
-     * One SSL factory that binary REST and HTTP REST share starts and stops once.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testSharedSslFactory() throws Exception {
-        TestContextFactory factory = new TestContextFactory();
-
-        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName())
-            .setConnectorConfiguration(new ConnectorConfiguration().setSslFactory(factory).setHttpSslFactory(factory));
-
-        startGrid(cfg);
-
-        assertEquals(1, factory.startCount());
-        assertEquals(0, factory.stopCount());
-
-        stopGrid();
-
-        assertEquals(1, factory.startCount());
-        assertEquals(1, factory.stopCount());
     }
 }

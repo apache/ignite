@@ -26,13 +26,9 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import jakarta.servlet.DispatcherType;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -163,8 +159,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         AbstractNetworkConnector connector = getJettyConnector();
 
-        enableHttps(connector);
-
         try {
             host = InetAddress.getByName(connector.getHost());
         }
@@ -180,14 +174,18 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             connector.setPort(port);
 
             if (startJetty()) {
-                if (config().getHttpSslFactory() != null)
-                    ctx.ssl().register("HTTP REST", config().getHttpSslFactory());
+                SslConnectionFactory tls = connector.getConnectionFactory(SslConnectionFactory.class);
+
+                if (tls != null) {
+                    SslContextFactory.Server ssl = tls.getSslContextFactory();
+
+                    ctx.ssl().registerReloadable("HTTP REST", ssl, () -> ssl.reload(f -> {}));
+                }
 
                 if (log.isInfoEnabled()) {
                     log.info(startInfo());
 
-                    boolean isSsl = connector.getConnectionFactory(SslConnectionFactory.class) != null;
-                    String proto = isSsl ? "https" : "http";
+                    String proto = tls == null ? "http" : "https";
 
                     log.info("HTTP REST protocol address: " + proto + "://" + host + ":" + port + "/");
                 }
@@ -410,35 +408,6 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Enables HTTPS with the factory from {@link org.apache.ignite.configuration.ConnectorConfiguration#getHttpSslFactory()}
-     * on a connector that serves plain HTTP.
-     *
-     * @param connector Jetty connector.
-     * @throws IgniteCheckedException If the configuration does not allow HTTPS from the factory.
-     */
-    private void enableHttps(AbstractNetworkConnector connector) throws IgniteCheckedException {
-        Factory<SSLContext> factory = config().getHttpSslFactory();
-
-        if (factory == null) {
-            if (config().isHttpSslClientAuth())
-                throw new IgniteCheckedException("HTTP REST client authentication requires an HTTP SSL factory.");
-
-            return;
-        }
-
-        if (connector.getConnectionFactory(SslConnectionFactory.class) != null)
-            throw new IgniteCheckedException("HTTP SSL factory cannot be used with a Jetty connector that configures TLS.");
-
-        if (!(connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory)) {
-            throw new IgniteCheckedException("HTTP SSL factory requires a Jetty connector whose default protocol is HTTP " +
-                "[defaultProtocol=" + connector.getDefaultProtocol() + ']');
-        }
-
-        connector.addFirstConnectionFactory(new SslConnectionFactory(
-            new JettySslContextFactory(factory, config().isHttpSslClientAuth()), connector.getDefaultProtocol()));
-    }
-
-    /**
      * Check if ignite-json module enabled.
      */
     private static boolean checkJacksonEnabled() {
@@ -528,104 +497,5 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridJettyRestProtocol.class, this);
-    }
-
-    /**
-     * Jetty SSL context factory that takes the current context of an Ignite factory for each new connection, so new
-     * connections use a reloaded context. Connections enable exactly the protocols and cipher suites of the Ignite
-     * factory, without the default exclusions of Jetty.
-     */
-    static class JettySslContextFactory extends SslContextFactory.Server {
-        /** */
-        private final Factory<SSLContext> factory;
-
-        /** Last context successfully loaded by Jetty. */
-        private volatile SSLContext activeCtx;
-
-        /**
-         * @param factory Ignite SSL context factory.
-         * @param clientAuth Whether a trusted client certificate is required.
-         */
-        JettySslContextFactory(Factory<SSLContext> factory, boolean clientAuth) {
-            this.factory = factory;
-
-            setNeedClientAuth(clientAuth);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void doStart() throws Exception {
-            SSLContext ctx = currentContext();
-
-            setSslContext(ctx);
-
-            super.doStart();
-
-            activeCtx = ctx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public SSLContext getSslContext() {
-            SSLContext prev = activeCtx;
-            SSLContext next = currentContext();
-
-            if (prev == next || !isStarted())
-                return next;
-
-            synchronized (this) {
-                // Another connection may have reloaded Jetty while the source was being read.
-                if (activeCtx != prev && activeCtx != next)
-                    next = currentContext();
-
-                if (activeCtx != next)
-                    replaceContext(next);
-
-                return activeCtx;
-            }
-        }
-
-        /** Applies the replacement and restores the active context if Jetty rejects it. */
-        private void replaceContext(SSLContext next) {
-            try {
-                reload(f -> f.setSslContext(next));
-                activeCtx = next;
-            }
-            catch (Exception | Error e) {
-                SSLContext prev = activeCtx;
-
-                // Jetty unloads its active context before it configures the replacement.
-                if (prev != null) {
-                    try {
-                        reload(f -> f.setSslContext(prev));
-                    }
-                    catch (Exception | Error restoreErr) {
-                        activeCtx = null;
-                        if (restoreErr != e)
-                            e.addSuppressed(restoreErr);
-                    }
-                }
-
-                if (e instanceof Error err)
-                    throw err;
-
-                throw new IgniteException("Failed to reload the HTTP REST SSL context.", e);
-            }
-        }
-
-        /** @return Initialized context for the HTTP connector. */
-        private SSLContext currentContext() {
-            return Objects.requireNonNull(factory.create(), "HTTP SSL factory returned a null context.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public SSLParameters customize(SSLParameters params) {
-            super.customize(params);
-
-            // Jetty supplies defaults even without jetty.xml. Null preserves the protocols and cipher suites
-            // that the current Ignite SSLContext enabled for this connection.
-            params.setProtocols(null);
-            params.setCipherSuites(null);
-
-            return params;
-        }
     }
 }

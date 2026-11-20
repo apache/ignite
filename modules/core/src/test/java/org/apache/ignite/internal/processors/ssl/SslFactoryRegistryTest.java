@@ -179,8 +179,8 @@ public class SslFactoryRegistryTest {
         registry.register("client connector", clientConnector);
         registry.register("discovery", factory);
 
-        assertEquals(List.of(Map.entry(factory, "communication, discovery"),
-            Map.entry(clientConnector, "client connector")), registry.factories());
+        assertEquals(List.of(Map.entry(factory, "communication, discovery"), Map.entry(clientConnector, "client connector")),
+            registry.factories().stream().map(f -> Map.entry(f.factory(), f.transports())).toList());
     }
 
     /**
