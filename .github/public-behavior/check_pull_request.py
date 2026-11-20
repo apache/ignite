@@ -22,6 +22,7 @@ import sys
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import quote, unquote
 
 from check_summary import report
 from contract_diff import changed_contracts
@@ -46,8 +47,10 @@ class CheckError(ValueError):
         self.result = CheckResult(reason, author, reviewer, paths, changes=changes)
 
 
-def api(route, *, pages=False, raw=False, full=False, allow_missing=False):
+def api(route, *, pages=False, raw=False, full=False, exists=False):
     args = ["gh", "api"]
+    if exists:
+        args.extend(["--method", "HEAD", "--silent"])
     if pages:
         args.extend(["--paginate", "--slurp"])
     if raw:
@@ -56,6 +59,8 @@ def api(route, *, pages=False, raw=False, full=False, allow_missing=False):
         args.extend(["-H", "Accept: application/vnd.github.full+json"])
     try:
         response = subprocess.check_output([*args, route], stderr=subprocess.PIPE)
+        if exists:
+            return True
         if raw:
             return response.decode("utf-8")
         data = json.loads(response)
@@ -64,8 +69,8 @@ def api(route, *, pages=False, raw=False, full=False, allow_missing=False):
         detail = str(exc)
         if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
             detail = exc.stderr.decode(errors="replace").strip()
-            if allow_missing and "(HTTP 404)" in detail:
-                return None
+            if exists and re.search(r"\bHTTP 404\b", detail):
+                return False
         raise CheckError(
             f"Could not read the GitHub API response for {route}. {detail}",
             "Check that the repository and revision are available, then rerun the job.",
@@ -85,65 +90,47 @@ def is_rfc_candidate(path):
             and re.match(r"IGNITE-[0-9]+\b", filename.name) is not None)
 
 
-class PullRequestLinks(HTMLParser):
-    """Read actual link destinations from GitHub's rendered PR description."""
+class RFCFileLinks(HTMLParser):
+    """Read links to RFC files from GitHub's rendered PR description."""
 
     def __init__(self, repository):
         super().__init__()
-        self.pattern = re.compile(rf"https://github\.com/{re.escape(repository)}/pull/([1-9][0-9]*)"
-                                  r"(?:/(?:files|changes|checks|commits)(?:/[a-f0-9]+)?)?/?(?:[?#].*)?", re.I)
-        self.numbers = []
+        self.pattern = re.compile(rf"(?ai:(?:https://github\.com)?/{re.escape(repository)})/blob/"
+                                  rf"([^?#]+?)/({RFC_PATH.pattern})(?:[?#].*)?")
+        self.targets = []
 
     def handle_starttag(self, tag, attrs):
         if tag == "a":
             match = self.pattern.fullmatch(dict(attrs).get("href") or "")
             if match:
-                self.numbers.append(match[1])
-
-
-def rfc_link(repository, revision, path, number):
-    project = f"https://github.com/{repository}"
-    return path, f"{project}/blob/{revision}/{path}", f"{project}/pull/{number}"
+                self.targets.append((unquote(match[1]), match[2]))
 
 
 def linked_rfcs(pr, files):
-    repository = pr["base"]["repo"]["full_name"]
-    parser = PullRequestLinks(repository)
+    base = pr["base"]
+    repository = base["repo"]["full_name"]
+    parser = RFCFileLinks(repository)
     parser.feed(pr["body_html"] or "")
     removed = {f["filename"] for f in files if f["status"] == "removed"}
     removed.update(f["previous_filename"] for f in files if f["status"] == "renamed")
-    found = {}
-    notes = []
-    request_error = None
-    for number in dict.fromkeys(parser.numbers):
-        if number == str(pr["number"]):
-            continue
-        route = f"repos/{repository}/pulls/{number}"
-        try:
-            source = api(route, allow_missing=True)
-            if source is None:
-                notes.append(f"PR #{number} was not found.")
-                continue
-            if not source["merged_at"]:
-                notes.append(f"PR #{number} has not been merged.")
-                continue
-            source_files = api(route + "/files?per_page=100", pages=True)
-        except CheckError as error:
-            request_error = error
-            continue
 
-        names = (f["filename"] for f in source_files if f["status"] != "removed")
-        paths = [p for p in names if RFC_PATH.fullmatch(p) and p not in removed and Path(p).is_file()]
-        if not paths:
-            if len(source_files) != source["changed_files"]:
-                notes.append(f"GitHub returned an incomplete file list for PR #{number}.")
-            else:
-                notes.append(f"PR #{number} has no matching RFC on this branch.")
-        for path in paths:
-            found.setdefault(path, rfc_link(repository, pr["base"]["sha"], path, number))
+    found = set()
+    request_error = None
+    for ref, path in dict.fromkeys(parser.targets):
+        if path in found or path in removed or not Path(path).is_file():
+            continue
+        # The checkout proves the target-branch link exists. Other revisions need a metadata check.
+        if ref not in {base["ref"], base["sha"]}:
+            try:
+                if not api(f"repos/{repository}/contents/{path}?ref={quote(ref, safe='')}", exists=True):
+                    continue
+            except CheckError as error:
+                request_error = error
+                continue
+        found.add(path)
     if request_error and not found:
         raise request_error
-    return tuple(found.values()), " ".join(notes)
+    return sorted(found)
 
 
 def check(files, changes, pr):
@@ -161,25 +148,28 @@ def check(files, changes, pr):
             )
 
     if docs:
-        links = tuple(rfc_link(pr["base"]["repo"]["full_name"], pr["head"]["sha"], path, pr["number"])
-                      for path in docs)
+        revision = pr["head"]["sha"]
+        reason = "This PR changes a public contract and adds or updates an RFC."
         review = ("Compare the changes below and their compatibility tests with the RFC. "
                   "For a new or revised plan, check its vote on dev@ and any unresolved objections.")
-        return CheckResult("This PR changes a public contract and adds or updates an RFC.", "", review,
-                           tuple(changes), advisory=True, changes=changes, rfc_links=links)
+    else:
+        docs = linked_rfcs(pr, files)
+        if not docs:
+            raise CheckError(
+                "Public API and other public contract changes require an RFC.",
+                "Add a new RFC from rfcs/TEMPLATE.md or update an existing RFC in this PR. "
+                "If an approved RFC covers the change, open its file on the target branch and "
+                "paste its GitHub URL into the PR description.",
+                "Check the detected changes and their effect on existing users.", paths, changes,
+            )
+        revision = pr["base"]["sha"]
+        reason = "The PR description links to an existing RFC."
+        review = ("Check that the linked RFC covers the changes below and their compatibility tests. "
+                  "Check any required vote on dev@.")
 
-    links, note = linked_rfcs(pr, files)
-    if links:
-        return CheckResult("The PR description links to a merged PR with an RFC.", "",
-                           "Check that the linked RFC covers the changes below and their compatibility tests. "
-                           "Check any required vote on dev@.", paths, advisory=True, changes=changes, rfc_links=links)
-
-    raise CheckError(
-        ("Public API and other public contract changes require an RFC. " + note).rstrip(),
-        "Add a new RFC from rfcs/TEMPLATE.md or update an existing RFC in this PR. "
-        "If an approved plan covers the change, paste its merged PR URL into this PR's description.",
-        "Check the detected changes and their effect on existing users.", paths, changes,
-    )
+    repository = pr["base"]["repo"]["full_name"]
+    links = tuple((path, f"https://github.com/{repository}/blob/{revision}/{path}") for path in docs)
+    return CheckResult(reason, "", review, tuple(changes), advisory=True, changes=changes, rfc_links=links)
 
 
 def main():

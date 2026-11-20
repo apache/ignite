@@ -106,7 +106,7 @@ class PostPrCommentTest(unittest.TestCase):
         rc.prepare(REPO, RUN, self.root / "pr.json")
         self.assertFalse((self.root / "output").exists())
         self.jobs[0]["name"] = "Public behavior changes"
-        self.pr["body"] = "See https://github.com/apache/ignite/pull/13759."
+        self.pr["body"] = "See https://github.com/apache/ignite/blob/master/rfcs/IGNITE-123-sql.md"
         context = self.prepare()
         self.assertEqual(context["pull_request"],
                          {"number": 42, "head": {"sha": PR["head"]["sha"]}, "base": {"sha": PR["base"]["sha"]},
@@ -167,10 +167,9 @@ class PostPrCommentTest(unittest.TestCase):
         summary = self.root / "summary.md"
         path = "rfcs/IGNITE-123-sql.md"
         file_url = f"https://github.com/{REPO}/blob/{PR['base']['sha']}/{path}"
-        source = f"https://github.com/{REPO}/pull/17"
         with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stdout(StringIO()):
-            report(True, "This PR links a merged RFC PR.", "", "Review the SQL result.",
-                   advisory=True, rfc_links=((path, file_url, source),))
+            report(True, "This PR links to an existing RFC.", "", "Review the SQL result.",
+                   advisory=True, rfc_links=((path, file_url),))
         rc.publish(REPO, RUN, self.prepare(), summary, "success")
         self.assertEqual(self.writes, ["POST"])
         body = self.comments[0]["body"]
@@ -178,7 +177,6 @@ class PostPrCommentTest(unittest.TestCase):
         self.assertIn("🟡 Reviewer action needed", body)
         self.assertIn("Review the SQL result.", body)
         self.assertIn(f"[{path}]({file_url})", body)
-        self.assertIn(f"[source PR]({source})", body)
         self.assertIn(CHECKS_LINK, body)
         self.assertNotIn("resolved", body)
 
@@ -283,10 +281,10 @@ class PostPrCommentTest(unittest.TestCase):
         self.publish(context, "failure", "Use the required RFC filename.")
         self.assertEqual(self.writes, ["POST"])
 
-    def test_rfc_pr_link_added_while_reporting_skips_the_stale_error(self):
-        """When the author links an RFC PR, leave the comment for the new check to publish."""
+    def test_rfc_file_link_added_while_reporting_skips_the_stale_error(self):
+        """When the author links an RFC file, leave the comment for the new check to publish."""
         context = self.prepare()
-        self.pr["body"] = "See https://github.com/apache/ignite/pull/13759."
+        self.pr["body"] = "See https://github.com/apache/ignite/blob/master/rfcs/IGNITE-123-sql.md"
         self.publish(context, "failure", "Add an RFC for this change.")
         self.assertEqual(self.writes, [])
 

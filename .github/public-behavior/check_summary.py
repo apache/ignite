@@ -57,11 +57,11 @@ def report(passed, reason, author, reviewer, paths=(), *, advisory=False, change
 
     if rfc_links:
         summary.append("### RFC files")
-        for path, file_url, pr_url in rfc_links[:8]:
-            summary.append(f"[{path}]({file_url}) ([source PR]({pr_url}))")
-            log.append(f"RFC: {file_url} ({pr_url})")
+        for path, file_url in rfc_links[:8]:
+            summary.append(f"[{path}]({file_url})")
+            log.append(f"RFC: {file_url}")
         if len(rfc_links) > 8:
-            summary.append(f"See {len(rfc_links) - 8} more RFCs in the linked PRs.")
+            summary.append(f"{len(rfc_links) - 8} more RFC files are listed in the PR.")
 
     if paths:
         items = []

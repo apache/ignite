@@ -22,8 +22,8 @@ The check compares source declarations at the PR head and its merge base. It rep
 ## Results
 
 - **No action.** If the check finds no public contract change, it passes without checking RFC files. This includes PRs that only edit an RFC or a method body.
-- **RFC needed.** If the check finds a contract change, add or update an RFC file in the PR. For work covered by an existing plan, paste the GitHub URL of the merged PR that added or updated it into the PR description. Use a PR from this repository. The RFC must still exist on the target branch.
-- **Review the change.** Once the check finds an RFC, it passes with a warning. Checks and the bot comment link to the RFC file and its PR, and list the declarations or values that changed. The reviewer checks that the plan covers the changes, reviews compatibility tests and checks any required vote on dev@.
+- **RFC needed.** If the check finds a contract change, add or update an RFC file in the PR. If an approved RFC already covers the change, open its file in the target branch and paste the GitHub URL into the PR description.
+- **Review the change.** Once the check finds an RFC, it passes with a warning. Checks and the bot comment link to the RFC file and list the declarations or values that changed. The reviewer checks that the RFC covers the changes, reviews compatibility tests and checks any required vote on dev@.
 
 Use `rfcs/IGNITE-<ticket>-<short-title>.md` for a new RFC. To update a plan under a new ticket, keep its original filename. If an RFC in the current PR has an invalid name, the check asks the author to fix it.
 
@@ -40,7 +40,7 @@ The report identifies the file and the specific change. For example, adding a se
 ## Enabling the check on master
 
 1. Merge the public contract and process RFCs and the template, then merge the workflows.
-2. On a fork PR, add a public method to a supported Java type. Verify that the check fails and names the method. Check both ways to get a review warning. Add a correctly named RFC file, or link to a merged PR with the RFC and open the file from the report.
+2. On a fork PR, add a public method to a supported Java type. Verify that the check fails and names the method. Add a correctly named RFC file or put a direct link to an existing RFC file in the PR description. Verify that the check shows a review warning and that the file opens from the report.
 3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). Remove that status from the required checks to stop blocking merges.
 
 To run the tests locally, use `python3 -m unittest discover -s tests` from `.github/public-behavior` with JDK 17 or later on PATH.

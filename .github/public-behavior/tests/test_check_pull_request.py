@@ -23,7 +23,7 @@ import check_pull_request as ci
 
 
 DOC = "rfcs/IGNITE-123-sql.md"
-PR = {"number": 42, "head": {"sha": "a" * 40}, "base": {"repo": {"full_name": "apache/ignite"}, "sha": "b" * 40},
+PR = {"number": 42, "head": {"sha": "a" * 40}, "base": {"repo": {"full_name": "apache/ignite"}, "ref": "master", "sha": "b" * 40},
       "body_html": ""}
 API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
 
@@ -33,27 +33,28 @@ def file(name, status="modified", **kwargs):
 
 
 class CheckPullRequestTest(unittest.TestCase):
-    def test_only_actual_links_to_project_prs_count(self):
-        """Only a link destination can identify a prior PR in a rendered description."""
-        parser = ci.PullRequestLinks("apache/ignite")
-        parser.feed('<code>https://github.com/apache/ignite/pull/1</code>'
-                    '<a href="https://example.com">https://github.com/apache/ignite/pull/2</a>'
-                    '<a href="https://github.com/other/ignite/pull/3">plan</a>'
-                    '<a href="https://github.com/apache/ignite/pull/4/files#diff-a">plan</a>')
-        self.assertEqual(parser.numbers, ["4"])
+    def test_only_actual_links_to_project_rfc_files_count(self):
+        """A link label, code sample, or file in a fork cannot identify the RFC."""
+        parser = ci.RFCFileLinks("apache/ignite")
+        plan = f"https://github.com/apache/ignite/blob/master/{DOC}"
+        parser.feed(f'<code>{plan}</code><a href="https://example.com">{plan}</a>'
+                    f'<a href="https://github.com/other/ignite/blob/master/{DOC}">fork</a>'
+                    f'<a href="{plan}?plain=1#L38">plan</a>')
+        self.assertEqual(parser.targets, [("master", DOC)])
 
-    def test_an_unavailable_link_does_not_hide_a_valid_rfc(self):
-        """One link fails to load. A second merged PR still supplies the RFC for review."""
-        body = ('<a href="https://github.com/apache/ignite/pull/10">Prior work</a> '
-                '<a href="https://github.com/apache/ignite/pull/11">Plan</a>')
-        responses = [ci.CheckError("GitHub is unavailable.", "Re-run the check.", ""), {"merged_at": "2026-10-01"},
-                     [file(DOC, "added")]]
-        with TemporaryDirectory() as root, chdir(root), patch.object(ci, "api", side_effect=responses):
+    def test_an_unavailable_permalink_does_not_hide_a_working_link(self):
+        """A second link to the target branch identifies the plan even if a metadata request fails."""
+        project = "https://github.com/apache/ignite"
+        old = "c" * 40
+        body = f'<a href="{project}/blob/{old}/{DOC}">old</a> <a href="{project}/blob/master/{DOC}">current</a>'
+        failure = ci.CheckError("GitHub is unavailable.", "Re-run the check.", "")
+        with TemporaryDirectory() as root, chdir(root), patch.object(ci, "api", side_effect=failure) as request:
             Path(DOC).parent.mkdir()
             Path(DOC).touch()
             result = ci.check([file(API)], {API: ["Added API method cacheTimeout"]}, dict(PR, body_html=body))
         self.assertTrue(result.advisory)
-        self.assertEqual(result.rfc_links[0][2], "https://github.com/apache/ignite/pull/11")
+        self.assertEqual(result.rfc_links, ((DOC, f"{project}/blob/{PR['base']['sha']}/{DOC}"),))
+        request.assert_called_once_with(f"repos/apache/ignite/contents/{DOC}?ref={old}", exists=True)
 
     def test_implementation_only_and_standalone_rfc_pass_quietly(self):
         for files in ([file(API)], [file(DOC)], [file("rfcs/TEMPLATE.md")]):
@@ -86,8 +87,7 @@ class CheckPullRequestTest(unittest.TestCase):
                 result = ci.check([file(API), file(DOC, status)], changes, PR)
                 self.assertTrue(result.advisory)
                 self.assertEqual(result.paths, (API,))
-                self.assertEqual(result.rfc_links, ((DOC, f"https://github.com/apache/ignite/blob/{PR['head']['sha']}/{DOC}",
-                                                     "https://github.com/apache/ignite/pull/42"),))
+                self.assertEqual(result.rfc_links, ((DOC, f"https://github.com/apache/ignite/blob/{PR['head']['sha']}/{DOC}"),))
                 self.assertEqual(result.changes, changes)
                 self.assertIn("vote on dev@", result.reviewer)
 
