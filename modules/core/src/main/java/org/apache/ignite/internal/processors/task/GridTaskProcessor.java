@@ -541,7 +541,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     ) {
         assert sesId != null;
 
-        authorizeUserTask(taskName, taskCls, task, opts);
+        authorizeTask(taskName, taskCls, task, arg, opts);
 
         assert opts.timeout() >= 0;
 
@@ -1588,10 +1588,11 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     }
 
     /** */
-    private void authorizeUserTask(
+    private void authorizeTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<?, ?> task,
+        @Nullable Object arg,
         TaskExecutionOptions opts
     ) {
         taskCls = resolveTaskClass(taskName, taskCls, task);
@@ -1601,6 +1602,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), TASK_EXECUTE);
         }
+        else if (opts.isPublicRequest() && arg instanceof VisorTaskArgument)
+            ctx.security().authorizeManagementTask(taskCls, (VisorTaskArgument<?>)arg);
     }
 
     /**
