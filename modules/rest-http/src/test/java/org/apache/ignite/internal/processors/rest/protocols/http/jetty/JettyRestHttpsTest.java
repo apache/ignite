@@ -210,7 +210,7 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
         try (SSLSocket established = connect(client1)) {
             assertEquals(200, request(established, "localhost"));
-            assertThrows(log, () -> issuerOfNewConnection(client2), SSLException.class, null);
+            assertThrows(log, () -> issuerOfNewConnection(client2), IOException.class, null);
 
             Files.delete(Path.of(factory.getKeyStoreFilePath()));
 
