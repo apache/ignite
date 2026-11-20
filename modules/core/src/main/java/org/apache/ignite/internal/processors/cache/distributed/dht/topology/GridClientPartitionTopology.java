@@ -67,6 +67,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.PART_STATE_FROM_OWNER_FEATURE;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
@@ -1014,9 +1015,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment,
+    @Override public boolean onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment,
         boolean updateRebalanceVer) {
-        // No-op.
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -1041,7 +1042,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             // Calculate how loss data is handled.
             boolean safe = partLossPlc != PartitionLossPolicy.IGNORE || !compatibleWithIgnorePlc;
 
-            boolean changed = false;
+            boolean skipRmtWrites =
+                cctx.kernalContext().rollingUpgrade().features().isActive(PART_STATE_FROM_OWNER_FEATURE);
 
             for (int part = 0; part < parts; part++) {
                 boolean lost = F.contains(lostParts, part);
@@ -1071,7 +1073,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     }
                 }
 
-                if (lost) {
+                if (lost && !skipRmtWrites) {
                     // Update remote maps according to policy.
                     for (Map.Entry<UUID, GridDhtPartitionMap> entry : node2part.entrySet()) {
                         if (entry.getValue().get(part) != null)
@@ -1080,7 +1082,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 }
             }
 
-            return changed;
+            return false;
         }
         finally {
             lock.writeLock().unlock();
