@@ -21,14 +21,14 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-import rfc_comment as rc
+import post_pr_comment as rc
 
 
 REPO = "apache/ignite"
 FORK = {"full_name": "contributor/ignite"}
 RUN = {"status": "completed", "conclusion": "failure", "event": "pull_request_review",
        "repository": {"full_name": REPO}, "head_repository": FORK, "head_sha": "a" * 40,
-       "head_branch": "proposal", "path": ".github/workflows/public-behavior.yml", "id": 12, "run_attempt": 1,
+       "head_branch": "proposal", "path": ".github/workflows/check-public-behavior.yml", "id": 12, "run_attempt": 1,
        "pull_requests": [], "display_title": "Public behavior changes for PR #42"}
 PR = {"state": "open", "number": 42, "head": {"ref": "proposal", "sha": RUN["head_sha"], "repo": FORK},
       "base": {"ref": "master", "sha": "b" * 40, "repo": RUN["repository"]},
@@ -36,7 +36,7 @@ PR = {"state": "open", "number": 42, "head": {"ref": "proposal", "sha": RUN["hea
 BOT = {"login": "github-actions[bot]", "type": "Bot"}
 
 
-class RFCCommentTest(unittest.TestCase):
+class PostPrCommentTest(unittest.TestCase):
     def setUp(self):
         """Expose a fork PR, its reviews and its comments through a local GitHub API fixture."""
         self.pr = deepcopy(PR)
@@ -58,7 +58,7 @@ class RFCCommentTest(unittest.TestCase):
             return {"jobs": self.jobs}
         if route == f"{prefix}/actions/runs/13/attempts/1/jobs?per_page=100":
             return {"jobs": [{"name": "Public behavior changes", "conclusion": "success"}]}
-        if route == (f"{prefix}/actions/workflows/public-behavior.yml/runs?head_sha={RUN['head_sha']}"
+        if route == (f"{prefix}/actions/workflows/check-public-behavior.yml/runs?head_sha={RUN['head_sha']}"
                      "&status=completed&per_page=100&page=1"):
             return {"total_count": len(self.runs), "workflow_runs": self.runs}
         if route == f"{prefix}/pulls/42":
@@ -224,7 +224,7 @@ class RFCCommentTest(unittest.TestCase):
                 self.publish(context, "failure", "Missing vote.")
                 self.assertEqual(self.writes, [])
         self.pr = deepcopy(PR)
-        self.reviews.append({"id": 3, "state": "APPROVED", "body": "RFC-exempt: No contract change.",
+        self.reviews.append({"id": 3, "state": "APPROVED", "body": "No-vote-needed: No contract change.",
                              "commit_id": RUN["head_sha"], "submitted_at": "2026-01-01T00:00:00Z"})
         self.publish(context, "failure", "Missing vote.")
         self.assertEqual(self.writes, [])

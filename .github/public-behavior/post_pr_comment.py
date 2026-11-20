@@ -23,8 +23,8 @@ import re
 import subprocess
 import sys
 
-from check_rfc import api
-from rfc_report import report_title, rules_reference
+from check_pull_request import api
+from check_summary import report_title, rules_reference
 
 
 MARKER = re.compile(
@@ -49,7 +49,7 @@ TIMEOUT = (
 
 def eligible(run, repo):
     return (
-        run["repository"]["full_name"] == repo and run["path"] == ".github/workflows/public-behavior.yml"
+        run["repository"]["full_name"] == repo and run["path"] == ".github/workflows/check-public-behavior.yml"
         and run["event"] in {"pull_request", "pull_request_review"}
         and run["status"] == "completed" and run["conclusion"] in JOB_CONCLUSIONS
         and run["head_repository"] and run["head_branch"]
@@ -92,7 +92,7 @@ def recorded_job(root, run):
 
 def newer_run(repo, run, pr):
     root = f"repos/{repo}"
-    route = f"{root}/actions/workflows/public-behavior.yml/runs?head_sha={run['head_sha']}&status=completed&per_page=100"
+    route = f"{root}/actions/workflows/check-public-behavior.yml/runs?head_sha={run['head_sha']}&status=completed&per_page=100"
     page = 1
     while True:
         response = api(f"{route}&page={page}")

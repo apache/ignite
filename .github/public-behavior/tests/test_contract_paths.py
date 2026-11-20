@@ -15,7 +15,7 @@
 
 import unittest
 
-from rfc_scope import CONFIG, METRICS, STORAGE, contract_review
+from contract_paths import CONFIG, METRICS, STORAGE, contract_review
 
 
 class ContractPathsTest(unittest.TestCase):

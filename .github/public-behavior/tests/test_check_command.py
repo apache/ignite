@@ -22,7 +22,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 
-CHECKER = Path(__file__).with_name("check_rfc.py").resolve()
+CHECKER = Path(__file__).resolve().parents[1] / "check_pull_request.py"
 PUBLIC_API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
 HEAD = "a" * 40
 
@@ -39,7 +39,7 @@ def run_checker(file_pages, *, head=HEAD, writer_review_sha=None, changed_files=
     }
     reviews = [] if writer_review_sha is None else [{
         "state": "APPROVED", "user": {"login": "reviewer"}, "commit_id": writer_review_sha,
-        "submitted_at": "2026-01-12T13:00:00Z", "body": "RFC-exempt: Only private state changed.",
+        "submitted_at": "2026-01-12T13:00:00Z", "body": "No-vote-needed: Only private state changed.",
     }]
     paged = "api --paginate --slurp"
     responses = {
@@ -75,7 +75,7 @@ def run_checker(file_pages, *, head=HEAD, writer_review_sha=None, changed_files=
         return result, summary.read_text()
 
 
-class RFCEntryTest(unittest.TestCase):
+class CheckCommandTest(unittest.TestCase):
     def test_public_api_on_second_page_requires_a_decision(self):
         """Given 100 documentation changes, when page two changes the public API, the job fails."""
         first_page = [f"docs/page-{i}.md" for i in range(100)]
@@ -83,7 +83,7 @@ class RFCEntryTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Review contract impact", result.stderr)
         self.assertIn(PUBLIC_API, summary)
-        self.assertIn("RFC-exempt:", summary)
+        self.assertIn("No-vote-needed:", summary)
 
     def test_writer_exception_applies_to_the_approved_revision(self):
         """Given a writer's exception, the approved head passes and the next push requires a fresh decision."""

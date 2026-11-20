@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           installed=$(gh api "repos/$GITHUB_REPOSITORY/contents/.github/workflows?ref=$BASE_SHA" \
-            --jq 'any(.[]; .name == "public-behavior.yml")')
+            --jq 'any(.[]; .name == "check-public-behavior.yml")')
           echo "installed=$installed" >> "$GITHUB_OUTPUT"
           if [[ "$installed" == false ]]; then
             cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
@@ -66,10 +66,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           sparse-checkout: |
-            .github/scripts
+            .github/public-behavior
             rfcs
           persist-credentials: false
       - name: Check public contract changes and RFC approval
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 .github/scripts/check_rfc.py
+        run: python3 .github/public-behavior/check_pull_request.py

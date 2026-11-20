@@ -17,15 +17,15 @@ import unittest
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlsplit
 
-import rfc_vote
+import vote_thread
 
 
 PR = "https://github.com/apache/ignite/pull/42"
 RFC = "rfcs/IGNITE-42-example.md"
 SHA = "c" * 40
 BLOB = f"https://github.com/contributor/ignite/blob/{SHA}/{RFC}"
-VOTE = rfc_vote.ARCHIVE + "/thread/open"
-RESULT = rfc_vote.ARCHIVE + "/thread/result"
+VOTE = vote_thread.ARCHIVE + "/thread/open"
+RESULT = vote_thread.ARCHIVE + "/thread/result"
 
 
 def node(mid, *children):
@@ -42,7 +42,7 @@ def mail(mid, subject, body, epoch, sender="organizer"):
     }
 
 
-class VoteTest(unittest.TestCase):
+class VoteThreadTest(unittest.TestCase):
     def setUp(self):
         """Provide a PR-specific vote with three distinct committers and a separate result email."""
         self.mails = {
@@ -53,7 +53,7 @@ class VoteTest(unittest.TestCase):
         for i, uid in enumerate(self.people):
             self.mails[uid] = mail(uid, "Re: [VOTE] Example", "+1", 20 + i, uid)
         self.tree = {"open": node("open", node("alice", node("bob")), node("carol")), "result": node("result")}
-        self.enterContext(patch("rfc_vote._load_json", side_effect=self.archive))
+        self.enterContext(patch("vote_thread._load_json", side_effect=self.archive))
 
     def archive(self, url):
         """Serve archive and ASF roster records through the URLs used in production."""
@@ -72,7 +72,7 @@ class VoteTest(unittest.TestCase):
         return {"thread": self.tree[mid]}
 
     def check(self, url=RESULT, *, reviewer_opening=None):
-        return rfc_vote.verify_vote(url, PR, [RFC], reviewer_opening=reviewer_opening)
+        return vote_thread.verify_vote(url, PR, [RFC], reviewer_opening=reviewer_opening)
 
     def test_separate_result_and_version(self):
         """Given a separate RESULT, following its opening link returns the voted version."""
@@ -82,7 +82,7 @@ class VoteTest(unittest.TestCase):
     def test_reviewer_can_identify_an_unlinked_opening(self):
         """Given a standalone RESULT with no vote link, a reviewed opening supplies the file and tally."""
         self.mails["result"]["body"] = "The vote has passed."
-        with self.assertRaises(rfc_vote.OpeningReviewRequired):
+        with self.assertRaises(vote_thread.OpeningReviewRequired):
             self.check()
         evidence = self.check(reviewer_opening=lambda: VOTE)
         self.assertEqual(evidence.versions, {RFC: SHA})
@@ -94,21 +94,21 @@ class VoteTest(unittest.TestCase):
         self.mails["open"]["body"] = f"https://github.com/apache/ignite/pull/99\n{BLOB}"
         self.mails["result"]["body"] += "\n" + VOTE.replace("/open", "/discussion")
         self.mails["discussion"] = mail("discussion", "[DISCUSS] Example", "A discussion.", 0)
-        with self.assertRaisesRegex(rfc_vote.VoteError, "this pull request"):
+        with self.assertRaisesRegex(vote_thread.VoteError, "this pull request"):
             self.check(reviewer_opening=lambda: self.fail("The result already identifies a vote."))
 
     def test_reviewer_must_choose_among_linked_openings(self):
         """Given a result linking two votes, a reviewer can select one of those votes."""
         self.mails["result"]["body"] += "\n" + VOTE.replace("/open", "/older")
         self.mails["older"] = mail("older", "[VOTE] Earlier proposal", "Earlier proposal.", 0)
-        with self.assertRaises(rfc_vote.OpeningReviewRequired):
+        with self.assertRaises(vote_thread.OpeningReviewRequired):
             self.check(reviewer_opening=lambda: VOTE.replace("/open", "/other"))
         self.assertEqual(self.check(reviewer_opening=lambda: VOTE).opening_url, VOTE)
 
     def test_unreadable_result_reference_requires_archive_evidence(self):
         """Given a missing archived reference, a review cannot substitute another opening."""
         self.mails["result"]["body"] += "\n" + VOTE.replace("/open", "/missing")
-        with self.assertRaisesRegex(rfc_vote.VoteError, "requested message"):
+        with self.assertRaisesRegex(vote_thread.VoteError, "requested message"):
             self.check(reviewer_opening=lambda: self.fail("The archive response was incomplete."))
 
     def test_reviewed_opening_cannot_clear_a_failed_vote(self):
@@ -118,7 +118,7 @@ class VoteTest(unittest.TestCase):
             ("The vote failed.", 10 + 72 * 3600, "says the vote failed"),
         ]:
             with self.subTest(reason=reason), patch.dict(self.mails["result"], body=body, epoch=epoch):
-                with self.assertRaisesRegex(rfc_vote.VoteError, reason):
+                with self.assertRaisesRegex(vote_thread.VoteError, reason):
                     self.check(reviewer_opening=lambda: VOTE)
 
     def test_result_inside_vote_thread(self):
@@ -133,19 +133,19 @@ class VoteTest(unittest.TestCase):
         for subject in ("Re: [RESULT] [VOTE] Example", "Fwd: [RESULT]", "[VOTE] Example"):
             with self.subTest(subject=subject):
                 self.mails["result"]["subject"] = subject
-                with self.assertRaisesRegex(rfc_vote.VoteError, "own subject"):
+                with self.assertRaisesRegex(vote_thread.VoteError, "own subject"):
                     self.check()
 
     def test_unrelated_pr(self):
         """Given a foreign PR and a quoted reference to this one, evidence fails."""
         self.mails["open"]["body"] = f"{PR}0\n> {PR}\n{BLOB}"
-        with self.assertRaisesRegex(rfc_vote.VoteError, "this pull request"):
+        with self.assertRaisesRegex(vote_thread.VoteError, "this pull request"):
             self.check()
 
     def test_wrong_rfc_path(self):
         """Given an opening linking another RFC in this PR, the requested RFC fails."""
         self.mails["open"]["body"] = f"{PR}\n{BLOB}.old"
-        with self.assertRaisesRegex(rfc_vote.VoteError, RFC):
+        with self.assertRaisesRegex(vote_thread.VoteError, RFC):
             self.check()
 
     def test_unpinned_version(self):
@@ -156,28 +156,28 @@ class VoteTest(unittest.TestCase):
     def test_early_close(self):
         """Given an early result, checking the two archive timestamps rejects it."""
         self.mails["result"]["epoch"] -= 1
-        with self.assertRaisesRegex(rfc_vote.VoteError, "Fewer than 72") as caught:
+        with self.assertRaisesRegex(vote_thread.VoteError, "Fewer than 72") as caught:
             self.check()
-        self.assertNotIsInstance(caught.exception, rfc_vote.ManualReviewRequired)
+        self.assertNotIsInstance(caught.exception, vote_thread.ManualReviewRequired)
 
     def test_foreign_or_private_message(self):
         """Given an unrelated list or a private reply, checking all nested ballots fails."""
         for fields in ({"list": "<dev.other.apache.org>"}, {"private": True}):
             with self.subTest(fields=fields), patch.dict(self.mails["bob"], fields):
-                with self.assertRaisesRegex(rfc_vote.VoteError, "public and archived"):
+                with self.assertRaisesRegex(vote_thread.VoteError, "public and archived"):
                     self.check()
 
     def test_archive_missing_a_reply(self):
         """Given a reply in the index, failing to load its full text blocks verification."""
         del self.mails["bob"]
-        with self.assertRaisesRegex(rfc_vote.VoteError, "requested message"):
+        with self.assertRaisesRegex(vote_thread.VoteError, "requested message"):
             self.check()
 
     def test_foreign_link(self):
         """Given a lookalike or malformed archive link, the check rejects it before fetching."""
         for url in (RESULT + "#other", RESULT + "/more", RESULT.replace(".org/", ".org.example/"),
                     RESULT.replace("https:", "http:")):
-            with self.subTest(url=url), self.assertRaisesRegex(rfc_vote.VoteError, "exact"):
+            with self.subTest(url=url), self.assertRaisesRegex(vote_thread.VoteError, "exact"):
                 self.check(url)
 
     def test_result_and_vote_name_different_proposals(self):

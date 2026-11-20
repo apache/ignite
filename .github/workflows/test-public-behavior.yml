@@ -19,7 +19,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/*public-behavior.yml'
-      - '.github/scripts/*rfc*.py'
+      - '.github/public-behavior/**/*.py'
 
 permissions:
   contents: read
@@ -31,6 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/scripts
+          sparse-checkout: .github/public-behavior
           persist-credentials: false
-      - run: python3 -m unittest discover -s .github/scripts
+      - working-directory: .github/public-behavior
+        run: python3 -m unittest discover -s tests

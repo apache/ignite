@@ -20,7 +20,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-import check_rfc as ci
+import check_pull_request as ci
 
 
 DOC = "rfcs/IGNITE-123-sql.md"
@@ -32,7 +32,7 @@ TEXT = ("# New setting\nTicket: [IGNITE-123](https://issues.apache.org/jira/brow
 PR = {"head": {"repo": {"full_name": "fork/ignite"}, "sha": "h"},
       "base": {"repo": {"full_name": "apache/ignite"}, "sha": "b"},
       "number": 1, "user": {"login": "author"}, "labels": [],
-      "title": "IGNITE-123 Add a timeout", "body": "RFC-result: " + RESULT,
+      "title": "IGNITE-123 Add a timeout", "body": "Vote-result: " + RESULT,
       "html_url": "https://github.com/apache/ignite/pull/1"}
 
 
@@ -40,7 +40,7 @@ def file(name, status="modified", **kwargs):
     return dict(filename=name, status=status, **kwargs)
 
 
-class RFCCheckTest(unittest.TestCase):
+class CheckPullRequestTest(unittest.TestCase):
     def test_rename_out_of_api_still_requires_review(self):
         with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError) as caught:
             ci.check(PR, [file("other", "renamed", previous_filename=API)], TEMPLATE)
@@ -53,7 +53,7 @@ class RFCCheckTest(unittest.TestCase):
     def test_reviewer_can_explain_refactoring_but_author_cannot(self):
         def run(login="maintainer", sha="h", permission="write"):
             review = {"commit_id": sha, "submitted_at": "2026-11-20T10:00:00Z", "state": "APPROVED", "user": {"login": login},
-                      "body": "RFC-exempt: this refactor keeps the same inputs and results"}
+                      "body": "No-vote-needed: this refactor keeps the same inputs and results"}
             with patch.object(ci, "api", side_effect=[[review], [], {"permission": permission}]):
                 ci.check(PR, [file(API)], TEMPLATE)
         run()
@@ -63,18 +63,18 @@ class RFCCheckTest(unittest.TestCase):
 
     def test_deleted_reviewer_does_not_hide_a_current_review(self):
         review = {"state": "APPROVED", "commit_id": "h", "submitted_at": "2026-11-20T10:00:00Z",
-                  "body": "RFC-exempt: refactoring"}
+                  "body": "No-vote-needed: refactoring"}
         reviews = [dict(review, user=None), dict(review, user={"login": "maintainer"})]
         with patch.object(ci, "api", side_effect=[reviews, [], {"permission": "write"}]):
             result = ci.check(PR, [file(API)], TEMPLATE)
         self.assertIn("Reviewer confirmed the RFC exception", result.reason)
 
     def test_required_label_also_catches_behavior_outside_known_paths(self):
-        pr = dict(PR, labels=[{"name": "rfc-required"}])
+        pr = dict(PR, labels=[{"name": "public-behavior-change"}])
         with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError) as caught:
             ci.check(pr, [file("other")], TEMPLATE)
-        self.assertIn("rfc-required label", caught.exception.result.reason)
-        self.assertNotIn("RFC-exempt", caught.exception.result.reviewer)
+        self.assertIn("public-behavior-change label", caught.exception.result.reason)
+        self.assertNotIn("No-vote-needed:", caught.exception.result.reviewer)
         self.assertEqual(caught.exception.result.paths, ("other",))
 
     def test_missing_rfc_names_the_compatibility_checks_for_this_diff(self):
@@ -92,10 +92,10 @@ class RFCCheckTest(unittest.TestCase):
         self.assertEqual(reviewer.count("configuration names, accepted values and defaults"), 1)
         self.assertIn("Maven coordinates and dependencies", reviewer)
         self.assertNotIn("client and server", reviewer)
-        self.assertIn("RFC-exempt:", reviewer)
+        self.assertIn("No-vote-needed:", reviewer)
 
     def test_follow_up_accepts_an_existing_rfc_after_an_incorrect_path(self):
-        reviews = ["RFC-covered: rfcs/IGNITE-123-typo.md", "RFC-covered: " + DOC]
+        reviews = ["Implements-RFC: rfcs/IGNITE-123-typo.md", "Implements-RFC: " + DOC]
         with TemporaryDirectory() as base, chdir(base), patch.object(ci, "review_lines", return_value=reviews):
             with self.assertRaises(ci.CheckError) as missing:
                 ci.check(PR, [file(API)], TEMPLATE)
@@ -121,8 +121,8 @@ class RFCCheckTest(unittest.TestCase):
     def test_new_rfc_cannot_use_wording_exception_or_empty_template(self):
         for text in (TEXT.replace("Add a timeout option.", ""), TEMPLATE, TEXT):
             with self.subTest(text=text), patch.object(ci, "content", return_value=(text, "blob")), \
-                    patch.object(ci, "review_lines", return_value=["RFC-exempt: wording only"]), self.assertRaises(ci.CheckError):
-                ci.check(dict(PR, body="RFC-result: missing"), [file(DOC, "added")], TEMPLATE)
+                    patch.object(ci, "review_lines", return_value=["No-vote-needed: wording only"]), self.assertRaises(ci.CheckError):
+                ci.check(dict(PR, body="Vote-result: missing"), [file(DOC, "added")], TEMPLATE)
 
     def test_reports_all_missing_or_empty_sections(self):
         """Given an RFC with an empty section and a missing section, the author sees both headings in one run."""
@@ -133,7 +133,7 @@ class RFCCheckTest(unittest.TestCase):
 
     def test_existing_file_can_be_clarified_or_amended_in_a_new_ticket(self):
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
-                patch.object(ci, "review_lines", return_value=["RFC-exempt: typo only"]):
+                patch.object(ci, "review_lines", return_value=["No-vote-needed: typo only"]):
             with self.assertRaisesRegex(ci.CheckError, "reuses the Jira ticket"):
                 ci.check(dict(PR, body=""), [file(DOC)], TEMPLATE)
             ci.check(dict(PR, title="IGNITE-456 Clarify the timeout", body=""), [file(DOC)], TEMPLATE)
@@ -145,15 +145,15 @@ class RFCCheckTest(unittest.TestCase):
     def test_early_or_rejected_vote_cannot_use_manual_verification(self):
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
                 patch.object(ci, "verify_vote", side_effect=ci.VoteError("Vote closed too early")), \
-                patch.object(ci, "review_lines", return_value=["RFC-verified: " + RESULT + " reviewed"]), \
+                patch.object(ci, "review_lines", return_value=["Vote-verified: " + RESULT + " reviewed"]), \
                 self.assertRaisesRegex(ci.CheckError, "Vote closed too early") as caught:
             ci.check(PR, [file(DOC, "added")], TEMPLATE)
         self.assertIn("dev list", caught.exception.result.author)
-        self.assertNotIn("RFC-verified", caught.exception.result.reviewer)
+        self.assertNotIn("Vote-verified:", caught.exception.result.reviewer)
 
     def test_withdrawn_or_retargeted_review_cannot_exempt_pr(self):
         review = {"state": "APPROVED", "user": {"login": "reviewer"}, "commit_id": "h",
-                  "submitted_at": "2026-11-20T10:00:00Z", "body": "RFC-exempt: refactoring"}
+                  "submitted_at": "2026-11-20T10:00:00Z", "body": "No-vote-needed: refactoring"}
         changed = dict(review, state="CHANGES_REQUESTED")
         retargeted = {"event": "base_ref_changed", "created_at": "2026-11-20T11:00:00Z"}
         for responses in ([[review, changed]], [[review], [retargeted]]):
@@ -166,7 +166,7 @@ class RFCCheckTest(unittest.TestCase):
         with patch.object(ci, "api", return_value=[{"body": "Vote result: " + RESULT}]):
             with self.assertRaisesRegex(ci.CheckError, "PR description") as caught:
                 ci.result_link(dict(PR, body=""))
-        self.assertIn("RFC-result:", caught.exception.result.author)
+        self.assertIn("Vote-result:", caught.exception.result.author)
         self.assertIn("Discuss the RFC", caught.exception.result.author)
         self.assertIn("Review the proposal", caught.exception.result.reviewer)
 
@@ -179,7 +179,7 @@ class RFCCheckTest(unittest.TestCase):
             return SimpleNamespace(versions={DOC: "voted"}, tally="positive result", review_note="")
 
         with patch.object(ci, "content", return_value=(TEXT, "blob")), patch.object(ci, "verify_vote", side_effect=verify):
-            line = f"RFC-verified: {RESULT} {opening} checked the vote and RFC text"
+            line = f"Vote-verified: {RESULT} {opening} checked the vote and RFC text"
             with patch.object(ci, "review_lines", return_value=[line.replace(RESULT, RESULT + "2")]), \
                     self.assertRaises(ci.CheckError) as caught:
                 ci.check(PR, [file(DOC, "added")], TEMPLATE)
@@ -199,7 +199,7 @@ class RFCCheckTest(unittest.TestCase):
     def test_archive_outage_calls_for_a_rerun(self):
         """Given an unavailable archive, checking a new RFC asks for readable evidence and a rerun."""
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
-                patch("rfc_vote.urlopen", side_effect=OSError("archive unavailable")), \
+                patch("vote_thread.urlopen", side_effect=OSError("archive unavailable")), \
                 self.assertRaisesRegex(ci.CheckError, "archive unavailable") as caught:
             ci.check(PR, [file(DOC, "added")], TEMPLATE)
         self.assertIn("rerun", caught.exception.result.author)
@@ -215,7 +215,7 @@ class RFCCheckTest(unittest.TestCase):
         self.assertEqual(outcome.paths, (DOC,))
 
     def test_manual_check_binds_to_current_result(self):
-        decision = "RFC-verified: " + RESULT + " confirmed three committer identities and the voted text"
+        decision = "Vote-verified: " + RESULT + " confirmed three committer identities and the voted text"
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
                 patch.object(ci, "verify_vote", side_effect=ci.ManualReviewRequired("Check identities")):
             with patch.object(ci, "review_lines", return_value=[decision]):
@@ -223,4 +223,4 @@ class RFCCheckTest(unittest.TestCase):
             with patch.object(ci, "review_lines", return_value=[decision.replace(RESULT, RESULT + "2")]), \
                     self.assertRaises(ci.CheckError) as caught:
                 ci.check(PR, [file(DOC, "added")], TEMPLATE)
-            self.assertIn("RFC-verified: " + RESULT + " ", caught.exception.result.reviewer)
+            self.assertIn("Vote-verified: " + RESULT + " ", caught.exception.result.reviewer)

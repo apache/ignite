@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Check a pull request against the RFC process. Run from the trusted base checkout."""
+"""Check public behavior changes in a pull request from the trusted base checkout."""
 import base64
 import json
 import os
@@ -24,9 +24,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
 
-from rfc_report import report
-from rfc_scope import contract_review
-from rfc_vote import EvidenceUnavailable, ManualReviewRequired, OpeningReviewRequired, PERMALINK, VoteError, verify_vote
+from check_summary import report
+from contract_paths import contract_review
+from vote_thread import EvidenceUnavailable, ManualReviewRequired, OpeningReviewRequired, PERMALINK, VoteError, verify_vote
 
 RFC_PATH = r"rfcs/IGNITE-([0-9]+)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.md"
 TEMPLATE = "rfcs/TEMPLATE.md"
@@ -117,7 +117,7 @@ def review_lines(pr):
         if review["commit_id"] != pr["head"]["sha"] or review["state"] != "APPROVED":
             continue
         lines = [s.strip() for s in (review["body"] or "").splitlines()
-                 if s.strip().startswith(("RFC-exempt:", "RFC-verified:", "RFC-covered:"))]
+                 if s.strip().startswith(("No-vote-needed:", "Vote-verified:", "Implements-RFC:"))]
         user = review["user"]["login"]
         if lines and user != pr["user"]["login"]:
             if retargeted is None:
@@ -132,7 +132,7 @@ def review_lines(pr):
 
 def result_link(pr):
     body = (pr["body"] or "").replace("\r", "")
-    explicit = re.findall(r"^RFC-result:[ \t]*(\S+)[ \t]*$", body, re.M)
+    explicit = re.findall(r"^Vote-result:[ \t]*(\S+)[ \t]*$", body, re.M)
     if explicit:
         links = set(explicit)
     else:
@@ -145,7 +145,7 @@ def result_link(pr):
     raise CheckError(
         "The PR description does not identify one Apache dev-list result.",
         "Discuss the RFC in this PR. When it is ready, start a [VOTE] on dev@ with links to the PR and the RFC revision. "
-        "Once the vote closes, add RFC-result: <RESULT URL> to the PR description.",
+        "Once the vote closes, add Vote-result: <RESULT URL> to the PR description.",
         "Review the proposal and its compatibility plan now. Before merge, check the published result for this revision.",
     )
 
@@ -154,7 +154,7 @@ def check(pr, files, template=None):
     changed = {path for f in files for path in (f["filename"], f.get("previous_filename")) if path}
     signals = {path: hint for path in sorted(changed) if (hint := contract_review(path))}
     proposals = {path for path in changed if path.startswith("rfcs/") and path.endswith(".md")}
-    marked = any(label["name"] == "rfc-required" for label in pr["labels"])
+    marked = any(label["name"] == "public-behavior-change" for label in pr["labels"])
     paths = tuple(sorted((signals.keys() | proposals) or (changed if marked else set())))
     try:
         result = check_evidence(pr, files, signals, marked, template)
@@ -195,7 +195,7 @@ def check_evidence(pr, files, signals, marked, template):
         return CheckResult(
             "The changed files include no RFC or known public-contract path.",
             "Continue with the usual PR review.",
-            "Public behavior can change in other files. Add the rfc-required label if this PR changes a public contract.",
+            "Public behavior can change in other files. Add the public-behavior-change label if this PR changes a public contract.",
         )
 
     # Fetch decisions lazily. Most PRs with RFCs pass using the dev-list result alone.
@@ -210,7 +210,7 @@ def check_evidence(pr, files, signals, marked, template):
                 yield match
 
     if not docs:
-        covered_paths = [m[1] for m in review_matches(r"RFC-covered:\s*(" + RFC_PATH + r")")]
+        covered_paths = [m[1] for m in review_matches(r"Implements-RFC:\s*(" + RFC_PATH + r")")]
         for path in covered_paths:
             if Path(path).is_file():
                 return CheckResult(
@@ -218,7 +218,7 @@ def check_evidence(pr, files, signals, marked, template):
                     "Keep the approved RFC linked in the PR. Request a fresh decision if you push another commit.",
                     "Compare the implementation and its compatibility tests with the plan in the linked RFC.",
                 )
-        exempt = None if marked else next(review_matches(r"RFC-exempt:\s*(\S.*)"), None)
+        exempt = None if marked else next(review_matches(r"No-vote-needed:\s*(\S.*)"), None)
         if exempt:
             return CheckResult(
                 f"Reviewer confirmed the RFC exception for this revision. {exempt[1]}",
@@ -230,23 +230,23 @@ def check_evidence(pr, files, signals, marked, template):
                 f"The base commit has no RFC at the paths named in approving reviews: {', '.join(covered_paths)}.",
                 "Link the approved RFC at its current path on the base branch.",
                 "If you have write access, compare the implementation with that RFC and approve this commit "
-                "with RFC-covered: <RFC path>.",
+                "with Implements-RFC: <RFC path>.",
             )
         checks = " ".join(list(dict.fromkeys(signals.values()))[:3])
         if marked:
             raise CheckError(
-                "The rfc-required label flags this change for an RFC.",
+                "The public-behavior-change label flags this change for an RFC.",
                 "Draft the proposal from rfcs/TEMPLATE.md or link the approved RFC that this PR implements.",
                 (checks + " " if checks else "") + "Check the behavior that prompted the label. "
                 "A reviewer with write access can approve a covered "
-                "implementation with RFC-covered: <RFC path>. If the label was applied in error, resolve it with its reviewer.",
+                "implementation with Implements-RFC: <RFC path>. If the label was applied in error, resolve it with its reviewer.",
             )
         raise CheckError(
             "Review contract impact. This PR changes a configured public-contract path without an RFC.",
             "Explain any exception in the PR. For an implementation, link its approved RFC. For a new proposal, "
             "start from rfcs/TEMPLATE.md and link the dev-list vote result in the PR description.",
             checks + " A reviewer with write access "
-            "can approve this commit with RFC-covered: <RFC path> for an approved plan or RFC-exempt: <reason> for an exception.",
+            "can approve this commit with Implements-RFC: <RFC path> for an approved plan or No-vote-needed: <reason> for an exception.",
         )
 
     pr_ticket = re.match(r"(IGNITE-[0-9]+)\b", pr["title"])
@@ -284,7 +284,7 @@ def check_evidence(pr, files, signals, marked, template):
                     ) from exc
             validate_new(path, text, pr["title"], template)
     if not marked and all(s == "modified" for s in docs.values()):
-        exempt = next(review_matches(r"RFC-exempt:\s*(\S.*)"), None)
+        exempt = next(review_matches(r"No-vote-needed:\s*(\S.*)"), None)
         if exempt:
             return CheckResult(
                 f"Reviewer confirmed that the RFC changes only clarify wording. {exempt[1]}",
@@ -293,7 +293,7 @@ def check_evidence(pr, files, signals, marked, template):
             )
 
     result = result_link(pr)
-    verification = r"RFC-verified:\s*" + re.escape(result) + r"\s+"
+    verification = r"Vote-verified:\s*" + re.escape(result) + r"\s+"
 
     def reviewer_opening():
         links = {m[1] for m in review_matches(verification + r"(\S+)\s+\S.*") if PERMALINK.fullmatch(m[1])}
@@ -316,7 +316,7 @@ def check_evidence(pr, files, signals, marked, template):
             str(error), "Point the reviewer to the original [VOTE] on dev@.",
             "Read both threads and compare the voted text with this revision. Check three committer votes, or an announced "
             "seven days without objections for compatible additions only. Give the opening link and evidence in your approval: "
-            f"RFC-verified: {result} <opening VOTE URL> <what you checked>.",
+            f"Vote-verified: {result} <opening VOTE URL> <what you checked>.",
         ) from error
     except ManualReviewRequired as error:
         verified = next(review_matches(verification + r"(\S.*)"), None)
@@ -331,7 +331,7 @@ def check_evidence(pr, files, signals, marked, template):
             "Identify the relevant messages or voted file revision in the PR so the reviewer can resolve this question.",
             "Check the voted RFC and the result on dev@. Confirm three committer votes or an announced seven-day vote "
             "with only compatible additions and no objections. Skipping deprecation needs explicit approval. "
-            f"Record the evidence in an approving review on this commit: RFC-verified: {result} <what you checked>.",
+            f"Record the evidence in an approving review on this commit: Vote-verified: {result} <what you checked>.",
         ) from error
     except EvidenceUnavailable as error:
         raise CheckError(

@@ -21,10 +21,10 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from rfc_report import report, rules_reference
+from check_summary import report, rules_reference
 
 
-class RFCReportTest(unittest.TestCase):
+class CheckSummaryTest(unittest.TestCase):
     def test_summary_lists_actions_and_displays_file_names_as_text(self):
         """Given a flagged PR, report each role's next step and quote file names safely."""
         paths = ["a</code>\n##[warning]"] + [f"public/path{i}" for i in range(8)]

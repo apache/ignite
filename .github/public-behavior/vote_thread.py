@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from urllib.parse import unquote, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
-from rfc_tally import unquoted_body, verify_tally
+from count_votes import unquoted_body, verify_tally
 
 
 ARCHIVE = "https://lists.apache.org"
@@ -60,7 +60,7 @@ class VoteEvidence:
 
 def _load_json(url):
     # The only callers construct URLs from fixed ASF hosts and validated message IDs.
-    request = Request(url, headers={"Accept": "application/json", "User-Agent": "ignite-rfc-check"})
+    request = Request(url, headers={"Accept": "application/json", "User-Agent": "ignite-public-behavior-check"})
     try:
         with urlopen(request, timeout=15) as response:
             limit = 16 * 1024 * 1024

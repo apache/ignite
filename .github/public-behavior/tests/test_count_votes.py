@@ -15,7 +15,7 @@
 
 import unittest
 
-from rfc_tally import DAY, verify_tally
+from count_votes import DAY, verify_tally
 
 
 NOTICE = ("This RFC is limited to compatible additions. "
@@ -44,7 +44,7 @@ def tally(votes, opening="[ ] +1 Approve\n[ ] -1 Disapprove", result=PASSED, dur
                         mail("ada@apache.org", result, duration), directory)
 
 
-class TallyTests(unittest.TestCase):
+class CountVotesTest(unittest.TestCase):
     def test_author_and_non_pmc_committers_count(self):
         """Given an author's vote and two member replies, closing the vote counts all three."""
         result = ("Hi all,\n\nThe vote has passed with 3 +1 votes from Ignite committers:\n\n"
