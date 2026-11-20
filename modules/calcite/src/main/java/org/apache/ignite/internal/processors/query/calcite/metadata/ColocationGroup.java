@@ -271,12 +271,14 @@ public class ColocationGroup extends AbstractMessage {
     /** */
     public ColocationGroup filterByPartitions(int[] parts) {
         if (!F.isEmpty(assignments)) {
-            List<List<UUID>> assignments =
-                new ArrayList<>(Collections.nCopies(this.assignments.size(), Collections.emptyList()));
+            List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
             Set<UUID> nodes = new HashSet<>();
 
             if (parts == null)
                 return this;
+
+            for (int i = 0; i < this.assignments.size(); ++i)
+                assignments.add(Collections.emptyList());
 
             for (int part : parts) {
                 UUID first = part < assignments.size() ? F.first(this.assignments.get(part)) : null;
