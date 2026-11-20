@@ -1,0 +1,63 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.management.cdc;
+
+import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.CliConfirmArgument;
+
+/** */
+@CliConfirmArgument
+public class CdcClearCommandArg extends IgniteDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0;
+
+    /** */
+    @Order(0)
+    @Argument(optional = true, description = "ID of the node to clear CDC directory from. " +
+        "If not set, the command will affect all server nodes")
+    UUID nodeId;
+
+    /** */
+    @Order(1)
+    @Argument(optional = true, description = "Also delete the CDC mode state. The CDC application will not " +
+        "capture changes until CDC is enabled and Ignite nodes are restarted")
+    boolean resetMode;
+
+    /** */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /** */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /** */
+    public boolean resetMode() {
+        return resetMode;
+    }
+
+    /** */
+    public void resetMode(boolean resetMode) {
+        this.resetMode = resetMode;
+    }
+}

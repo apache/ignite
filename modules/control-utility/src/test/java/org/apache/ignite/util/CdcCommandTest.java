@@ -19,6 +19,7 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -85,6 +86,12 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     public static final String RESEND = "resend";
+
+    /** */
+    public static final String CLEAR = "clear";
+
+    /** */
+    public static final String RESET_MODE = "--reset-mode";
 
     /** */
     private IgniteEx srv0;
@@ -522,6 +529,208 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         waitForSize(cnsmr0, srv0.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
         waitForSize(cnsmr1, srv1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY));
+    }
+
+    /** */
+    @Test
+    public void testCdcClearOnAllNodes() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        // Temporary mode state can remain if the CDC application failed while saving it.
+        File tmpModeState = grid(0).context().pdsFolderResolver().fileTree().tmpCdcModeState().toFile();
+
+        assertTrue(tmpModeState.createNewFile());
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
+
+        checkCdcCleared(0, true);
+        checkCdcCleared(1, true);
+    }
+
+    /** */
+    @Test
+    public void testCdcClearOnOneNode() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, NODE_ID, grid(1).localNode().id().toString()),
+            "CDC directories were successfully cleared.");
+
+        checkCdcNotCleared(0, 2);
+        checkCdcCleared(1, true);
+    }
+
+    /** */
+    @Test
+    public void testCdcClearOnClientNode() throws Exception {
+        injectTestSystemOut();
+
+        IgniteEx client = startClientGrid("client");
+
+        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CDC, CLEAR, NODE_ID, client.localNode().id().toString()),
+            "Client nodes do not support CDC clear command.");
+    }
+
+    /** */
+    @Test
+    public void testCdcClearWithResetMode() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, RESET_MODE), "CDC directories were successfully cleared.");
+
+        checkCdcCleared(0, false);
+        checkCdcCleared(1, false);
+    }
+
+    /** */
+    @Test
+    public void testCdcClearWithDistributedProperty() throws Exception {
+        injectTestSystemOut();
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR), "CDC was not disabled.");
+
+        cdcDisabled.propagate(true);
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
+
+        cdcDisabled.propagate(false);
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR), "CDC was not disabled.");
+    }
+
+    /** */
+    @Test
+    public void testCdcClearWithLockAcquire() throws Exception {
+        injectTestSystemOut();
+
+        runCdc(grid(0));
+
+        archiveSegment();
+
+        waitForCdcState(0);
+
+        cdcDisabled.propagate(true);
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR),
+            "Unable to acquire lock to the CDC folder. Make sure a CDC app is shut down");
+
+        checkCdcNotCleared(0, 1);
+        checkCdcCleared(1, false);
+
+        stopThreads(log);
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
+
+        checkCdcCleared(0, true);
+        checkCdcCleared(1, false);
+    }
+
+    /** Checks that the CDC application captures changes after the CDC directory is cleared. */
+    @Test
+    public void testCdcCapturesChangesAfterClear() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
+
+        cdcDisabled.propagate(false);
+
+        UserCdcConsumer cnsmr0 = runCdc(srv0);
+        UserCdcConsumer cnsmr1 = runCdc(srv1);
+
+        addData(srv0.cache(DEFAULT_CACHE_NAME), KEYS_CNT, 2 * KEYS_CNT);
+
+        checkPrimaryKeysCaptured(srv0, cnsmr0, KEYS_CNT, 2 * KEYS_CNT);
+        checkPrimaryKeysCaptured(srv1, cnsmr1, KEYS_CNT, 2 * KEYS_CNT);
+    }
+
+    /**
+     * @param srv Server node.
+     * @param cnsmr CDC consumer of the node.
+     * @param from First key, inclusive.
+     * @param to Last key, exclusive.
+     */
+    private void checkPrimaryKeysCaptured(IgniteEx srv, UserCdcConsumer cnsmr, int from, int to) throws Exception {
+        List<Integer> expKeys = new ArrayList<>();
+
+        for (int key = from; key < to; key++) {
+            if (srv.affinity(DEFAULT_CACHE_NAME).isPrimary(srv.localNode(), key))
+                expKeys.add(key);
+        }
+
+        assertFalse(expKeys.isEmpty());
+
+        assertTrue(waitForCondition(() -> cnsmr.data(UPDATE, CU.cacheId(DEFAULT_CACHE_NAME)).containsAll(expKeys),
+            getTestTimeout()));
+    }
+
+    /** */
+    private void prepareForClear() throws Exception {
+        checkCdcCleared(0, false);
+        checkCdcCleared(1, false);
+
+        runCdc(grid(0));
+        runCdc(grid(1));
+
+        archiveSegment();
+
+        waitForCdcState(0);
+        waitForCdcState(1);
+
+        stopThreads(log);
+
+        // Segments archived after CDC applications stop are not processed and not deleted.
+        archiveSegment();
+        archiveSegment();
+
+        cdcDisabled.propagate(true);
+
+        checkCdcNotCleared(0, 2);
+        checkCdcNotCleared(1, 2);
+    }
+
+    /** @param idx Node index. */
+    private void waitForCdcState(int idx) throws Exception {
+        NodeFileTree ft = grid(idx).context().pdsFolderResolver().fileTree();
+
+        assertTrue(waitForCondition(() -> ft.cdcWalState().toFile().exists(), getTestTimeout()));
+    }
+
+    /**
+     * @param idx Node index.
+     * @param minSegCnt Minimal expected count of segment links.
+     */
+    private void checkCdcNotCleared(int idx, int minSegCnt) throws Exception {
+        NodeFileTree ft = grid(idx).context().pdsFolderResolver().fileTree();
+
+        assertTrue(waitForCondition(() -> ft.walCdcSegments().length >= minSegCnt, getTestTimeout()));
+        assertTrue(ft.cdcWalState().toFile().exists());
+        assertTrue(ft.cdcModeState().toFile().exists());
+    }
+
+    /**
+     * @param idx Node index.
+     * @param modeExists Whether CDC mode state is expected to exist.
+     */
+    private void checkCdcCleared(int idx, boolean modeExists) {
+        NodeFileTree ft = grid(idx).context().pdsFolderResolver().fileTree();
+
+        assertEquals(0, ft.walCdcSegments().length);
+
+        assertEquals(modeExists, ft.cdcState().toFile().exists());
+
+        if (modeExists) {
+            File[] stateFiles = ft.cdcState().toFile().listFiles();
+
+            assertEquals("Only CDC mode state is expected", 1, stateFiles.length);
+            assertEquals("Unexpected state file", ft.cdcModeState().toFile(), stateFiles[0]);
+        }
     }
 
     /** */
