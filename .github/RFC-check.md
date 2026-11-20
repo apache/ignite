@@ -17,7 +17,9 @@ limitations under the License.
 
 # RFC check for pull requests
 
-The **RFC process** check flags changes in known public API, SQL, CLI, client protocol, storage and distribution paths. A refactoring in one of these paths can trigger it. A change to public behavior elsewhere may need an RFC as well. Reviewers can apply the `rfc-required` label to flag such a PR. The [RFC process](../rfcs/IGNITE-29220-rfc-development-process.md) defines the rules.
+The **RFC process** check flags changes in known public API, SQL, CLI, client protocol, storage and distribution paths. A refactoring in one of these paths can trigger it. Reviewers can add the `rfc-required` label when a change elsewhere affects public behavior. The [RFC process](../rfcs/IGNITE-29220-rfc-development-process.md) defines the rules.
+
+When the check fails, read the bot's comment in the PR. It lists the affected files, the author's next step and what the reviewer should check. When the advice changes, the bot posts a new comment and removes its previous one. Once the check passes, it posts a confirmation. PRs that pass on the first run stay quiet. The same guidance is available in the job summary under **Checks**.
 
 ## Submitting an RFC
 
@@ -26,8 +28,6 @@ Use the [template](../rfcs/TEMPLATE.md) for a new RFC. Name the file after the P
 Start the vote on dev@ignite.apache.org. Link the PR and the RFC file at the commit being voted on. When the vote closes, link the opening vote from the result email if you start a separate thread. Link the result in the PR description. If the PR links several archive threads, identify the result on its own line.
 
     RFC-result: https://lists.apache.org/thread/<result-message-id>
-
-A single archive link in a PR comment also works. Rerun the check after adding a comment.
 
 The check reads the public Apache archive. It checks that the vote identifies this PR and RFC, compares the voted text with the PR and checks the time between the opening and result emails. It looks for three distinct Ignite committer +1 votes and a voting period of at least 72 hours. For compatible additions, it can also accept seven days without an objection when the opening announced that option. The author can vote explicitly. The check identifies committer accounts using personal Apache addresses and the current ASF roster. It can ask a reviewer to verify a sender whose address the list rewrote.
 
@@ -43,10 +43,10 @@ For failed votes, early results or missing evidence, follow the RFC process and 
 
 ## Enabling the check on master
 
-1. Merge the RFC process and its template, then merge the workflow. Check that the files are present on `master`.
-2. Set the Actions repository variable `IGNITE_RFC_CHECK` to `true`. Open or update a PR targeting `master` and check the **RFC process** job in its Checks tab.
-3. Add **RFC process** to the required status checks for `master`. A required check blocks merge while evidence is missing. Protect changes to workflow definitions through the repository's review rules, since GitHub can use the workflow YAML proposed in a PR.
+1. Merge the RFC process and its template, then merge these workflows. Create the `rfc-required` label so reviewers can flag PRs.
+2. On a PR from a fork targeting `master`, check that missing evidence fails **RFC process** and produces a PR comment. Supply the evidence and check that the job passes and the bot replaces its comment with a confirmation.
+3. Protect workflow changes with trusted review. Add `RFC process` to the required status checks for `master` in [`.asf.yaml`](../.asf.yaml). To stop blocking merges, remove this status from the branch rule.
 
-The workflow runs with read access and loads the checker from the PR base commit. It runs again on a push, a PR description edit, a label change or a review. To disable it, remove the required status check first and then clear the variable.
+The check reads the PR on a push, a description or label change, or a review. A separate workflow from the default branch checks the evidence again before it publishes a comment. Both use checker code from the base repository.
 
 Run the checker tests with `python3 -m unittest discover -s .github/scripts`.

@@ -20,47 +20,90 @@ import os
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
 
-from rfc_scope import potential_contract
-from rfc_vote import ManualReviewRequired, PERMALINK, VoteError, verify_vote
+from rfc_report import report
+from rfc_scope import contract_review
+from rfc_vote import EvidenceUnavailable, ManualReviewRequired, PERMALINK, VoteError, verify_vote
 
 RFC_PATH = r"rfcs/IGNITE-([0-9]+)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.md"
 TEMPLATE = "rfcs/TEMPLATE.md"
 
 
+@dataclass
+class CheckResult:
+    reason: str
+    author: str
+    reviewer: str
+    paths: tuple = ()
+
+
 class CheckError(ValueError):
-    pass
+    def __init__(self, reason, author, reviewer):
+        super().__init__(reason)
+        self.result = CheckResult(reason, author, reviewer)
 
 
 def api(route, *, pages=False):
     args = ["gh", "api"]
     if pages:
         args.extend(["--paginate", "--slurp"])
-    data = json.loads(subprocess.check_output([*args, route]))
-    return [item for page in data for item in page] if pages else data
+    try:
+        data = json.loads(subprocess.check_output([*args, route], stderr=subprocess.PIPE))
+        return [item for page in data for item in page] if pages else data
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError) as exc:
+        detail = str(exc)
+        if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
+            detail = exc.stderr.decode(errors="replace").strip()
+        raise CheckError(
+            f"Could not read the GitHub API response for {route}. {detail}",
+            "Check that the repository and revision are available, then rerun the job.",
+            "Check the failed request in the job log and confirm the workflow has read access.",
+        ) from exc
 
 
 def content(repo, path, sha):
     data = api(f"repos/{repo}/contents/{quote(path)}?ref={sha}")
-    if data.get("type") != "file" or data.get("encoding") != "base64":
-        raise CheckError(f"Cannot read the RFC as a file: {path}")
-    return base64.b64decode(data["content"]).decode(), data["sha"]
+    try:
+        if data["type"] == "file" and data["encoding"] == "base64":
+            return base64.b64decode(data["content"]).decode(), data["sha"]
+    except (KeyError, ValueError, TypeError):
+        pass
+    raise CheckError(
+        f"Cannot read the RFC as a UTF-8 file at {repo}@{sha}.",
+        f"Check that {path} is a regular Markdown file at the referenced commit.",
+        "Open that revision and verify that the RFC text is readable.",
+    )
 
 
 def validate_new(path, text, title, template):
     ticket = "IGNITE-" + re.fullmatch(RFC_PATH, path)[1]
     if not re.match(rf"{ticket}\b", title) or f"(https://issues.apache.org/jira/browse/{ticket})" not in text:
-        raise CheckError(f"Use {ticket} in the PR title and link its Jira ticket from {path}.")
-    headings = re.findall(r"^## .+$", template, re.M)
-    for heading in headings:
+        raise CheckError(
+            f"The title or the Jira link in {path} does not match the RFC ticket.",
+            f"Start the PR title with {ticket} and link https://issues.apache.org/jira/browse/{ticket} from the RFC.",
+            "Check that the PR, RFC filename and Jira link identify the same proposal.",
+        )
+    missing = []
+    for heading in re.findall(r"^## .+$", template, re.M):
         section = re.search(rf"^{re.escape(heading)}\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
         if not section or not section[1].strip():
-            raise CheckError(f"Fill in '{heading[3:]}' in {path}.")
+            missing.append(heading[3:])
+    if missing:
+        raise CheckError(
+            f"{path} has missing or empty template sections.",
+            "Fill in " + ", ".join(missing) + " under the original template headings.",
+            "Check that each section answers the template question for the proposed change.",
+        )
     prompts = template.split("## Problem", 1)[-1].splitlines()
     if any(line in text for line in prompts if line and not line.startswith("#")):
-        raise CheckError(f"Replace the template prompts with answers in {path}.")
+        raise CheckError(
+            f"{path} still contains instructions from the template.",
+            "Replace the template prompts with the proposal's answers.",
+            "Check that the proposal explains compatibility, migration and how the implementation will be tested.",
+        )
 
 
 def review_lines(pr):
@@ -92,41 +135,66 @@ def result_link(pr):
     if explicit:
         links = set(explicit)
     else:
-        def links_in(text):
-            return {u.rstrip(".,") for u in re.findall(r"https://lists\.apache\.org/[^\s<>\[\]()]+", text)
-                    if PERMALINK.fullmatch(u.rstrip(".,"))}
-        links = links_in(body)
-        if not links:
-            route = f"repos/{pr['base']['repo']['full_name']}/issues/{pr['number']}/comments?per_page=100"
-            for comment in api(route, pages=True):
-                links.update(links_in(comment["body"] or ""))
+        links = {u.rstrip(".,") for u in re.findall(r"https://lists\.apache\.org/[^\s<>\[\]()]+", body)
+                 if PERMALINK.fullmatch(u.rstrip(".,"))}
     if len(links) == 1:
         link = links.pop()
         if PERMALINK.fullmatch(link):
             return link
-    raise CheckError("Add one line to the PR description: RFC-result: <Apache archive URL of the RESULT message>.")
+    raise CheckError(
+        "The PR description does not identify one Apache dev-list result.",
+        "Add RFC-result: <Apache archive URL of the RESULT message> on its own line in the PR description.",
+        "Open the linked message and check that its own subject announces the result for this proposal.",
+    )
 
 
 def check(pr, files, template=None):
+    changed = {path for f in files for path in (f["filename"], f.get("previous_filename")) if path}
+    signals = {path: hint for path in sorted(changed) if (hint := contract_review(path))}
+    proposals = {path for path in changed if path.startswith("rfcs/") and path.endswith(".md")}
+    marked = any(label["name"] == "rfc-required" for label in pr["labels"])
+    paths = tuple(sorted((signals.keys() | proposals) or (changed if marked else set())))
+    try:
+        result = check_evidence(pr, files, signals, marked, template)
+    except CheckError as exc:
+        exc.result.paths = paths
+        raise
+    if signals or marked or proposals - {TEMPLATE}:
+        result.paths = paths
+    return result
+
+
+def check_evidence(pr, files, signals, marked, template):
     docs = {}
-    signals = set()
     for f in files:
         path = f["filename"]
         old = f.get("previous_filename")
         if old == TEMPLATE or (path == TEMPLATE and f["status"] == "removed"):
-            raise CheckError(f"Keep the RFC template at {TEMPLATE}.")
-        if old and re.fullmatch(RFC_PATH, old):
-            raise CheckError(f"Keep the existing RFC at {old}.")
+            raise CheckError(
+                "The RFC template was moved or removed.",
+                f"Restore {TEMPLATE}.", "Check that contributors can still start an RFC from the template.",
+            )
+        original = old if old else (path if f["status"] == "removed" else "")
+        if re.fullmatch(RFC_PATH, original):
+            raise CheckError(
+                f"Existing links to {original} would break.",
+                "Restore the RFC at its original path and edit it in place.",
+                "Check that existing votes and implementation PRs still link to the proposal.",
+            )
         if path.startswith("rfcs/") and path.endswith(".md") and path != TEMPLATE:
             if not re.fullmatch(RFC_PATH, path):
-                raise CheckError("Name the RFC rfcs/IGNITE-<ticket>-<short-title>.md.")
-            if f["status"] == "removed":
-                raise CheckError(f"Update the existing RFC at {path} so later PRs can still link to it.")
+                raise CheckError(
+                    f"The RFC filename {path} does not identify a Jira ticket and a short title.",
+                    "Name the RFC rfcs/IGNITE-<ticket>-<short-title>.md.",
+                    "Check that the filename identifies the proposal's Jira ticket.",
+                )
             docs[path] = f["status"]
-        signals.update(p for p in (path, old) if p and potential_contract(p))
-    marked = any(label["name"] == "rfc-required" for label in pr["labels"])
     if not (docs or signals or marked):
-        return "No RFC files or configured public-contract paths changed."
+        return CheckResult(
+            "No RFC files or configured public-contract paths changed.",
+            "Continue with the usual PR review.",
+            "Check for user-visible behavior changes outside the configured paths. Apply rfc-required if an RFC is needed.",
+        )
 
     # Fetch decisions lazily. Most PRs with RFCs pass using the dev-list result alone.
     decisions = None
@@ -139,25 +207,85 @@ def check(pr, files, template=None):
     if not docs:
         covered = reviewed(r"RFC-covered:\s*(" + RFC_PATH + r")")
         if covered and Path(covered[1]).is_file():
-            return f"Reviewer confirmed coverage by {covered[1]}."
-        if not marked and reviewed(r"RFC-exempt:\s*\S.*"):
-            return "Reviewer confirmed the RFC exception for this revision."
-        locations = ", ".join(sorted(signals)[:3]) or "rfc-required label"
-        raise CheckError(f"Review contract impact ({locations}). Include an RFC or record a reviewer decision. See .github/RFC-check.md.")
+            return CheckResult(
+                f"Reviewer confirmed coverage by {covered[1]}.",
+                "Keep the approved RFC linked in the PR. Request a fresh decision if you push another commit.",
+                "Compare the implementation and its compatibility tests with the plan in the linked RFC.",
+            )
+        exempt = None if marked else reviewed(r"RFC-exempt:\s*(\S.*)")
+        if exempt:
+            return CheckResult(
+                f"Reviewer confirmed the RFC exception for this revision. {exempt[1]}",
+                "Request a fresh decision if you push another commit.",
+                "Check the stated exception against the public behavior and compatibility tests in this revision.",
+            )
+        if covered:
+            raise CheckError(
+                f"The approving review names {covered[1]}, which is missing from the base commit.",
+                "Link the approved RFC at its current path on the base branch.",
+                "If you have write access, compare the implementation with that RFC and approve this commit "
+                "with RFC-covered: <RFC path>.",
+            )
+        checks = " ".join(list(dict.fromkeys(signals.values()))[:3])
+        if marked:
+            raise CheckError(
+                "The rfc-required label flags this change for an RFC.",
+                "Draft the proposal from rfcs/TEMPLATE.md or link the approved RFC that this PR implements.",
+                (checks + " " if checks else "") + "Check the behavior that prompted the label. "
+                "A reviewer with write access can approve a covered "
+                "implementation with RFC-covered: <RFC path>. If the label was applied in error, resolve it with its reviewer.",
+            )
+        raise CheckError(
+            "Review contract impact. This PR changes a configured public-contract path without an RFC.",
+            "Explain any exception in the PR. For an implementation, link its approved RFC. For a new proposal, "
+            "start from rfcs/TEMPLATE.md and link the dev-list vote result in the PR description.",
+            checks + " A reviewer with write access "
+            "can approve this commit with RFC-covered: <RFC path> for an approved plan or RFC-exempt: <reason> for an exception.",
+        )
 
     pr_ticket = re.match(r"(IGNITE-[0-9]+)\b", pr["title"])
     if not pr_ticket:
-        raise CheckError("Start the PR title with its Jira ticket, for example IGNITE-12345.")
+        raise CheckError(
+            "The PR title is missing its Jira ticket.",
+            "Start the PR title with its Jira ticket, for example IGNITE-12345.",
+            "Check that this ticket describes the proposal or amendment under review.",
+        )
+    head_repo = pr["head"].get("repo")
+    if not head_repo:
+        raise CheckError(
+            "GitHub cannot identify the source repository for this RFC revision.",
+            "Restore access to the source repository or open a PR from an accessible branch.",
+            "Check that the proposed RFC can be read at the PR head commit.",
+        )
     blobs = {}
     for path, status in docs.items():
-        text, blobs[path] = content(pr["head"]["repo"]["full_name"], path, pr["head"]["sha"])
+        text, blobs[path] = content(head_repo["full_name"], path, pr["head"]["sha"])
         if status in {"added", "renamed", "copied"}:
-            validate_new(path, text, pr["title"], template if template is not None else Path(TEMPLATE).read_text())
-    if not marked and all(s == "modified" for s in docs.values()) and reviewed(r"RFC-exempt:\s*\S.*"):
-        return "Reviewer confirmed that the RFC changes only clarify wording."
+            if template is None:
+                try:
+                    template = Path(TEMPLATE).read_text()
+                except (OSError, UnicodeError) as exc:
+                    raise CheckError(
+                        f"The base checkout could not read {TEMPLATE}.",
+                        "Rerun on a base revision containing the RFC template.",
+                        "Check that the RFC process and template have landed on the base branch.",
+                    ) from exc
+            validate_new(path, text, pr["title"], template)
+    if not marked and all(s == "modified" for s in docs.values()):
+        exempt = reviewed(r"RFC-exempt:\s*(\S.*)")
+        if exempt:
+            return CheckResult(
+                f"Reviewer confirmed that the RFC changes only clarify wording. {exempt[1]}",
+                "Request a fresh decision if you change this revision.",
+                "Compare the wording with the approved text. A change to the agreed behavior or migration plan needs a new vote.",
+            )
 
     if any(status == "modified" and path.startswith(f"rfcs/{pr_ticket[1]}-") for path, status in docs.items()):
-        raise CheckError("Use a new Jira ticket to update an approved RFC. Keep the existing RFC file.")
+        raise CheckError(
+            "The PR reuses the Jira ticket of the RFC it amends.",
+            "Use a new Jira ticket for the amendment and edit the existing RFC at its original path.",
+            "Check the revised behavior and migration plan against the original approval.",
+        )
 
     result = result_link(pr)
     try:
@@ -169,10 +297,37 @@ def check(pr, files, template=None):
             if voted_blob != blob:
                 raise ManualReviewRequired(f"{path} differs from the voted version. Check whether the agreed plan changed.")
     except ManualReviewRequired as error:
-        if reviewed(r"RFC-verified:\s*" + re.escape(result) + r"\s+\S.*"):
-            return f"Reviewer verified the result and the RFC at this revision. {error}"
-        raise CheckError(f"{error} See manual verification in .github/RFC-check.md.") from error
-    return f"Verified the dev-list vote. {evidence.tally}"
+        verified = reviewed(r"RFC-verified:\s*" + re.escape(result) + r"\s+(\S.*)")
+        if verified:
+            return CheckResult(
+                f"Reviewer verified the result and the RFC at this revision. {verified[1]}",
+                "Keep the result linked and request a fresh decision after new commits.",
+                f"Compare the implementation and its tests with the RFC covered by {result}.",
+            )
+        raise CheckError(
+            str(error),
+            "Identify the relevant messages or voted file revision in the PR so the reviewer can resolve this question.",
+            "Read the linked vote and compare it with this revision. If the evidence resolves the question above, "
+            f"a reviewer with write access can approve this commit with RFC-verified: {result} <what you checked>.",
+        ) from error
+    except EvidenceUnavailable as error:
+        raise CheckError(
+            str(error), "Check access to the Apache archive or roster and rerun the job when it is readable.",
+            "Wait for readable evidence before confirming the vote.",
+        ) from error
+    except VoteError as error:
+        raise CheckError(
+            str(error),
+            "Check the linked opening and result against the finding. Link the correct result in the PR description. "
+            "If the vote did not pass under the RFC process, resolve the issue on the dev list and hold a new vote.",
+            f"Verify that {result} establishes approval for this PR and the proposed RFC revision.",
+        ) from error
+    return CheckResult(
+        f"Verified the dev-list vote. {evidence.tally}",
+        "Keep the result linked. Take changes to the agreed behavior or migration plan back to the dev list.",
+        f"Compare the implementation and migration tests with the plan approved at {result}. "
+        "Check that any approval by silence covered only compatible additions and that any request to skip deprecation had explicit approval.",
+    )
 
 
 def main():
@@ -180,15 +335,34 @@ def main():
     route = f"repos/{os.environ['GITHUB_REPOSITORY']}/pulls/{event['number']}"
     pr = api(route)
     if (pr["head"]["sha"], pr["base"]["sha"]) != (event["head"]["sha"], event["base"]["sha"]):
-        raise CheckError("This run is stale. Check the run for the current PR revision.")
+        raise CheckError(
+            "This run is stale. The PR head or base revision has changed.",
+            "Open the check for the current PR revision. Update the PR if it needs a new run.",
+            "Use the result attached to the current revision before merging.",
+        )
     files = api(route + "/files?per_page=100", pages=True)
     if len(files) != pr["changed_files"]:
-        raise CheckError("GitHub returned an incomplete file list. Split the PR or review it manually.")
-    print(check(pr, files))
+        raise CheckError(
+            f"GitHub returned an incomplete file list ({len(files)} of {pr['changed_files']}).",
+            "Split PRs that exceed GitHub's limit of 3,000 files. For a smaller PR, rerun the job.",
+            "Wait for a complete file list before assessing public-contract impact.",
+        )
+    return check(pr, files)
 
 
 if __name__ == "__main__":
     try:
-        main()
-    except (CheckError, VoteError, OSError, subprocess.CalledProcessError, ValueError) as e:
-        sys.exit(f"RFC check failed: {e}")
+        outcome = main()
+        passed = True
+    except CheckError as error:
+        outcome = error.result
+        passed = False
+    except (OSError, KeyError, TypeError, ValueError) as error:
+        outcome = CheckResult(
+            f"Could not read the workflow event or pull request data. {error}",
+            "Rerun the job for the current PR revision.",
+            "If the error recurs, check the workflow event and GitHub API response in the job log.",
+        )
+        passed = False
+    report(passed, outcome.reason, outcome.author, outcome.reviewer, outcome.paths)
+    sys.exit(0 if passed else 1)

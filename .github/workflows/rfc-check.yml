@@ -14,6 +14,7 @@
 # limitations under the License.
 
 name: RFC check
+run-name: 'RFC check for PR #${{ github.event.pull_request.number }}'
 
 on:
   pull_request:
@@ -31,10 +32,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  base:
+    name: Check RFC workflow installation
+    if: github.event.pull_request.base.ref == 'master'
+    runs-on: ubuntu-slim
+    outputs:
+      installed: ${{ steps.workflow.outputs.installed }}
+    steps:
+      - id: workflow
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          installed=$(gh api "repos/$GITHUB_REPOSITORY/contents/.github/workflows?ref=$BASE_SHA" \
+            --jq 'any(.[]; .name == "rfc-check.yml")')
+          echo "installed=$installed" >> "$GITHUB_OUTPUT"
+          if [[ "$installed" == false ]]; then
+            echo "The base commit has no RFC workflow. After the checker lands on master, test a new or updated PR before requiring this check." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   check:
-    # An inactive job must not satisfy a branch rule that requires "RFC process".
-    name: ${{ vars.IGNITE_RFC_CHECK == 'true' && 'RFC process' || 'RFC process (disabled)' }}
-    if: vars.IGNITE_RFC_CHECK == 'true' && github.event.pull_request.base.ref == 'master'
+    needs: base
+    name: ${{ needs.base.outputs.installed == 'true' && 'RFC process' || 'RFC process (inactive)' }}
+    if: needs.base.outputs.installed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:

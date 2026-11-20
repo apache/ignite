@@ -15,7 +15,7 @@
 
 import unittest
 
-from rfc_scope import potential_contract
+from rfc_scope import contract_review
 
 
 class ContractPathsTest(unittest.TestCase):
@@ -43,7 +43,7 @@ class ContractPathsTest(unittest.TestCase):
             "bin/ignite.sh",
         ):
             with self.subTest(path=path):
-                self.assertTrue(potential_contract(path))
+                self.assertIsNotNone(contract_review(path))
 
     def test_paths_outside_scope(self):
         """A PR that only touches these internal, test or documentation paths gets no scope signal."""
@@ -62,4 +62,4 @@ class ContractPathsTest(unittest.TestCase):
             "rfcs/TEMPLATE.md",
         ):
             with self.subTest(path=path):
-                self.assertFalse(potential_contract(path))
+                self.assertIsNone(contract_review(path))

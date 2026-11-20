@@ -40,11 +40,13 @@ def file(name, status="modified", **kwargs):
 
 class RFCCheckTest(unittest.TestCase):
     def test_rename_out_of_api_still_requires_review(self):
-        with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError):
+        with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError) as caught:
             ci.check(PR, [file("other", "renamed", previous_filename=API)], TEMPLATE)
+        self.assertIn(API, caught.exception.result.paths)
 
     def test_ordinary_test_change_does_not_require_review(self):
-        ci.check(PR, [file("modules/core/src/test/java/FooTest.java")], TEMPLATE)
+        result = ci.check(PR, [file("modules/core/src/test/java/FooTest.java"), file(ci.TEMPLATE)], TEMPLATE)
+        self.assertEqual(result.paths, ())
 
     def test_reviewer_can_explain_refactoring_but_author_cannot(self):
         def run(login="maintainer", sha="h", permission="write"):
@@ -59,8 +61,28 @@ class RFCCheckTest(unittest.TestCase):
 
     def test_required_label_also_catches_behavior_outside_known_paths(self):
         pr = dict(PR, labels=[{"name": "rfc-required"}])
-        with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError):
+        with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError) as caught:
             ci.check(pr, [file("other")], TEMPLATE)
+        self.assertIn("rfc-required label", caught.exception.result.reason)
+        self.assertNotIn("RFC-exempt", caught.exception.result.reviewer)
+        self.assertEqual(caught.exception.result.paths, ("other",))
+
+    def test_missing_rfc_names_the_compatibility_checks_for_this_diff(self):
+        """Given storage, configuration and Maven changes, a missing RFC prompts one check for each contract."""
+        java = "modules/core/src/main/java/org/apache/ignite/"
+        paths = [
+            java + "internal/processors/cache/persistence/wal/serializer/RecordSerializer.java",
+            java + "configuration/CacheConfiguration.java", java + "configuration/DataStorageConfiguration.java",
+            "modules/core/pom.xml",
+        ]
+        with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError) as caught:
+            ci.check(PR, [file(path) for path in paths])
+        reviewer = caught.exception.result.reviewer
+        self.assertIn("data written by the previous version", reviewer)
+        self.assertEqual(reviewer.count("configuration names, accepted values and defaults"), 1)
+        self.assertIn("Maven coordinates and dependencies", reviewer)
+        self.assertNotIn("client and server", reviewer)
+        self.assertIn("RFC-exempt:", reviewer)
 
     def test_follow_up_links_existing_rfc(self):
         with patch.object(ci, "review_lines", return_value=["RFC-covered: " + DOC]):
@@ -72,7 +94,11 @@ class RFCCheckTest(unittest.TestCase):
     def test_new_rfc_must_match_approved_document(self):
         evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result")
         with patch.object(ci, "content", return_value=(TEXT, "blob")), patch.object(ci, "verify_vote", return_value=evidence):
-            ci.check(PR, [file(DOC, "added"), file(API)], TEMPLATE)
+            result = ci.check(PR, [file(DOC, "added"), file(API)], TEMPLATE)
+            self.assertEqual(set(result.paths), {DOC, API})
+            self.assertIn(evidence.tally, result.reason)
+            self.assertIn("only compatible additions", result.reviewer)
+            self.assertIn("skip deprecation had explicit approval", result.reviewer)
         with patch.object(ci, "content", side_effect=[(TEXT, "changed"), (TEXT, "voted")]), \
                 patch.object(ci, "verify_vote", return_value=evidence), \
                 patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError):
@@ -83,6 +109,13 @@ class RFCCheckTest(unittest.TestCase):
             with self.subTest(text=text), patch.object(ci, "content", return_value=(text, "blob")), \
                     patch.object(ci, "review_lines", return_value=["RFC-exempt: wording only"]), self.assertRaises(ci.CheckError):
                 ci.check(dict(PR, body="RFC-result: missing"), [file(DOC, "added")], TEMPLATE)
+
+    def test_reports_all_missing_or_empty_sections(self):
+        """Given an RFC with an empty section and a missing section, the author sees both headings in one run."""
+        text = TEXT.split("## Problem")[0] + "## Problem\n\n"
+        with self.assertRaises(ci.CheckError) as caught:
+            ci.validate_new(DOC, text, PR["title"], TEMPLATE)
+        self.assertIn("Problem, Proposed change", caught.exception.result.author)
 
     def test_existing_file_can_be_clarified_or_amended_in_a_new_ticket(self):
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
@@ -96,8 +129,11 @@ class RFCCheckTest(unittest.TestCase):
     def test_early_or_rejected_vote_cannot_use_manual_verification(self):
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
                 patch.object(ci, "verify_vote", side_effect=ci.VoteError("Vote closed too early")), \
-                patch.object(ci, "review_lines", return_value=["RFC-verified: " + RESULT + " reviewed"]), self.assertRaises(ci.VoteError):
+                patch.object(ci, "review_lines", return_value=["RFC-verified: " + RESULT + " reviewed"]), \
+                self.assertRaisesRegex(ci.CheckError, "Vote closed too early") as caught:
             ci.check(PR, [file(DOC, "added")], TEMPLATE)
+        self.assertIn("dev list", caught.exception.result.author)
+        self.assertNotIn("RFC-verified", caught.exception.result.reviewer)
 
     def test_withdrawn_or_retargeted_review_cannot_exempt_pr(self):
         review = {"state": "APPROVED", "user": {"login": "reviewer"}, "commit_id": "h",
@@ -108,10 +144,31 @@ class RFCCheckTest(unittest.TestCase):
             with patch.object(ci, "api", side_effect=responses), self.assertRaises(ci.CheckError):
                 ci.check(PR, [file(API)], TEMPLATE)
 
-    def test_result_link_accepts_ordinary_pr_links(self):
+    def test_result_link_must_be_in_the_pr_description(self):
+        """Given a result in a comment, checking the PR still asks the author to link it in the description."""
         self.assertEqual(ci.result_link(dict(PR, body=f"The vote passed. [Result]({RESULT})")), RESULT)
         with patch.object(ci, "api", return_value=[{"body": "Vote result: " + RESULT}]):
-            self.assertEqual(ci.result_link(dict(PR, body="")), RESULT)
+            with self.assertRaisesRegex(ci.CheckError, "PR description") as caught:
+                ci.result_link(dict(PR, body=""))
+        self.assertIn("RFC-result:", caught.exception.result.author)
+
+    def test_archive_outage_calls_for_a_rerun(self):
+        """Given an unavailable archive, checking a new RFC asks for readable evidence and a rerun."""
+        with patch.object(ci, "content", return_value=(TEXT, "blob")), \
+                patch("rfc_vote.urlopen", side_effect=OSError("archive unavailable")), \
+                self.assertRaisesRegex(ci.CheckError, "archive unavailable") as caught:
+            ci.check(PR, [file(DOC, "added")], TEMPLATE)
+        self.assertIn("rerun", caught.exception.result.author)
+        self.assertEqual(caught.exception.result.paths, (DOC,))
+
+    def test_unreadable_proposal_identifies_the_file_and_revision(self):
+        """Given a directory at the RFC path, the author sees which file and revision to fix."""
+        with patch.object(ci, "api", return_value=[]), self.assertRaises(ci.CheckError) as caught:
+            ci.check(PR, [file(DOC, "added")], TEMPLATE)
+        outcome = caught.exception.result
+        self.assertIn("fork/ignite@h", outcome.reason)
+        self.assertIn(DOC, outcome.author)
+        self.assertEqual(outcome.paths, (DOC,))
 
     def test_manual_check_binds_to_current_result(self):
         decision = "RFC-verified: " + RESULT + " confirmed three committer identities and the voted text"
@@ -119,5 +176,7 @@ class RFCCheckTest(unittest.TestCase):
                 patch.object(ci, "verify_vote", side_effect=ci.ManualReviewRequired("Check identities")):
             with patch.object(ci, "review_lines", return_value=[decision]):
                 ci.check(PR, [file(DOC, "added")], TEMPLATE)
-            with patch.object(ci, "review_lines", return_value=[decision.replace(RESULT, RESULT + "2")]), self.assertRaises(ci.CheckError):
+            with patch.object(ci, "review_lines", return_value=[decision.replace(RESULT, RESULT + "2")]), \
+                    self.assertRaises(ci.CheckError) as caught:
                 ci.check(PR, [file(DOC, "added")], TEMPLATE)
+            self.assertIn("RFC-verified: " + RESULT + " ", caught.exception.result.reviewer)

@@ -1,0 +1,52 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+import os
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+from unittest.mock import patch
+
+from rfc_report import report
+
+
+class RFCReportTest(unittest.TestCase):
+    def test_summary_lists_actions_and_displays_file_names_as_text(self):
+        """Given a flagged PR, report each role's next step and quote file names safely."""
+        paths = ["a</code>\n##[warning]"] + [f"public/path{i}" for i in range(8)]
+        with TemporaryDirectory() as directory:
+            summary = Path(directory) / "summary.md"
+            with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stderr(StringIO()) as log:
+                report(False, "Missing vote.", "Link the result.", "Check the voted API.", paths)
+            rendered = summary.read_text()
+
+        self.assertIn("## RFC check failed", rendered)
+        self.assertIn("### For the author\n\n<p>Link the result.</p>", rendered)
+        self.assertIn("### For the reviewer\n\n<p>Check the voted API.</p>", rendered)
+        self.assertIn("<code>a&lt;/code&gt;\\n##[warning]</code>", rendered)
+        self.assertIn("See 1 more in the PR diff.", rendered)
+        self.assertNotIn("public/path7", rendered)
+        self.assertNotIn("##[warning]", log.getvalue())
+
+    def test_local_run_writes_guidance_to_the_log(self):
+        """Given no GitHub summary file, a passing local run prints the verdict and both actions."""
+        with patch.dict(os.environ, GITHUB_STEP_SUMMARY=""), redirect_stdout(StringIO()) as log:
+            report(True, "Vote verified.", "No RFC changes needed.", "Check the implementation.")
+
+        self.assertIn("RFC check passed: Vote verified.", log.getvalue())
+        self.assertIn("For the author: No RFC changes needed.", log.getvalue())
+        self.assertIn("For the reviewer: Check the implementation.", log.getvalue())

@@ -36,6 +36,10 @@ class VoteError(ValueError):
     """The archive did not establish the requested vote evidence."""
 
 
+class EvidenceUnavailable(VoteError):
+    """An Apache service could not supply readable evidence."""
+
+
 class ManualReviewRequired(VoteError):
     """A maintainer must interpret the evidence for this PR and RFC."""
 
@@ -60,7 +64,7 @@ def _load_json(url):
                 raise VoteError(f"Response from {urlsplit(url).hostname} exceeds 16 MiB.")
             return json.loads(data)
     except (OSError, http.client.HTTPException, ValueError, RecursionError) as exc:
-        raise VoteError(f"Could not read evidence from {urlsplit(url).hostname}: {exc}") from exc
+        raise EvidenceUnavailable(f"Could not read evidence from {urlsplit(url).hostname}: {exc}") from exc
 
 
 def _links(body):
