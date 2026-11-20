@@ -40,9 +40,7 @@ def run_checker(file_pages, *, changed_files=None):
     paged = "api --paginate --slurp"
     responses = {
         f"api {pull}": pr,
-        f"{paged} {pull}/files?per_page=100": [
-            [{"filename": path, "status": "modified"} for path in page] for page in file_pages
-        ],
+        f"{paged} {pull}/files?per_page=100": file_pages,
     }
     with TemporaryDirectory() as directory:
         work = Path(directory)
@@ -71,16 +69,32 @@ def run_checker(file_pages, *, changed_files=None):
 class CheckCommandTest(unittest.TestCase):
     def test_public_api_on_second_page_shows_advice(self):
         """A public API on page two produces guidance and a successful job."""
-        first_page = [f"docs/page-{i}.md" for i in range(100)]
-        result, summary = run_checker([first_page, [PUBLIC_API]])
+        first_page = [{"filename": f"docs/page-{i}.md", "status": "modified"} for i in range(100)]
+        result, summary = run_checker([first_page, [{"filename": PUBLIC_API, "status": "modified"}]])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn(PUBLIC_API, summary)
         self.assertIn("Check results, errors and calls", summary)
         self.assertIn("process exception", summary)
+        self.assertIn("This PR does not add or update an RFC.", summary)
+
+    def test_empty_rfc_needs_only_its_filename(self):
+        empty = {"filename": "rfcs/IGNITE-123-cache-timeout.md", "status": "added",
+                 "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391", "changes": 0}
+        result, summary = run_checker([[empty]])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("This PR adds or updates an RFC.", summary)
+        self.assertIn(empty["filename"], summary)
+
+    def test_invalid_rfc_filename_fails_with_an_example(self):
+        result, summary = run_checker([[{"filename": "rfcs/cache-timeout.md", "status": "added"}]])
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("Invalid RFC filename: rfcs/cache-timeout.md.", summary)
+        self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", summary)
+        self.assertIn("Invalid RFC filename", result.stderr)
 
     def test_incomplete_file_list_requires_a_complete_pr(self):
         """Given an API file count mismatch, the job stops before review and explains GitHub's limit."""
-        result, summary = run_checker([[PUBLIC_API]], changed_files=3001)
+        result, summary = run_checker([[{"filename": PUBLIC_API, "status": "modified"}]], changed_files=3001)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("incomplete file list (1 of 3001)", result.stderr)
         self.assertIn("3,000 files", summary)

@@ -70,8 +70,8 @@ def matches(pr, run, repo):
 
 
 def metadata(pr):
-    state = (pr["head"]["sha"], pr["base"]["sha"], pr["title"],
-             sorted(label["name"] for label in pr["labels"]))
+    marked = any(label["name"] == "public-behavior-change" for label in pr["labels"])
+    state = (pr["head"]["sha"], pr["base"]["sha"], marked)
     return hashlib.sha256(json.dumps(state).encode()).hexdigest()
 
 

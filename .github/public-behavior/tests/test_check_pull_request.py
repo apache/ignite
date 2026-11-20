@@ -14,17 +14,13 @@
 # limitations under the License.
 
 import unittest
-from unittest.mock import patch
 
 import check_pull_request as ci
 
 
 DOC = "rfcs/IGNITE-123-sql.md"
 API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
-TEMPLATE = ("## Problem\nDescribe the problem.\n\n## Proposed change\nDescribe the change.")
-TEXT = ("# New setting\nTicket: [IGNITE-123](https://issues.apache.org/jira/browse/IGNITE-123)\n"
-        "## Problem\nUsers need a timeout.\n## Proposed change\nAdd a timeout option.")
-PR = {"head": {"repo": {"full_name": "fork/ignite"}, "sha": "h"}, "labels": [], "title": "IGNITE-123 Add a timeout"}
+PR = {"labels": []}
 
 
 def file(name, status="modified", **kwargs):
@@ -40,7 +36,7 @@ class CheckPullRequestTest(unittest.TestCase):
 
     def test_ordinary_test_change_stays_quiet(self):
         """A test and a template edit have no public-behavior advice."""
-        result = ci.check(PR, [file("modules/core/src/test/java/FooTest.java"), file(ci.TEMPLATE)])
+        result = ci.check(PR, [file("modules/core/src/test/java/FooTest.java"), file("rfcs/TEMPLATE.md")])
         self.assertFalse(result.advisory)
         self.assertEqual(result.paths, ())
 
@@ -50,6 +46,7 @@ class CheckPullRequestTest(unittest.TestCase):
         result = ci.check(pr, [file("internal/Scheduler.java")])
         self.assertTrue(result.advisory)
         self.assertIn("public-behavior-change", result.reason)
+        self.assertIn("This PR does not add or update an RFC.", result.reason)
         self.assertIn("process exception", result.author)
         self.assertEqual(result.paths, ("internal/Scheduler.java",))
 
@@ -63,65 +60,56 @@ class CheckPullRequestTest(unittest.TestCase):
         ]
         result = ci.check(PR, [file(path) for path in paths])
         self.assertTrue(result.advisory)
+        self.assertIn("This PR does not add or update an RFC.", result.reason)
         self.assertIn("data written by the previous version", result.reviewer)
         self.assertEqual(result.reviewer.count("configuration names, accepted values and defaults"), 1)
         self.assertIn("Maven coordinates and dependencies", result.reviewer)
         self.assertNotIn("client and server", result.reviewer)
 
-    def test_new_rfc_reminds_the_reviewer_to_check_the_vote(self):
-        """A complete proposal can be reviewed with an empty PR description."""
-        with patch.object(ci, "content", return_value=TEXT):
-            result = ci.check(PR, [file(DOC, "added")], TEMPLATE)
-        self.assertTrue(result.advisory)
-        self.assertEqual(result.paths, (DOC,))
-        self.assertIn("vote on dev@ and any later objections", result.reviewer)
-        self.assertIn("first implementation", result.reviewer)
+    def test_added_updated_and_renamed_rfcs_are_present(self):
+        for proposal in [file(DOC, "added"), file(DOC), file(DOC, "renamed", previous_filename="notes/sql.md")]:
+            with self.subTest(status=proposal["status"]):
+                result = ci.check(PR, [proposal])
+                self.assertTrue(result.advisory)
+                self.assertEqual(result.paths, (DOC,))
+                self.assertIn("This PR adds or updates an RFC.", result.reason)
+                self.assertIn("vote on dev@ and any later objections", result.reviewer)
 
-    def test_new_rfc_requires_the_template_sections(self):
-        """An incomplete proposal reports the missing answer to its author."""
-        with patch.object(ci, "content", return_value=TEXT.replace("Add a timeout option.", "")), \
-                self.assertRaises(ci.CheckError) as caught:
-            ci.check(PR, [file(DOC, "added")], TEMPLATE)
-        self.assertIn("Proposed change", caught.exception.result.author)
+    def test_pr_title_does_not_limit_rfc_changes(self):
+        for title in ["", "Add an SQL setting", "IGNITE-456 Update the setting"]:
+            with self.subTest(title=title):
+                for status in ("added", "modified"):
+                    result = ci.check(dict(PR, title=title), [file(DOC, status)])
+                    self.assertTrue(result.advisory)
 
-    def test_reports_all_missing_or_empty_sections(self):
-        """Given an RFC with an empty section and a missing section, the author sees both headings in one run."""
-        text = TEXT.split("## Problem")[0] + "## Problem\n\n"
-        with self.assertRaises(ci.CheckError) as caught:
-            ci.validate_new(DOC, text, PR["title"], TEMPLATE)
-        self.assertIn("Problem, Proposed change", caught.exception.result.author)
+    def test_invalid_filename_identifies_the_file_and_gives_an_example(self):
+        for name in ["rfcs/cache-timeout.md", "rfcs/IGNITE-timeout.md", "rfcs/IGNITE-42-.md",
+                     "rfcs/IGNITE-42 two.md", "rfcs/IGNITE-42-timeout.txt", "rfcs/IGNITE-42-timeout"]:
+            with self.subTest(name=name), self.assertRaises(ci.CheckError) as caught:
+                ci.check(PR, [file(name, "added")])
+            result = caught.exception.result
+            self.assertIn(f"Invalid RFC filename: {name}", result.reason)
+            self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", result.author)
+            self.assertEqual(result.paths, (name,))
+
+    def test_support_files_and_removed_proposals_do_not_count(self):
+        changes = [file("rfcs/TEMPLATE.md", "removed"), file("rfcs/README.md"), file(DOC, "removed"),
+                   file("rfcs/IGNITE-123-timeout.png"),
+                   file("notes/sql.md", "renamed", previous_filename="rfcs/IGNITE-42-original.md")]
+        self.assertFalse(ci.check(PR, changes).advisory)
+        result = ci.check(PR, changes + [file(API)])
+        self.assertIn("This PR does not add or update an RFC.", result.reason)
+        self.assertEqual(result.paths, (API,))
+
+    def test_rfc_with_other_documents_needs_no_implementation_review(self):
+        result = ci.check(PR, [file(DOC), file("rfcs/TEMPLATE.md"), file("CONTRIBUTING.md")])
+        self.assertIn("documentation or process RFC can stand alone", result.reviewer)
 
     def test_rfc_edit_and_implementation_get_separate_review_advice(self):
-        """Changing an RFC and code shows both kinds of advice on known and manually flagged paths."""
         for path, labels in [(API, []), ("internal/Scheduler.java", [{"name": "public-behavior-change"}])]:
-            pr = dict(PR, title="IGNITE-456 Clarify the timeout", labels=labels)
-            with self.subTest(path=path), patch.object(ci, "content", return_value=TEXT):
-                result = ci.check(pr, [file(DOC), file(path)], TEMPLATE)
+            with self.subTest(path=path):
+                result = ci.check(dict(PR, labels=labels), [file(DOC), file(path)])
                 self.assertTrue(result.advisory)
                 self.assertEqual(set(result.paths), {DOC, path})
                 self.assertIn("Wording-only edits need no new vote", result.reviewer)
                 self.assertIn("implementation and its compatibility tests", result.reviewer)
-
-    def test_empty_rfc_edit_names_the_file(self):
-        """Replacing a proposal with an empty file reports a structural error."""
-        pr = dict(PR, title="IGNITE-456 Clarify the timeout")
-        with patch.object(ci, "content", return_value=""), self.assertRaises(ci.CheckError) as caught:
-            ci.check(pr, [file(DOC)])
-        self.assertIn(f"{DOC} is empty", caught.exception.result.reason)
-
-    def test_existing_file_can_be_clarified_or_amended_in_a_new_ticket(self):
-        """An existing RFC needs a new ticket, and its reviewer decides whether the edit needs a vote."""
-        with patch.object(ci, "content", return_value=TEXT):
-            with self.assertRaisesRegex(ci.CheckError, "reuses the Jira ticket"):
-                ci.check(PR, [file(DOC)], TEMPLATE)
-            result = ci.check(dict(PR, title="IGNITE-456 Clarify the timeout"), [file(DOC)], TEMPLATE)
-        self.assertIn("Wording-only edits need no new vote", result.reviewer)
-
-    def test_unreadable_proposal_identifies_the_file_and_revision(self):
-        """Given a directory at the RFC path, the author sees which file and revision to fix."""
-        with patch.object(ci, "api", return_value=[]), self.assertRaises(ci.CheckError) as caught:
-            ci.check(PR, [file(DOC, "added")], TEMPLATE)
-        outcome = caught.exception.result
-        self.assertIn("fork/ignite@h", outcome.reason)
-        self.assertIn(DOC, outcome.author)
-        self.assertEqual(outcome.paths, (DOC,))

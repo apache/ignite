@@ -14,7 +14,6 @@
 # limitations under the License.
 
 """Check public behavior changes in a pull request from the trusted base checkout."""
-import base64
 import json
 import os
 import re
@@ -22,13 +21,11 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from urllib.parse import quote
 
 from check_summary import report
 from contract_paths import contract_review
 
-RFC_PATH = r"rfcs/IGNITE-([0-9]+)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.md"
-TEMPLATE = "rfcs/TEMPLATE.md"
+RFC_PATH = re.compile(r"rfcs/IGNITE-[0-9]+-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.md")
 
 
 @dataclass
@@ -41,9 +38,9 @@ class CheckResult:
 
 
 class CheckError(ValueError):
-    def __init__(self, reason, author, reviewer):
+    def __init__(self, reason, author, reviewer, paths=()):
         super().__init__(reason)
-        self.result = CheckResult(reason, author, reviewer)
+        self.result = CheckResult(reason, author, reviewer, paths)
 
 
 def api(route, *, pages=False):
@@ -64,155 +61,54 @@ def api(route, *, pages=False):
         ) from exc
 
 
-def content(repo, path, sha):
-    data = api(f"repos/{repo}/contents/{quote(path)}?ref={sha}")
-    try:
-        if data["type"] == "file" and data["encoding"] == "base64":
-            return base64.b64decode(data["content"]).decode()
-    except (KeyError, ValueError, TypeError):
-        pass
-    raise CheckError(
-        f"Cannot read the RFC as a UTF-8 file at {repo}@{sha}.",
-        f"Check that {path} is a regular Markdown file at the referenced commit.",
-        "Open that revision and verify that the RFC text is readable.",
-    )
+def is_rfc_candidate(path):
+    filename = Path(path)
+    if not path.startswith("rfcs/") or filename.name.lower() in {"template.md", "readme.md"}:
+        return False
+    suffix = filename.suffix.lower()
+    return suffix == ".md" or (suffix in {"", ".txt"} and re.match(r"IGNITE-[0-9]+\b", filename.name) is not None)
 
 
-def validate_new(path, text, title, template):
-    ticket = "IGNITE-" + re.fullmatch(RFC_PATH, path)[1]
-    if not re.match(rf"{ticket}\b", title) or f"(https://issues.apache.org/jira/browse/{ticket})" not in text:
-        raise CheckError(
-            f"The title or the Jira link in {path} does not match the RFC ticket.",
-            f"Start the PR title with {ticket} and link https://issues.apache.org/jira/browse/{ticket} from the RFC.",
-            "Check that the PR, RFC filename and Jira link identify the same proposal.",
-        )
-    missing = []
-    for heading in re.findall(r"^## .+$", template, re.M):
-        section = re.search(rf"^{re.escape(heading)}\s*\n(.*?)(?=^## |\Z)", text, re.M | re.S)
-        if not section or not section[1].strip():
-            missing.append(heading[3:])
-    if missing:
-        raise CheckError(
-            f"{path} has missing or empty template sections.",
-            "Fill in " + ", ".join(missing) + " under the original template headings.",
-            "Check that each section answers the template question for the proposed change.",
-        )
-    prompts = template.split("## Problem", 1)[-1].splitlines()
-    if any(line in text for line in prompts if line and not line.startswith("#")):
-        raise CheckError(
-            f"{path} still contains instructions from the template.",
-            "Replace the template prompts with the proposal's answers.",
-            "Check that the proposal explains compatibility, migration and how the implementation will be tested.",
-        )
-
-
-def check(pr, files, template=None):
+def check(pr, files):
     changed = {path for f in files for path in (f["filename"], f.get("previous_filename")) if path}
     signals = {path: hint for path in sorted(changed) if (hint := contract_review(path))}
-    proposals = {path for path in changed if path.startswith("rfcs/") and path.endswith(".md")}
+    docs = {f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"])}
     marked = any(label["name"] == "public-behavior-change" for label in pr["labels"])
-    paths = tuple(sorted(changed if marked else signals.keys() | proposals))
-    try:
-        docs = validate_proposals(pr, files, template)
-    except CheckError as exc:
-        exc.result.paths = paths
-        raise
+    paths = tuple(sorted(changed if marked else signals.keys() | docs))
+    for path in sorted(docs):
+        if not RFC_PATH.fullmatch(path):
+            raise CheckError(
+                f"Invalid RFC filename: {path}.",
+                "Use rfcs/IGNITE-<ticket>-<short-title>.md, for example rfcs/IGNITE-12345-cache-timeout.md.",
+                "Check that the filename contains the proposal's Jira ticket number.", paths,
+            )
 
     if not (docs or signals or marked):
         return CheckResult(
-            "The changed files include no RFC or known public-contract path.",
+            "This PR does not add or update an RFC or touch a known public-contract path.",
             "Continue with the usual PR review.",
             "If another file changes public behavior, add the public-behavior-change label.",
         )
 
     hints = []
     if docs:
-        reason = "This PR adds or edits an RFC."
+        reason = "This PR adds or updates an RFC."
         author = "Discuss the proposal in this PR. Follow the RFC process for a new proposal or a change to the agreed plan."
         hints.append("For a new proposal or a changed plan, check the vote on dev@ and any later objections. "
                      "Wording-only edits need no new vote.")
-        if any(f["filename"] not in docs for f in files):
-            hints.append("Review the code separately. Compare the implementation and its compatibility tests with the agreed plan.")
-        else:
+        if not (marked or signals):
             hints.append("A product RFC goes with its first implementation. A documentation or process RFC can stand alone.")
+        hints.append("If this PR includes code, compare the implementation and its compatibility tests with the agreed plan.")
     else:
         reason = ("The public-behavior-change label flags this PR for review."
                   if marked else "This PR changes a file that may affect public behavior.")
+        reason += " This PR does not add or update an RFC."
         author = ("If public behavior changes, start from rfcs/TEMPLATE.md unless an approved RFC "
                   "or a process exception already covers the work.")
         hints.append("Check whether the code preserves the contract, follows an approved plan or needs an RFC.")
 
     hints.extend(dict.fromkeys(signals.values()))
     return CheckResult(reason, author, " ".join(hints), paths, advisory=True)
-
-
-def validate_proposals(pr, files, template):
-    docs = {}
-    for f in files:
-        path = f["filename"]
-        old = f.get("previous_filename")
-        if old == TEMPLATE or (path == TEMPLATE and f["status"] == "removed"):
-            raise CheckError(
-                "The RFC template was moved or removed.",
-                f"Restore {TEMPLATE}.", "Check that contributors can still start an RFC from the template.",
-            )
-        original = old if old else (path if f["status"] == "removed" else "")
-        if re.fullmatch(RFC_PATH, original):
-            raise CheckError(
-                f"Existing links to {original} would break.",
-                "Restore the RFC at its original path and edit it in place.",
-                "Check that existing votes and implementation PRs still link to the proposal.",
-            )
-        if path.startswith("rfcs/") and path.endswith(".md") and path != TEMPLATE:
-            if not re.fullmatch(RFC_PATH, path):
-                raise CheckError(
-                    f"The RFC filename {path} does not identify a Jira ticket and a short title.",
-                    "Name the RFC rfcs/IGNITE-<ticket>-<short-title>.md.",
-                    "Check that the filename identifies the proposal's Jira ticket.",
-                )
-            docs[path] = f["status"]
-    if not docs:
-        return docs
-
-    pr_ticket = re.match(r"(IGNITE-[0-9]+)\b", pr["title"])
-    if not pr_ticket:
-        raise CheckError(
-            "The PR title is missing its Jira ticket.",
-            "Start the PR title with its Jira ticket, for example IGNITE-12345.",
-            "Check that this ticket describes the proposal or amendment under review.",
-        )
-    if any(status == "modified" and path.startswith(f"rfcs/{pr_ticket[1]}-") for path, status in docs.items()):
-        raise CheckError(
-            "The PR reuses the Jira ticket of the RFC it amends.",
-            "Use a new Jira ticket for the amendment and edit the existing RFC at its original path.",
-            "Check the revised behavior and migration plan against the original approval.",
-        )
-    head_repo = pr["head"].get("repo")
-    if not head_repo:
-        raise CheckError(
-            "GitHub cannot identify the source repository for this RFC revision.",
-            "Restore access to the source repository or open a PR from an accessible branch.",
-            "Check that the proposed RFC can be read at the PR head commit.",
-        )
-    for path, status in docs.items():
-        text = content(head_repo["full_name"], path, pr["head"]["sha"])
-        if not text.strip():
-            raise CheckError(
-                f"{path} is empty.", "Restore the proposal text in this file.",
-                "Check that the RFC still describes the agreed behavior.",
-            )
-        if status in {"added", "renamed", "copied"}:
-            if template is None:
-                try:
-                    template = Path(TEMPLATE).read_text()
-                except (OSError, UnicodeError) as exc:
-                    raise CheckError(
-                        f"The base checkout could not read {TEMPLATE}.",
-                        "Rerun on a base revision containing the RFC template.",
-                        "Check that the RFC process and template have landed on the base branch.",
-                    ) from exc
-            validate_new(path, text, pr["title"], template)
-    return docs
 
 
 def main():

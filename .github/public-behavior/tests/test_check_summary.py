@@ -31,12 +31,12 @@ class CheckSummaryTest(unittest.TestCase):
         with TemporaryDirectory() as directory:
             summary = Path(directory) / "summary.md"
             with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stderr(StringIO()) as log:
-                report(False, "Missing section.", "Fill in the section.", "Check the migration plan.", paths)
+                report(False, "Invalid RFC filename.", "Rename the file.", "Check the migration plan.", paths)
             rendered = summary.read_text()
 
         self.assertIn("## Public behavior check failed", rendered)
         self.assertIn(rules_reference(), rendered)
-        self.assertIn("### For the author\n\n<p>Fill in the section.</p>", rendered)
+        self.assertIn("### For the author\n\n<p>Rename the file.</p>", rendered)
         self.assertIn("### For the reviewer\n\n<p>Check the migration plan.</p>", rendered)
         self.assertIn("<code>a&lt;/code&gt;\\n##[warning]</code>", rendered)
         self.assertIn("See 1 more in the PR diff.", rendered)
@@ -57,9 +57,9 @@ class CheckSummaryTest(unittest.TestCase):
     def test_local_run_writes_guidance_to_the_log(self):
         """Given no GitHub summary file, a passing local run prints the verdict and both actions."""
         with patch.dict(os.environ, GITHUB_STEP_SUMMARY=""), redirect_stdout(StringIO()) as log:
-            report(True, "RFC sections checked.", "Continue the usual review.", "Check the implementation.")
+            report(True, "RFC filename checked.", "Continue the usual review.", "Check the implementation.")
 
-        self.assertIn("Public behavior check passed: RFC sections checked.", log.getvalue())
+        self.assertIn("Public behavior check passed: RFC filename checked.", log.getvalue())
         self.assertIn(rules_reference(), log.getvalue())
         self.assertIn("For the author: Continue the usual review.", log.getvalue())
         self.assertIn("For the reviewer: Check the implementation.", log.getvalue())
