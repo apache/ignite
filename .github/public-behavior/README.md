@@ -17,42 +17,22 @@ limitations under the License.
 
 # Public behavior changes
 
-[Public behavior and compatibility](../../rfcs/IGNITE-29219-public-api-and-compatibility.md) defines what users can rely on, including API behavior, client protocols, stored data and supported runtime setups. The [RFC process](../../rfcs/IGNITE-29220-rfc-development-process.md) defines which changes need a vote and how approval works.
+This check helps reviewers spot changes to [Ignite's public contracts](../../rfcs/IGNITE-29219-public-api-and-compatibility.md). The [RFC process](../../rfcs/IGNITE-29220-rfc-development-process.md) explains when a proposal and a vote are required.
 
-The check flags known contract paths and checks proposals in `rfcs/`. A matching path tells the reviewer where to look. A change elsewhere can also affect users. Reviewers can flag it with the `public-behavior-change` label.
+## What appears in a PR
 
-If the check fails, the bot comments in the PR with the files to review, the author's next step and what the reviewer should check. It replaces its comment when the advice changes or the problem is resolved. A PR that passes on its first run stays quiet. The report is also available under **Checks**.
+- **A file may affect public behavior.** The check passes and the bot lists the files and what to review. For example, a client protocol change calls for checking old clients against the new server. If a change outside the known paths needs the same review, add the `public-behavior-change` label.
+- **The PR adds or edits an RFC.** The check validates the filename and ticket. For a new RFC it also checks the sections from the [template](../../rfcs/TEMPLATE.md). If a check fails, the bot tells the author what to fix.
+- **The PR changes both code and an RFC.** Review the implementation and its compatibility tests against the plan. A wording fix in the RFC can accompany code that changes public behavior.
 
-## When a change needs a vote
+The reviewer decides whether an RFC or an exception applies, checks any required vote on dev@, and approves the PR when satisfied.
 
-Ask what users can rely on before and after the change. A new field in a supported client protocol needs an RFC even if old clients keep working. A SQL fix that restores the documented result can go through normal review if it preserves the other contracts. The process also describes exceptions for previously deprecated APIs and undisclosed security fixes.
-
-Use the [template](../../rfcs/TEMPLATE.md) for a new proposal. Name it after the PR's Jira ticket. To amend an approved RFC, open a new ticket and edit the existing file. Wording-only edits can go through review without another vote.
-
-Discuss the proposal in the PR. When it is ready, start a `[VOTE]` on dev@ignite.apache.org with links to the PR and the RFC revision. Keep it open for at least 72 hours. Approval takes three explicit `+1` votes from different Ignite committers. A committer who wrote the RFC can vote. If the RFC only adds compatible behavior, announce that seven days without objections also counts as approval. Skipping deprecation needs explicit approval.
-
-Publish `[RESULT]` on dev@. Put the result link in the PR description so the check runs again. If the description has several archive links, mark the result on its own line.
-
-    Vote-result: https://lists.apache.org/thread/<result-message-id>
-
-## What the reviewer confirms
-
-A reviewer with write access records one of these decisions in an approving review on the current commit. A new commit needs a fresh decision.
-
-- `No-vote-needed: <reason>` — explain why the process permits this change without a vote. For example, a refactoring preserves the contract or an RFC edit only clarifies wording. If a reviewer added `public-behavior-change` by mistake, ask them to remove it.
-- `Implements-RFC: rfcs/IGNITE-12345-example.md` — identify the approved RFC that already covers this implementation.
-- `Vote-verified: <result URL> <what you checked>` — confirm the dev-list decision when the check asks for evidence. Compare the voted text with the PR. If a separate result does not identify the opening vote, put the opening URL immediately after the result URL. For approval by silence, check that the opening offered it, the RFC only adds compatible behavior and seven days passed without objections.
-
-Merge the RFC with its first implementation in one commit after code review and tests. Later PRs that follow the approved plan can link to it. This also covers removal at the release agreed in a deprecation RFC. A documentation or process RFC can stand alone. A change to the agreed proposal or migration plan needs a new vote.
-
-If the archive is unavailable, retry after access returns. If the PR or base branch moved, trigger a new check by updating the PR.
+The check runs when a PR to `master` opens, reopens, becomes ready for review, or changes its code, details or labels. The result is available under **Checks**. When there is something to fix or review, the bot also comments in the PR. It replaces its comment when the advice changes and confirms when earlier issues are resolved. A clean PR with nothing to review gets no comment.
 
 ## Enabling the check on master
 
-1. Merge the two RFCs and the template, then merge the workflows. Create the `public-behavior-change` label.
-2. On a fork PR targeting `master`, verify that missing evidence fails **Public behavior changes** and produces a PR comment. Supply the evidence and check that the bot replaces the warning with a confirmation.
-3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). Remove that status from the branch rule to stop blocking merges.
+1. Merge the public contract and process RFCs and the template, then merge the workflows. Create the `public-behavior-change` label.
+2. On a fork PR, change a known public API file. Check that the job passes and the bot posts review guidance. Add an RFC with an empty section, then fill it in. Check that the job fails and then passes, and that the bot replaces its warning.
+3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). To stop blocking merges on this check, remove it from the required checks.
 
-The check reruns on a push, a PR description or label change, or a review. A workflow from the default branch verifies the current evidence before posting a comment. Both use code from the base repository.
-
-From `.github/public-behavior`, run `python3 -m unittest discover -s tests`.
+To run the tests locally, use `python3 -m unittest discover -s tests` from `.github/public-behavior`.

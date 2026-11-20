@@ -19,12 +19,14 @@ from pathlib import Path
 import sys
 
 
-def _one_line(text):
-    line = "".join(c if c.isprintable() else ascii(c)[1:-1] for c in text[:1001])
-    return line[:999] + "…" if len(line) > 1000 else line
+def _one_line(text, limit=1000):
+    line = "".join(c if c.isprintable() else ascii(c)[1:-1] for c in text[:limit + 1])
+    return line[:limit - 1] + "…" if len(line) > limit else line
 
 
-def report_title(passed):
+def report_title(passed, advisory=False):
+    if passed and advisory:
+        return "Public behavior to review"
     return "Public behavior check passed" if passed else "Public behavior check failed"
 
 
@@ -38,16 +40,17 @@ def rules_reference():
         process = f"{project}/pull/13760/files#diff-964c536dd887c02e46887244405c46d2d8b5e15dc7a4480eb3a33fb64844b15a"
     return (
         f"The check flags known files. Reviewers decide whether a change affects [Ignite's public contracts]({scope}). "
-        f"The [RFC process]({process}) explains when a vote is required."
+        f"Before merge, the reviewer checks any vote required by the [RFC process]({process})."
     )
 
 
-def report(passed, reason, author, reviewer, paths=()):
-    title = report_title(passed)
-    reason, author, reviewer = map(_one_line, (reason, author, reviewer))
+def report(passed, reason, author, reviewer, paths=(), *, advisory=False):
+    title = report_title(passed, advisory)
+    reason, author, reviewer = _one_line(reason), _one_line(author), _one_line(reviewer, limit=3000)
+    status = "The automated checks passed. " if passed and advisory else ""
     log = [f"{title}: {reason}", f"For the author: {author}", f"For the reviewer: {reviewer}"]
     summary = [
-        f"## {title}", f"<p>{escape(reason, quote=False)}</p>",
+        f"## {title}", f"<p>{status}{escape(reason, quote=False)}</p>",
         "### For the author", f"<p>{escape(author, quote=False)}</p>",
         "### For the reviewer", f"<p>{escape(reviewer, quote=False)}</p>",
     ]

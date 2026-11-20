@@ -31,26 +31,37 @@ class CheckSummaryTest(unittest.TestCase):
         with TemporaryDirectory() as directory:
             summary = Path(directory) / "summary.md"
             with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stderr(StringIO()) as log:
-                report(False, "Missing vote.", "Link the result.", "Check the voted API.", paths)
+                report(False, "Missing section.", "Fill in the section.", "Check the migration plan.", paths)
             rendered = summary.read_text()
 
         self.assertIn("## Public behavior check failed", rendered)
         self.assertIn(rules_reference(), rendered)
-        self.assertIn("### For the author\n\n<p>Link the result.</p>", rendered)
-        self.assertIn("### For the reviewer\n\n<p>Check the voted API.</p>", rendered)
+        self.assertIn("### For the author\n\n<p>Fill in the section.</p>", rendered)
+        self.assertIn("### For the reviewer\n\n<p>Check the migration plan.</p>", rendered)
         self.assertIn("<code>a&lt;/code&gt;\\n##[warning]</code>", rendered)
         self.assertIn("See 1 more in the PR diff.", rendered)
         self.assertNotIn("public/path7", rendered)
         self.assertNotIn("##[warning]", log.getvalue())
 
+    def test_passing_check_shows_what_to_review(self):
+        with TemporaryDirectory() as directory:
+            summary = Path(directory) / "summary.md"
+            with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stdout(StringIO()):
+                report(True, "A client protocol file changed.", "Describe the change.", "Check old clients.", advisory=True)
+            rendered = summary.read_text()
+
+        self.assertTrue(rendered.startswith("## Public behavior to review\n"))
+        self.assertIn("The automated checks passed.", rendered)
+        self.assertIn("Check old clients.", rendered)
+
     def test_local_run_writes_guidance_to_the_log(self):
         """Given no GitHub summary file, a passing local run prints the verdict and both actions."""
         with patch.dict(os.environ, GITHUB_STEP_SUMMARY=""), redirect_stdout(StringIO()) as log:
-            report(True, "Vote verified.", "No RFC changes needed.", "Check the implementation.")
+            report(True, "RFC sections checked.", "Continue the usual review.", "Check the implementation.")
 
-        self.assertIn("Public behavior check passed: Vote verified.", log.getvalue())
+        self.assertIn("Public behavior check passed: RFC sections checked.", log.getvalue())
         self.assertIn(rules_reference(), log.getvalue())
-        self.assertIn("For the author: No RFC changes needed.", log.getvalue())
+        self.assertIn("For the author: Continue the usual review.", log.getvalue())
         self.assertIn("For the reviewer: Check the implementation.", log.getvalue())
 
     def test_links_to_the_process_document_available_on_apache(self):

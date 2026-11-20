@@ -36,7 +36,7 @@ RESOLVED = f"## {report_title(True)}\n\nThe issues from the previous public beha
 RERUN = (
     "## Public behavior changes need a fresh check\n\n"
     "GitHub still shows a failed job. The current PR passed when the reporter checked again.\n\n"
-    "### For the author\n\nUpdate the PR description to start a fresh **Public behavior changes** check.\n\n"
+    "### For the author\n\nRerun **Public behavior changes** from the Checks tab.\n\n"
     "### For the reviewer\n\nWait for **Public behavior changes** to pass on this commit."
 )
 TIMEOUT = (
@@ -50,7 +50,7 @@ TIMEOUT = (
 def eligible(run, repo):
     return (
         run["repository"]["full_name"] == repo and run["path"] == ".github/workflows/check-public-behavior.yml"
-        and run["event"] in {"pull_request", "pull_request_review"}
+        and run["event"] == "pull_request"
         and run["status"] == "completed" and run["conclusion"] in JOB_CONCLUSIONS
         and run["head_repository"] and run["head_branch"]
         and re.fullmatch(r"[0-9a-f]{40}", run["head_sha"])
@@ -60,26 +60,17 @@ def eligible(run, repo):
 def matches(pr, run, repo):
     source = run["head_repository"]["full_name"]
     head = pr["head"]
-    # Review events on forks can report the base repository as head_repository.
-    fork_review = run["event"] == "pull_request_review" and source == repo
     return (
         run.get("display_title") == f"Public behavior changes for PR #{pr['number']}"
         and pr["state"] == "open" and pr["base"]["ref"] == "master" and pr["base"]["repo"]["full_name"] == repo
-        and head["repo"] and (head["repo"]["full_name"] == source or fork_review)
+        and head["repo"] and head["repo"]["full_name"] == source
         and head["ref"] == run["head_branch"] and head["sha"] == run["head_sha"]
         and (not run["pull_requests"] or any(link["number"] == pr["number"] for link in run["pull_requests"]))
     )
 
 
-def review_state(route):
-    reviews = api(route + "/reviews?per_page=100", pages=True)
-    decisions = [(r["id"], r["state"], r["body"], r["commit_id"], r["submitted_at"]) for r in reviews
-                 if r["state"] in {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}]
-    return hashlib.sha256(json.dumps(decisions).encode()).hexdigest()
-
-
 def metadata(pr):
-    state = (pr["head"]["sha"], pr["base"]["sha"], pr["title"], pr["body"],
+    state = (pr["head"]["sha"], pr["base"]["sha"], pr["title"],
              sorted(label["name"] for label in pr["labels"]))
     return hashlib.sha256(json.dumps(state).encode()).hexdigest()
 
@@ -125,9 +116,8 @@ def prepare(repo, run, destination):
     pr = api(f"{root}/pulls/{title[1]}")
     if not matches(pr, run, repo):
         return
-    state = review_state(f"{root}/pulls/{pr['number']}")
     event = {"number": pr["number"], "head": {"sha": pr["head"]["sha"]}, "base": {"sha": pr["base"]["sha"]}}
-    context = {"pull_request": event, "metadata": metadata(pr), "reviews": state, "source_conclusion": conclusion}
+    context = {"pull_request": event, "metadata": metadata(pr), "source_conclusion": conclusion}
     destination.write_text(json.dumps(context), encoding="utf-8")
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
         print(f"pr_number={int(pr['number'])}", f"base_sha={pr['base']['sha']}", f"conclusion={conclusion}", sep="\n", file=out)
@@ -146,11 +136,17 @@ def comment_body(summary_file, original, outcome):
     if outcome not in {"success", "failure"} or original == "timed_out":
         raise ValueError("The public behavior check returned inconsistent conclusions.")
     summary = summary_file.read_text(encoding="utf-8").strip()
-    heading = "## " + report_title(outcome == "success")
-    if not summary.startswith(heading + "\n") or len(summary) > 63000:
+    heading, _, content = summary.partition("\n")
+    passed = outcome == "success"
+    headings = {"## " + report_title(passed), "## " + report_title(passed, advisory=True)}
+    if not content or heading not in headings or len(summary) > 63000:
         raise ValueError("The public behavior check did not produce a complete job summary.")
-    if outcome == "success":
-        return (RESOLVED if original == "success" else RERUN) + "\n\n" + rules_reference()
+    if passed:
+        if original != "success":
+            return RERUN + "\n\n" + rules_reference()
+        if heading == "## " + report_title(True, advisory=True):
+            return summary
+        return RESOLVED + "\n\n" + rules_reference()
     if original == "success":
         summary += "\n\nThe original job passed. Update the PR to start a fresh **Public behavior changes** check."
     return summary
@@ -174,9 +170,10 @@ def publish(repo, run, context, summary_file, outcome):
         return
     original = context["source_conclusion"]
     passed = original == outcome == "success"
-    if passed and not comments:
-        return
     body = comment_body(summary_file, original, outcome)
+    advisory = body.startswith("## " + report_title(True, advisory=True) + "\n")
+    if passed and not advisory and not comments:
+        return
     outcome = "success" if passed else "failure"
     # Avoid notifications from @mentions in file names or diagnostic text.
     body = re.sub(r"(?<![\w.])@(?=[\w-])", "@\u200b", body)
@@ -192,12 +189,14 @@ def publish(repo, run, context, summary_file, outcome):
     current = api(route)
     if not matches(current, run, repo) or metadata(current) != context["metadata"]:
         return
-    if review_state(route) != context["reviews"] or newer_run(repo, run, current):
+    if newer_run(repo, run, current):
         return
     if retained is None:
         marker = f"<!-- ignite-public-behavior {source[0]} {source[1]} {outcome} {fingerprint} -->"
-        details = f"https://github.com/{repo}/actions/runs/{source[0]}/attempts/{source[1]}"
-        update("POST", f"{root}/issues/{number}/comments", f"{marker}\n{body}\n\n[Open the check]({details})")
+        if advisory and comments and latest["outcome"] == "failure":
+            body += "\n\nThe issues from the previous check are resolved."
+        details = f"https://github.com/{repo}/pull/{number}/checks"
+        update("POST", f"{root}/issues/{number}/comments", f"{marker}\n{body}\n\n[Open PR checks]({details})")
     for cid, _ in comments:
         if cid != retained:
             update("DELETE", f"{root}/issues/comments/{cid}")

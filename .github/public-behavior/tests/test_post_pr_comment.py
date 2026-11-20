@@ -26,7 +26,7 @@ import post_pr_comment as rc
 
 REPO = "apache/ignite"
 FORK = {"full_name": "contributor/ignite"}
-RUN = {"status": "completed", "conclusion": "failure", "event": "pull_request_review",
+RUN = {"status": "completed", "conclusion": "failure", "event": "pull_request",
        "repository": {"full_name": REPO}, "head_repository": FORK, "head_sha": "a" * 40,
        "head_branch": "proposal", "path": ".github/workflows/check-public-behavior.yml", "id": 12, "run_attempt": 1,
        "pull_requests": [], "display_title": "Public behavior changes for PR #42"}
@@ -34,14 +34,15 @@ PR = {"state": "open", "number": 42, "head": {"ref": "proposal", "sha": RUN["hea
       "base": {"ref": "master", "sha": "b" * 40, "repo": RUN["repository"]},
       "title": "IGNITE-123 Proposal", "body": "", "labels": []}
 BOT = {"login": "github-actions[bot]", "type": "Bot"}
+ADVISORY_TITLE = "Public behavior to review"
+CHECKS_LINK = f"[Open PR checks](https://github.com/{REPO}/pull/42/checks)"
 
 
 class PostPrCommentTest(unittest.TestCase):
     def setUp(self):
-        """Expose a fork PR, its reviews and its comments through a local GitHub API fixture."""
+        """Expose a fork PR, its workflow runs and its comments through a local GitHub API fixture."""
         self.pr = deepcopy(PR)
         self.comments = []
-        self.reviews = []
         self.writes = []
         self.runs = [RUN]
         self.jobs = [{"name": "Public behavior changes", "conclusion": "failure"}]
@@ -63,9 +64,6 @@ class PostPrCommentTest(unittest.TestCase):
             return {"total_count": len(self.runs), "workflow_runs": self.runs}
         if route == f"{prefix}/pulls/42":
             return self.pr
-        if route == f"{prefix}/pulls/42/reviews?per_page=100":
-            self.assertTrue(pages)
-            return self.reviews
         if route == f"{prefix}/issues/42/comments?per_page=100":
             self.assertTrue(pages)
             return self.comments
@@ -86,15 +84,17 @@ class PostPrCommentTest(unittest.TestCase):
         return max([0] + [c["id"] for c in self.comments]) + 1
 
     def prepare(self):
-        """Capture the PR and review state that the trusted checker will read."""
+        """Capture the current PR for the trusted checker."""
         filename = self.root / "pr.json"
         rc.prepare(REPO, RUN, filename)
         return json.loads(filename.read_text())
 
-    def publish(self, context, outcome, text="", *, original=None):
+    def publish(self, context, outcome, text="", *, original=None, title=None):
         """Write the trusted summary and pair it with the original job outcome."""
         summary = self.root / "summary.md"
-        summary.write_text(f"## {rc.report_title(outcome == 'success')}\n\n{text}\n\n{rc.rules_reference()}\n")
+        if title is None:
+            title = "Public behavior check passed" if outcome == "success" else "Public behavior check failed"
+        summary.write_text(f"## {title}\n\n{text}\n\n{rc.rules_reference()}\n")
         rc.publish(REPO, RUN, dict(context, source_conclusion=original or outcome), summary, outcome)
 
     def test_prepare_resolves_fork_and_skips_an_unrelated_job(self):
@@ -109,23 +109,28 @@ class PostPrCommentTest(unittest.TestCase):
         self.assertEqual(context["source_conclusion"], "failure")
         self.assertIn(f"pr_number=42\nbase_sha={PR['base']['sha']}\n", (self.root / "output").read_text())
 
-    def test_fork_review_can_report_the_base_repository_as_its_source(self):
-        """Given a fork review that reports the base repository, find its open PR by commit and branch."""
-        run = dict(RUN, head_repository={"full_name": REPO})
+    def test_skips_review_events(self):
+        """When a review triggers a workflow on a fork, leave the PR alone."""
         dest = self.root / "pr.json"
-        rc.prepare(REPO, run, dest)
-        self.assertEqual(json.loads(dest.read_text())["pull_request"]["number"], PR["number"])
-        self.assertFalse(rc.matches(PR, dict(run, event="pull_request"), REPO))
-        self.assertFalse(rc.matches(PR, dict(run, pull_requests=[{"number": 17}]), REPO))
+        rc.prepare(REPO, dict(RUN, event="pull_request_review"), dest)
+        self.assertFalse(dest.exists())
+
+    def test_run_must_match_the_head_repository_and_pr(self):
+        """When the same commit is reported for another repository or PR, skip the report."""
+        dest = self.root / "pr.json"
+        for details in ({"head_repository": {"full_name": REPO}}, {"pull_requests": [{"number": 17}]}):
+            with self.subTest(details=details):
+                rc.prepare(REPO, dict(RUN, **details), dest)
+                self.assertFalse(dest.exists())
 
     def test_run_title_alone_cannot_select_a_different_pr(self):
         """Given a run title from a fork, require the exact template and matching live head before checking."""
         dest = self.root / "pr.json"
         rc.prepare(REPO, dict(RUN, display_title="A reference to Public behavior changes for PR #42"), dest)
         self.assertFalse(dest.exists())
-        rc.prepare(REPO, dict(RUN, event="pull_request", head_sha="9" * 40), dest)
+        rc.prepare(REPO, dict(RUN, head_sha="9" * 40), dest)
         self.assertFalse(dest.exists())
-        rc.prepare(REPO, dict(RUN, event="pull_request"), dest)
+        rc.prepare(REPO, RUN, dest)
         self.assertTrue(dest.exists())
 
     def test_posts_changed_guidance_and_a_single_resolution(self):
@@ -133,23 +138,52 @@ class PostPrCommentTest(unittest.TestCase):
         context = self.prepare()
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(self.writes, [])
-        self.publish(context, "failure", "Link the vote.")
+        self.publish(context, "failure", "Add the missing RFC section.")
         self.assertEqual(self.writes, ["POST"])
-        self.publish(context, "failure", "Link the vote.")
+        self.publish(context, "failure", "Add the missing RFC section.")
         self.assertEqual(self.writes, ["POST"])
 
         copied_marker = {**self.comments[0], "id": 98, "user": {"login": "contributor", "type": "User"}}
         self.comments.append(copied_marker)
-        self.publish(context, "failure", "Review the SQL result.")
+        self.publish(context, "failure", "Fill in the compatibility section.")
         self.assertEqual(self.writes[-2:], ["POST", "DELETE"])
-        self.assertIn("Review the SQL result.", self.comments[-1]["body"])
-        self.publish(context, "success", "Vote verified.")
+        self.assertIn("Fill in the compatibility section.", self.comments[-1]["body"])
+        self.publish(context, "success", "RFC sections checked.")
         self.assertEqual(self.writes, ["POST", "POST", "DELETE", "POST", "DELETE"])
         self.assertIn("resolved", self.comments[-1]["body"])
         self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(len(self.writes), 5)
         self.assertIn(copied_marker, self.comments)
+
+    def test_posts_review_guidance_on_the_first_green_run(self):
+        """When the first check finds a public path, post the review guidance even though the job passed."""
+        self.publish(self.prepare(), "success", "Review the SQL result.", title=ADVISORY_TITLE)
+        self.assertEqual(self.writes, ["POST"])
+        body = self.comments[0]["body"]
+        self.assertIn("## Public behavior to review", body)
+        self.assertIn("Review the SQL result.", body)
+        self.assertIn(CHECKS_LINK, body)
+        self.assertNotIn("resolved", body)
+
+    def test_fixed_error_keeps_remaining_review_guidance(self):
+        """When an RFC error is fixed, confirm the fix and keep the advice until the affected code changes."""
+        context = self.prepare()
+        self.publish(context, "failure", "Add the missing RFC section.")
+        self.publish(context, "success", "Review the SQL result.", title=ADVISORY_TITLE)
+        self.assertEqual(self.writes, ["POST", "POST", "DELETE"])
+        self.assertEqual(len(self.comments), 1)
+        self.assertIn("The issues from the previous check are resolved.", self.comments[0]["body"])
+        self.assertIn("Review the SQL result.", self.comments[0]["body"])
+
+        self.publish(context, "success", "Review the SQL result.", title=ADVISORY_TITLE)
+        self.assertEqual(self.writes, ["POST", "POST", "DELETE"])
+        self.publish(context, "success", "No matching paths.")
+        self.assertEqual(self.writes[-2:], ["POST", "DELETE"])
+        self.assertEqual(len(self.comments), 1)
+        self.assertIn(rc.RESOLVED, self.comments[0]["body"])
+        self.publish(context, "success", "No matching paths.")
+        self.assertEqual(self.writes, ["POST", "POST", "DELETE", "POST", "DELETE"])
 
     def test_replaces_only_its_own_comment_from_the_old_workflow(self):
         """Given an old bot status, post the renamed status once and preserve comments from other authors."""
@@ -158,16 +192,16 @@ class PostPrCommentTest(unittest.TestCase):
             with self.subTest(verdict=verdict):
                 self.comments.clear()
                 self.writes.clear()
-                self.publish(context, "failure", "Link the vote.")
+                self.publish(context, "failure", "Add the missing RFC section.")
                 if verdict == "success":
-                    self.publish(context, "success", "Vote verified.")
+                    self.publish(context, "success", "RFC sections checked.")
                 old = self.comments[0]
                 old["body"] = old["body"].replace("<!-- ignite-public-behavior ", "<!-- ignite-rfc-check ", 1)
                 other_bot = {**old, "id": 20, "user": {"login": "another[bot]", "type": "Bot"}}
                 human = {**old, "id": 21, "user": {"login": "contributor", "type": "User"}}
                 self.comments.extend([other_bot, human])
                 self.writes.clear()
-                self.publish(context, verdict, "Link the vote." if verdict == "failure" else "Vote verified.")
+                self.publish(context, verdict, "Add the missing RFC section." if verdict == "failure" else "RFC sections checked.")
                 self.assertEqual(self.writes, ["POST", "DELETE"])
                 self.assertEqual(self.comments[:-1], [other_bot, human])
                 self.assertTrue(self.comments[-1]["body"].startswith("<!-- ignite-public-behavior "))
@@ -175,27 +209,29 @@ class PostPrCommentTest(unittest.TestCase):
     def test_requires_a_green_job_before_reporting_resolution(self):
         """Given a failed job, ask for a rerun even if the evidence already passes on a second check."""
         context = self.prepare()
-        self.publish(context, "success", "Vote verified.", original="failure")
+        self.publish(context, "success", "RFC sections checked.", original="failure")
         self.assertEqual(self.writes, ["POST"])
-        self.assertIn("Update the PR description to start a fresh **Public behavior changes** check", self.comments[-1]["body"])
+        self.assertIn("fresh check", self.comments[-1]["body"])
+        self.assertIn(CHECKS_LINK, self.comments[-1]["body"])
         self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.assertNotIn(rc.RESOLVED, self.comments[-1]["body"])
-        self.publish(context, "success", "Vote verified.", original="success")
+        self.publish(context, "success", "RFC sections checked.", original="success")
         self.assertIn(rc.RESOLVED, self.comments[-1]["body"])
         self.assertEqual(self.writes, ["POST", "POST", "DELETE"])
 
     def test_shows_new_findings_if_the_original_job_passed(self):
         """Given a green original job, publish current failures and ask for an updated check."""
-        self.publish(self.prepare(), "failure", "Link the vote.", original="success")
-        self.assertIn("Link the vote.", self.comments[0]["body"])
-        self.assertIn("start a fresh **Public behavior changes** check", self.comments[0]["body"])
+        self.publish(self.prepare(), "failure", "Add the missing RFC section.", original="success")
+        self.assertIn("Add the missing RFC section.", self.comments[0]["body"])
+        self.assertIn("fresh", self.comments[0]["body"])
+        self.assertIn(CHECKS_LINK, self.comments[0]["body"])
         self.assertEqual(self.comments[0]["body"].count(rc.rules_reference()), 1)
 
     def test_timeout_replaces_a_previous_resolution_without_waiting_for_evidence(self):
         """Given a resolved warning, when the next job times out, replace the old confirmation with recovery steps."""
         context = self.prepare()
-        self.publish(context, "failure", "Link the vote.")
-        self.publish(context, "success", "Vote verified.")
+        self.publish(context, "failure", "Add the missing RFC section.")
+        self.publish(context, "success", "RFC sections checked.")
         self.jobs[0]["conclusion"] = "timed_out"
         run = dict(RUN, conclusion="timed_out")
         rc.prepare(REPO, run, self.root / "timeout.json")
@@ -209,30 +245,32 @@ class PostPrCommentTest(unittest.TestCase):
     def test_late_failure_cannot_replace_a_newer_silent_success(self):
         """Given a first green with no comment, ignore an older failure delivered afterward on the same commit."""
         context = self.prepare()
-        self.runs.append(dict(RUN, id=13, conclusion="success", head_repository={"full_name": REPO}))
-        self.publish(context, "success", "Vote verified.", original="failure")
+        self.runs.append(dict(RUN, id=13, conclusion="success"))
+        self.publish(context, "success", "RFC sections checked.", original="failure")
         self.assertEqual(self.writes, [])
 
-    def test_checks_snapshot_again_before_posting(self):
-        """Given a reviewed revision, discard its report after a new review, base update or push."""
+    def test_skips_stale_pr_metadata(self):
+        """When the head, base, title or labels change after the check, discard the outdated report."""
         context = self.prepare()
-        for field in ("head", "base"):
+        changes = {"head": dict(PR["head"], sha="c" * 40), "base": dict(PR["base"], sha="c" * 40),
+                   "title": "IGNITE-456 Another proposal", "labels": [{"name": "public-behavior-change"}]}
+        for field, value in changes.items():
             with self.subTest(field=field):
-                changed = deepcopy(PR)
-                changed[field]["sha"] = "c" * 40
-                self.pr = changed
-                self.publish(context, "failure", "Missing vote.")
+                self.pr = dict(PR, **{field: value})
+                self.publish(context, "failure", "Add the missing RFC section.")
                 self.assertEqual(self.writes, [])
-        self.pr = deepcopy(PR)
-        self.reviews.append({"id": 3, "state": "APPROVED", "body": "No-vote-needed: No contract change.",
-                             "commit_id": RUN["head_sha"], "submitted_at": "2026-01-01T00:00:00Z"})
-        self.publish(context, "failure", "Missing vote.")
-        self.assertEqual(self.writes, [])
+
+    def test_pr_description_edits_keep_the_report_current(self):
+        """When only the PR description changes after the check, still post the result."""
+        context = self.prepare()
+        self.pr["body"] = "Added steps to test the fix."
+        self.publish(context, "failure", "Add the missing RFC section.")
+        self.assertEqual(self.writes, ["POST"])
 
     def test_retry_keeps_the_new_comment_when_deletion_failed(self):
         """Given a failed cleanup, retry by deleting the old comment without reposting the new one."""
         context = self.prepare()
-        self.publish(context, "failure", "Missing vote.")
+        self.publish(context, "failure", "Add the missing RFC section.")
 
         def interrupted(method, route, body=None):
             if method == "DELETE":
@@ -240,8 +278,8 @@ class PostPrCommentTest(unittest.TestCase):
             self.write(method, route, body)
 
         with patch.object(rc, "update", interrupted), self.assertRaises(OSError):
-            self.publish(context, "success", "Vote verified.")
+            self.publish(context, "success", "RFC sections checked.")
         new_id = self.comments[-1]["id"]
-        self.publish(context, "success", "Vote verified.")
+        self.publish(context, "success", "RFC sections checked.")
         self.assertEqual([c["id"] for c in self.comments], [new_id])
         self.assertEqual(self.writes, ["POST", "POST", "DELETE"])

@@ -20,8 +20,6 @@ on:
   pull_request:
     branches: [master]
     types: [opened, reopened, synchronize, edited, labeled, unlabeled, ready_for_review]
-  pull_request_review:
-    types: [submitted, edited, dismissed]
 
 permissions:
   contents: read
@@ -69,7 +67,7 @@ jobs:
             .github/public-behavior
             rfcs
           persist-credentials: false
-      - name: Check public contract changes and RFC approval
+      - name: Check public behavior changes
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 .github/public-behavior/check_pull_request.py

@@ -28,7 +28,7 @@ permissions:
 jobs:
   prepare:
     if: >-
-      contains(fromJSON('["pull_request", "pull_request_review"]'), github.event.workflow_run.event) &&
+      github.event.workflow_run.event == 'pull_request' &&
       contains(fromJSON('["success", "failure", "timed_out"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -56,7 +56,7 @@ jobs:
             .github/public-behavior
             rfcs
           persist-credentials: false
-      - name: Check the current evidence for the comment
+      - name: Check the current PR for the comment
         id: evidence
         if: steps.source.outputs.pr_number != '' && steps.source.outputs.conclusion != 'timed_out'
         continue-on-error: true
