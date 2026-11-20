@@ -101,6 +101,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePart
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionsUpdateCountersAndSizeTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheConcurrentPutGetRemoveTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessageTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.AtomicNearCacheInvokeAllWithStoreTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearTxExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedStorePutSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxExceptionSelfTest;
@@ -132,6 +133,7 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicStopBusySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheTransactionalStopBusySelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCacheAtomicNearCacheSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, AtomicNearCacheInvokeAllWithStoreTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheAtomicNearUpdateTopologyChangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheTxNearUpdateTopologyChangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridCachePartitionedStorePutSelfTest.class, ignoredTests);
