@@ -144,7 +144,7 @@ def comment_body(summary_file, original, outcome):
             return RERUN + "\n\n" + rules_reference()
         if heading == "## " + report_title(True, advisory=True):
             return summary
-        return RESOLVED + "\n\n" + rules_reference()
+        return RESOLVED
     if original == "success":
         summary += "\n\nThe original job passed. Update the PR to start a fresh **Public behavior changes** check."
     return summary

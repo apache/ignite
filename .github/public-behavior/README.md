@@ -21,11 +21,11 @@ The check compares source declarations at the PR head and its merge base. It rep
 
 ## Results
 
-- **Fix the RFC.** A detected contract change needs a new or updated RFC in this PR. For work covered by an existing plan, link its file in the PR description. The bot lists the affected files and the declarations or values that changed.
+- **No action.** If the check finds no public contract change, it passes without checking RFC files or links. This includes PRs that only edit an RFC or a method body.
+- **Fix the RFC.** A detected contract change needs a correctly named RFC in this PR. For work covered by an existing plan, link its file in the PR description. The bot lists the affected files and the declarations or values that changed.
 - **Review the change.** With an RFC, the job passes and adds a warning to Checks and the PR. The reviewer compares the code and compatibility tests with the plan and checks any required vote on dev@.
-- **No action.** When the check finds no contract change, it passes quietly. An internal change to a method body falls into this case. Reviewers assess any effects that the static checks cannot establish.
 
-RFC files must follow `rfcs/IGNITE-<ticket>-<short-title>.md`. An invalid filename fails even in a documentation-only PR. To update a plan under a new ticket, keep its original filename. For later implementation PRs, use a repository-relative path such as `rfcs/IGNITE-12345-cache-timeout.md` or a GitHub link to the file.
+Use `rfcs/IGNITE-<ticket>-<short-title>.md` for a new RFC. To update a plan under a new ticket, keep its original filename. For later implementation PRs, use a repository-relative path such as `rfcs/IGNITE-12345-cache-timeout.md` or a GitHub link to the file.
 
 The bot replaces its comment when the result changes and confirms when earlier issues are resolved.
 

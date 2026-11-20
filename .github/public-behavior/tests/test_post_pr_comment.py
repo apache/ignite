@@ -154,7 +154,7 @@ class PostPrCommentTest(unittest.TestCase):
         self.publish(context, "success", "RFC filename checked.")
         self.assertEqual(self.writes, ["POST", "POST", "DELETE", "POST", "DELETE"])
         self.assertIn("The check passed. There is nothing left to flag in this PR.", self.comments[-1]["body"])
-        self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
+        self.assertNotIn(rc.rules_reference(), self.comments[-1]["body"])
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(len(self.writes), 5)
         self.assertIn(copied_marker, self.comments)

@@ -98,6 +98,9 @@ def linked_rfcs(body, repository):
 
 
 def check(files, changes, description="", repository="apache/ignite"):
+    if not changes:
+        return CheckResult("No change was found by the static contract checks.", "", "")
+
     docs = sorted(f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"]))
     paths = (*docs, *changes)
     for path in docs:
@@ -107,9 +110,6 @@ def check(files, changes, description="", repository="apache/ignite"):
                 "Use rfcs/IGNITE-<ticket>-<short-title>.md, for example rfcs/IGNITE-12345-cache-timeout.md.",
                 "Check that the filename contains the proposal's Jira ticket number.", paths, changes,
             )
-
-    if not changes:
-        return CheckResult("No change was found by the static contract checks.", "", "")
 
     if docs:
         reason = "This PR changes a public contract and adds or updates an RFC."

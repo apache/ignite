@@ -75,9 +75,10 @@ def report(passed, reason, author, reviewer, paths=(), *, advisory=False, change
             log.append(more)
             summary.append(more)
 
-    rules = rules_reference()
-    summary.append(rules)
-    log.append(rules)
+    if not passed or advisory:
+        rules = rules_reference()
+        summary.append(rules)
+        log.append(rules)
 
     # GitHub also accepts the older ##[command] syntax inside log lines.
     print("\n".join(log).replace("##[", r"##\["), file=sys.stdout if passed else sys.stderr)

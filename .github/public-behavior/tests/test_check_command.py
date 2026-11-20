@@ -93,11 +93,13 @@ class CheckCommandTest(unittest.TestCase):
         self.assertIn("cacheTimeout", summary)
         self.assertIn("vote on dev@", summary)
 
-    def test_method_body_change_is_quiet(self):
+    def test_method_body_change_skips_rfc_checks(self):
+        """A PR edits a method body and adds a misnamed RFC. The check reports no contract change."""
         source = "package org.apache.ignite; public class IgniteCache { public int size() { return 1; } }"
         edit = {"filename": PUBLIC_API, "status": "modified"}
-        result, summary = run_checker([[edit]], sources={("before", PUBLIC_API): source,
-                                                         ("after", PUBLIC_API): source.replace("return 1", "return 2")})
+        rfc = {"filename": "rfcs/cache-timeout.md", "status": "added"}
+        sources = {("before", PUBLIC_API): source, ("after", PUBLIC_API): source.replace("return 1", "return 2")}
+        result, summary = run_checker([[edit, rfc]], sources=sources)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("No change was found by the static contract checks", summary)
         self.assertNotIn("Reviewer action needed", summary)
@@ -108,12 +110,13 @@ class CheckCommandTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("Reviewer action needed", summary)
 
-    def test_invalid_filename_fails_even_in_document_only_pr(self):
+    def test_rfc_only_pr_passes_with_an_invalid_filename(self):
+        """When only an RFC changes, its filename does not affect the result."""
         file = {"filename": "rfcs/cache-timeout.md", "status": "added"}
         result, summary = run_checker([[file]])
-        self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertIn("Invalid RFC filename: rfcs/cache-timeout.md.", summary)
-        self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", summary)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("No change was found by the static contract checks", summary)
+        self.assertNotIn("rfcs/cache-timeout.md", summary)
 
     def test_incomplete_file_list_requires_a_complete_pr(self):
         """Given an API file count mismatch, the job stops before review and explains GitHub's limit."""

@@ -56,17 +56,20 @@ class CheckPullRequestTest(unittest.TestCase):
                 self.assertEqual(result.changes, changes)
                 self.assertIn("vote on dev@", result.reviewer)
 
-    def test_invalid_filename_identifies_the_file_and_gives_an_example(self):
+    def test_invalid_rfc_name_with_public_change(self):
+        """When a public method is added, a misnamed RFC fails with the path and an example."""
+        changes = {API: ["Added API method cacheTimeout"]}
         for name in ["rfcs/cache-timeout.md", "rfcs/IGNITE-timeout.md", "rfcs/IGNITE-42-.md",
                      "rfcs/IGNITE-42 two.md", "rfcs/IGNITE-42-timeout.txt", "rfcs/IGNITE-42-timeout",
                      "rfcs/IGNITE-42-timeout.markdown", "rfcs/IGNITE-42-timeout.adoc"]:
             with self.subTest(name=name):
                 with self.assertRaises(ci.CheckError) as caught:
-                    ci.check([file(name, "added")], {})
+                    ci.check([file(API), file(name, "added")], changes)
                 result = caught.exception.result
                 self.assertIn(f"Invalid RFC filename: {name}", result.reason)
                 self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", result.author)
-                self.assertEqual(result.paths, (name,))
+                self.assertEqual(result.paths, (name, API))
+                self.assertEqual(result.changes, changes)
 
 class LinkedRfcsTest(unittest.TestCase):
     def setUp(self):

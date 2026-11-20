@@ -61,16 +61,12 @@ class CheckSummaryTest(unittest.TestCase):
         self.assertEqual(sum(line.startswith("::warning ") for line in log.getvalue().splitlines()), 1)
 
     def test_clean_check_reports_no_tasks_or_warnings(self):
-        """When a PR has no flagged changes, the check prints just the result and rule links."""
+        """When the check finds no change, its only output is the result."""
         with patch.dict(os.environ, GITHUB_STEP_SUMMARY="", PUBLIC_BEHAVIOR_REVIEW_WARNING="true"), \
                 redirect_stdout(StringIO()) as log:
-            report(True, "No matching files.", "", "")
+            report(True, "No contract changes found.", "", "")
 
-        self.assertIn("Public behavior check passed: No matching files.", log.getvalue())
-        self.assertIn(rules_reference(), log.getvalue())
-        self.assertNotIn("For the author", log.getvalue())
-        self.assertNotIn("For the reviewer", log.getvalue())
-        self.assertNotIn("::warning", log.getvalue())
+        self.assertEqual(log.getvalue().strip(), "Public behavior check passed: No contract changes found.")
 
     def test_comment_reporter_does_not_repeat_warning(self):
         """When the reporter checks the PR again, it renders the marker without a second annotation."""
