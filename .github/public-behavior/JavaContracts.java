@@ -39,6 +39,7 @@ class JavaContracts {
     private final Map<String, List<Entry>> declarations = new TreeMap<>();
     private final Map<String, Map<String, String>> wireValues = new TreeMap<>();
     private final Map<String, Path> wireFiles = new HashMap<>();
+    private final Map<Path, ClassTree> internalTypes = new TreeMap<>();
     private final Set<String> typesWithParents = new HashSet<>();
 
     private static boolean exported(ModifiersTree mods, boolean implicitPublic) {
@@ -47,7 +48,7 @@ class JavaContracts {
             || flags.contains(Modifier.PROTECTED));
     }
 
-    private static Object literal(ExpressionTree expr) {
+    static Object literal(ExpressionTree expr) {
         if (expr instanceof ParenthesizedTree parens)
             return literal(parens.getExpression());
         if (expr instanceof LiteralTree lit && lit.getValue() != null)
@@ -122,11 +123,14 @@ class JavaContracts {
     private void readType(Path file, String owner, ClassTree cls, boolean implicitPublic, boolean ownerDeprecated,
         Set<String> outerVariables) {
         String name = owner.isEmpty() ? cls.getSimpleName().toString() : owner + "." + cls.getSimpleName();
+        if (name.contains(".internal.") && file.endsWith(name.replace('.', '/') + ".java"))
+            internalTypes.put(file, cls);
         if (WIRE_TYPES.containsKey(name)) {
             readWireValues(file, name, cls);
             return;
         }
-        if (name.contains(".internal.") || !exported(cls.getModifiers(), implicitPublic))
+        boolean restExtension = name.equals("org.apache.ignite.internal.processors.rest.protocols.http.jetty.IgniteRestExtension");
+        if ((name.contains(".internal.") && !restExtension) || !exported(cls.getModifiers(), implicitPublic))
             return;
 
         boolean iface = cls.getKind() == Tree.Kind.INTERFACE || cls.getKind() == Tree.Kind.ANNOTATION_TYPE;
@@ -137,31 +141,47 @@ class JavaContracts {
         cls.getTypeParameters().forEach(t -> variables.add(t.getName().toString()));
         boolean deprecated = ownerDeprecated || annotated(cls.getModifiers(), "Deprecated");
         String kind = cls.getKind().toString().toLowerCase(Locale.ROOT);
-        add(name, new Entry(file, owner, "API type " + name, visibility(cls.getModifiers()) + " " + kind, false, deprecated));
+        String modifiers = visibility(cls.getModifiers());
+        if (cls.getKind() == Tree.Kind.CLASS) {
+            if (cls.getModifiers().getFlags().contains(Modifier.FINAL))
+                modifiers += " final";
+            if (cls.getModifiers().getFlags().contains(Modifier.ABSTRACT))
+                modifiers += " abstract";
+        }
+        add(name, new Entry(file, owner, "API type " + name, modifiers + " " + kind, false, deprecated));
 
         for (Tree member : cls.getMembers()) {
             if (member instanceof ClassTree nested)
                 readType(file, name, nested, iface, deprecated, variables);
-            else if (member instanceof MethodTree method && method.getReturnType() != null
+            else if (member instanceof MethodTree method && (method.getReturnType() != null
+                || cls.getKind() == Tree.Kind.CLASS && !method.getParameters().isEmpty())
                 && cls.getKind() != Tree.Kind.RECORD && exported(method.getModifiers(), iface)) {
                 String methodName = method.getName().toString();
-                boolean inherited = hasParents || OBJECT_METHODS.contains(methodName)
-                    || cls.getKind() == Tree.Kind.ENUM || annotated(method.getModifiers(), "Override");
+                boolean constructor = method.getReturnType() == null;
+                boolean inherited = !constructor && (hasParents || OBJECT_METHODS.contains(methodName)
+                    || cls.getKind() == Tree.Kind.ENUM || annotated(method.getModifiers(), "Override"));
                 Set<String> methodVars = new HashSet<>(variables);
                 method.getTypeParameters().forEach(t -> methodVars.add(t.getName().toString()));
                 List<String> params = new ArrayList<>();
                 for (VariableTree param : method.getParameters())
                     params.add(type(param.getType(), methodVars));
-                String returns = type(method.getReturnType(), methodVars);
+                String returns = constructor ? "" : type(method.getReturnType(), methodVars);
                 String access = visibility(method.getModifiers());
                 if (method.getModifiers().getFlags().contains(Modifier.STATIC))
                     access += " static";
                 String signature = returns == null || params.contains(null) ? "?" :
-                    access + " (" + String.join(", ", params) + ") -> " + returns;
+                    access + " (" + String.join(", ", params) + ")" + (constructor ? "" : " -> " + returns);
                 String key = name + "." + methodName + "/" + params.size();
                 String arity = params.size() + (params.size() == 1 ? " parameter" : " parameters");
-                add(key, new Entry(file, name, "API method " + name + "." + methodName + " (" + arity + ")", signature,
+                String subject = constructor ? "API constructor " + name : "API method " + name + "." + methodName;
+                add(key, new Entry(file, name, subject + " (" + arity + ")", signature,
                     inherited, deprecated || annotated(method.getModifiers(), "Deprecated")));
+            }
+            else if (cls.getKind() == Tree.Kind.ENUM && member instanceof VariableTree entry
+                && entry.getInitializer() instanceof NewClassTree && entry.getType().toString().equals(cls.getSimpleName().toString())) {
+                String key = name + "." + entry.getName();
+                add(key + " enum", new Entry(file, name, "API enum value " + key, "enum", false,
+                    deprecated || annotated(entry.getModifiers(), "Deprecated")));
             }
             else if (member instanceof VariableTree var && exported(var.getModifiers(), iface)
                 && (iface || var.getModifiers().getFlags().containsAll(Set.of(Modifier.FINAL, Modifier.STATIC)))) {
@@ -284,7 +304,7 @@ class JavaContracts {
                 || e.signature == null || e.couldBeInherited))
                 continue;
             Entry item = now.isEmpty() ? old.get(0) : now.get(0);
-            if (old.size() != now.size()
+            if (old.size() != now.size() && !key.contains(".<init>/") && !key.endsWith(" enum")
                 && (before.typesWithParents.contains(item.owner) || after.typesWithParents.contains(item.owner)))
                 continue;
             if (old.size() < now.size())
@@ -301,6 +321,24 @@ class JavaContracts {
                     emit(item.file, "Changed " + item.subject + " from " + String.join(", ", from) + " to " + String.join(", ", to));
             }
         }
+        before.internalTypes.keySet().removeIf(path -> invalid.contains(path.getFileName().toString()));
+        after.internalTypes.keySet().removeIf(path -> invalid.contains(path.getFileName().toString()));
+        RestContracts.compare(before.internalTypes, after.internalTypes, JavaContracts::emit);
+        Set<String> registeredPaths = Set.copyOf(Arrays.asList(args).subList(2, args.length));
+        for (var entry : before.internalTypes.entrySet()) {
+            Path file = entry.getKey();
+            ClassTree old = entry.getValue();
+            ClassTree now = after.internalTypes.get(file);
+            if (now == null)
+                continue;
+            var output = (java.util.function.Consumer<String>)(text -> emit(file, text));
+            String owner = file.toString().replaceFirst("^.*/src/main/java/", "").replace('/', '.').replaceFirst("\\.java$", "");
+            CliContracts.compare(file, old, now, output);
+            if (registeredPaths.contains(file.toString()))
+                RegisteredContracts.compare(old, now, output);
+            FormatContracts.compare(owner, old, now, output);
+        }
+        ErrorMapping.compare(before.internalTypes, after.internalTypes, JavaContracts::emit);
         Set<String> wireTypes = new TreeSet<>(before.wireValues.keySet());
         wireTypes.addAll(after.wireValues.keySet());
         for (String name : wireTypes)

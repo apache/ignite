@@ -188,3 +188,25 @@ class CheckCommandTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("incomplete file list (1 of 3001)", result.stderr)
         self.assertIn("3,000 files", summary)
+
+    def test_changed_jdbc_mapping_loads_the_unchanged_sqlstate_file(self):
+        """A PR edits only the error mapping. The report shows the values a client receives."""
+        core = "modules/core/src/main/java/org/apache/ignite/internal/processors/"
+        errors = core + "cache/query/IgniteQueryErrorCode.java"
+        states = core + "odbc/SqlStateCode.java"
+        expr = """package org.apache.ignite.internal.processors.cache.query;
+            class IgniteQueryErrorCode {
+                public static final int DUPLICATE_KEY = 4001;
+                static String codeToSqlState(int code) {
+                    switch (code) { case DUPLICATE_KEY: return SqlStateCode.CONSTRAINT;
+                        default: return SqlStateCode.INVALID; }
+                }
+            }"""
+        sources = {("before", errors): expr,
+                   ("after", errors): expr.replace("return SqlStateCode.CONSTRAINT", "return SqlStateCode.INVALID"),
+                   ("after", states): """package org.apache.ignite.internal.processors.odbc;
+                       class SqlStateCode { static final String CONSTRAINT="23000", INVALID="22000"; }"""}
+        result, summary = run_checker([[{"filename": errors, "status": "modified"}]], sources=sources)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("require an RFC", summary)
+        self.assertIn("SQLState for error 4001 from 23000 to 22000", summary)

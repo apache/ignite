@@ -47,7 +47,7 @@ class CheckError(ValueError):
         self.result = CheckResult(reason, author, reviewer, paths, changes=changes)
 
 
-def api(route, *, pages=False, raw=False, full=False, exists=False):
+def api(route, *, pages=False, raw=False, full=False, exists=False, optional=False):
     args = ["gh", "api"]
     if exists:
         args.extend(["--method", "HEAD", "--silent"])
@@ -69,8 +69,8 @@ def api(route, *, pages=False, raw=False, full=False, exists=False):
         detail = str(exc)
         if isinstance(exc, subprocess.CalledProcessError) and exc.stderr:
             detail = exc.stderr.decode(errors="replace").strip()
-            if exists and re.search(r"\bHTTP 404\b", detail):
-                return False
+            if (exists or optional) and re.search(r"\bHTTP 404\b", detail):
+                return False if exists else None
         raise CheckError(
             f"Could not read the GitHub API response for {route}. {detail}",
             "Check that the repository and revision are available, then rerun the job.",

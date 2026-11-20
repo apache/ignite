@@ -15,6 +15,9 @@
 
 """Select source files for the static checks. A path match by itself is not a finding."""
 
+from registered_contracts import supports_registered_contracts
+
+
 JAVA_MODULES = {
     "binary/api", "binary/impl", "calcite", "commons", "compress", "control-utility", "core", "direct-io",
     "indexing", "jcl", "json", "jta", "kubernetes", "log4j2", "nio", "numa-allocator",
@@ -22,11 +25,31 @@ JAVA_MODULES = {
     "thin-client/impl", "urideploy", "web", "zookeeper",
 }
 
-WIRE_CONTRACTS = {
+_CORE = "modules/core/src/main/java/org/apache/ignite/internal/"
+_REST = "processors/rest/"
+REST_SOURCES = {
+    _CORE + _REST + "GridRestCommand.java",
+    "modules/rest-http/src/main/java/org/apache/ignite/internal/" + _REST + "protocols/http/jetty/GridJettyRestProtocol.java",
+    "modules/rest-http/src/main/java/org/apache/ignite/internal/" + _REST + "protocols/http/jetty/GridJettyRestHandler.java",
+}
+SQL_ERRORS = _CORE + "processors/cache/query/IgniteQueryErrorCode.java"
+SQL_STATES = _CORE + "processors/odbc/SqlStateCode.java"
+
+_INTERNAL_SOURCES = {
     "internal/processors/cache/query/IgniteQueryErrorCode.java",
     "internal/processors/odbc/SqlStateCode.java",
     "internal/processors/platform/client/ClientBitmaskFeature.java",
     "internal/client/thin/ClientOperation.java",
+    "internal/processors/rest/protocols/http/jetty/IgniteRestExtension.java",
+    "internal/commandline/ArgumentParser.java",
+    "internal/commandline/CommandHandler.java",
+    "internal/management/IgniteCommandRegistry.java",
+    "internal/binary/GridBinaryMarshaller.java",
+    "internal/pagemem/wal/record/WALRecord.java",
+    "internal/processors/cache/persistence/file/FilePageStore.java",
+    "internal/processors/cache/persistence/file/FilePageStoreV2.java",
+    "internal/processors/cache/persistence/snapshot/SnapshotMetadata.java",
+    "internal/processors/cache/persistence/snapshot/IncrementalSnapshotMetadata.java",
 }
 
 
@@ -36,7 +59,7 @@ def java_contract_source(path):
         return False
     if module.removeprefix("modules/") not in JAVA_MODULES:
         return False
-    if java in WIRE_CONTRACTS:
+    if java in _INTERNAL_SOURCES or path in REST_SOURCES or supports_registered_contracts(path):
         return True
     return not (java.startswith(("internal/", "spi/discovery/tcp/messages/", "spi/communication/tcp/messages/"))
                 or "/internal/" in java or java.endswith("package-info.java"))

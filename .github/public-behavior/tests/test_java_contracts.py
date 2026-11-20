@@ -14,27 +14,16 @@
 # limitations under the License.
 
 
-from pathlib import Path
-import subprocess
-from tempfile import TemporaryDirectory
 import unittest
 
-
-HELPER = Path(__file__).resolve().parents[1] / "JavaContracts.java"
+from contract_diff import java_changes
 
 
 def compare(before, after):
-    """Run the same JDK parser as the check on two source snapshots."""
-    with TemporaryDirectory() as directory:
-        roots = [Path(directory) / name for name in ("before", "after")]
-        for root, sources in zip(roots, (before, after)):
-            root.mkdir()
-            for path, source in sources.items():
-                dest = root / path
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                dest.write_text(source)
-        result = subprocess.run(["java", str(HELPER), *map(str, roots)], capture_output=True, text=True, check=True)
-        return result.stdout.splitlines()
+    """Run the workflow's JDK parser on both snapshots."""
+    sources = [((side, path), source) for side, files in (("before", before), ("after", after))
+               for path, source in files.items()]
+    return ["\t".join(row) for row in java_changes(sources)]
 
 
 class JavaContractsTest(unittest.TestCase):
@@ -138,3 +127,14 @@ public class Client {
         rows = compare(before, after)
         self.assertTrue(any("Added API method api.Valid.newSetting" in row for row in rows), rows)
         self.assertFalse(any("Bad" in row for row in rows), rows)
+
+    def test_constructors_of_derived_classes_and_public_enum_members(self):
+        """A new constructor needs no inherited-method resolution. Enum members keep their source names."""
+        before = {"Client.java": "public class Client extends Base { public Client(String s) {} }",
+                  "Mode.java": "public enum Mode implements Marker { FIRST, SECOND }"}
+        after = {"Client.java": before["Client.java"].replace("String s", "long value"),
+                 "Mode.java": before["Mode.java"].replace("SECOND", "THIRD")}
+        self.assertCountEqual(compare(before, after), [
+            "Client.java\tChanged API constructor Client (1 parameter) from public (String) to public (long)",
+            "Mode.java\tRemoved API enum value Mode.SECOND", "Mode.java\tAdded API enum value Mode.THIRD"])
+        self.assertEqual(compare(before, {**before, "Mode.java": before["Mode.java"].replace("FIRST, SECOND", "SECOND, FIRST")}), [])
