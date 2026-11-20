@@ -18,7 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTracker;
 
 /**
  * Data region provides access to objects configured with {@link DataRegionConfiguration} configuration.
