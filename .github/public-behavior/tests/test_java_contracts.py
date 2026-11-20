@@ -124,6 +124,13 @@ public class Client {
         self.assertEqual(compare(before, after), [
             "SqlStateCode.java\tChanged SQLState for F from 01000 to 22000"])
 
+    def test_sql_error_codes_use_the_declared_integer_value(self):
+        pkg = "package org.apache.ignite.internal.processors.cache.query;"
+        before = {"IgniteQueryErrorCode.java": pkg + " class IgniteQueryErrorCode { public static final int E='A'; }"}
+        after = {"IgniteQueryErrorCode.java": pkg + " class IgniteQueryErrorCode { public static final int E=65;"
+                 ' public static final String DESCRIPTION="example"; }'}
+        self.assertEqual(compare(before, after), [])
+
     def test_parse_error_does_not_report_a_removal_or_hide_other_files(self):
         src = "package api; public class Valid { public void newSetting() {} }"
         before = {"api/Bad.java": "package api; public class Bad { public int run() { return 1; } }"}

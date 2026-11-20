@@ -119,7 +119,8 @@ class JavaContracts {
         declarations.computeIfAbsent(key, ignored -> new ArrayList<>()).add(entry);
     }
 
-    private void readType(Path file, String owner, ClassTree cls, boolean implicitPublic, boolean ownerDeprecated, Set<String> outerVariables) {
+    private void readType(Path file, String owner, ClassTree cls, boolean implicitPublic, boolean ownerDeprecated,
+        Set<String> outerVariables) {
         String name = owner.isEmpty() ? cls.getSimpleName().toString() : owner + "." + cls.getSimpleName();
         if (WIRE_TYPES.containsKey(name)) {
             readWireValues(file, name, cls);
@@ -165,7 +166,7 @@ class JavaContracts {
             else if (member instanceof VariableTree var && exported(var.getModifiers(), iface)
                 && (iface || var.getModifiers().getFlags().containsAll(Set.of(Modifier.FINAL, Modifier.STATIC)))) {
                 String key = name + "." + var.getName();
-                add(key + " field", new Entry(file, name, "API constant " + key, constantValue(var), hasParents,
+                add(key + " field", new Entry(file, name, "API constant " + key, constantValue(var), false,
                     deprecated || annotated(var.getModifiers(), "Deprecated")));
             }
         }
@@ -178,23 +179,25 @@ class JavaContracts {
         for (Tree member : cls.getMembers()) {
             if (!(member instanceof VariableTree var))
                 continue;
-            ExpressionTree value;
+            String value;
             if (cls.getKind() == Tree.Kind.ENUM) {
                 // Enum constants carry their wire ID in the constructor arguments.
                 if (!(var.getInitializer() instanceof NewClassTree init)
                     || !var.getType().toString().equals(cls.getSimpleName().toString()))
                     continue;
-                value = init.getArguments().size() == 1 ? init.getArguments().get(0) : null;
+                Object id = init.getArguments().size() == 1 ? literal(init.getArguments().get(0)) : null;
+                value = id instanceof Integer n ? n.toString() : null;
             }
             else {
+                boolean sqlState = name.endsWith(".SqlStateCode");
+                String fieldType = var.getType().toString();
                 if (!var.getModifiers().getFlags().containsAll(Set.of(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL))
-                    || !Set.of("String", "int", "java.lang.String").contains(var.getType().toString()))
+                    || (sqlState ? !Set.of("String", "java.lang.String").contains(fieldType) : !fieldType.equals("int")))
                     continue;
-                value = var.getInitializer();
+                value = constantValue(var);
             }
             // An expression can have the same value as a literal in the other revision.
-            Object id = literal(value);
-            values.put(var.getName().toString(), id == null ? null : id.toString());
+            values.put(var.getName().toString(), value);
         }
     }
 
