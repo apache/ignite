@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -108,6 +109,20 @@ public interface GridSecurityProcessor extends GridProcessor {
      */
     public void authorize(String name, SecurityPermission perm, SecurityContext securityCtx)
         throws SecurityException;
+
+    /**
+     * Authorizes a management task: an Ignite internal task executed through the public API, e.g. by a control.sh
+     * command. Unlike user tasks, such tasks are not authorized with {@link SecurityPermission#TASK_EXECUTE}.
+     *
+     * @param taskCls Task class.
+     * @param arg Task argument.
+     * @param securityCtx Security context.
+     * @throws SecurityException If security check failed.
+     */
+    public default void authorizeManagementTask(Class<?> taskCls, VisorTaskArgument<?> arg, SecurityContext securityCtx)
+        throws SecurityException {
+        // No-op.
+    }
 
     /**
      * Callback invoked when subject session got expired.

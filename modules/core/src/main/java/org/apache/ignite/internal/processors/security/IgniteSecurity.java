@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -119,6 +120,11 @@ public interface IgniteSecurity {
     public default void authorize(SecurityPermission perm) throws SecurityException {
         authorize(null, perm);
     }
+
+    /**
+     * Delegates call to {@link GridSecurityProcessor#authorizeManagementTask(Class, VisorTaskArgument, SecurityContext)}.
+     */
+    public void authorizeManagementTask(Class<?> taskCls, VisorTaskArgument<?> arg) throws SecurityException;
 
     /**
      * @return Instance of IgniteSandbox.
