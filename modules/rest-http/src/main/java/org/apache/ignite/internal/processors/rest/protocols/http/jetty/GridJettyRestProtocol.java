@@ -26,6 +26,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import jakarta.servlet.DispatcherType;
@@ -538,6 +539,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         /** */
         private final Factory<SSLContext> factory;
 
+        /** Last context successfully loaded by Jetty. */
+        private volatile SSLContext activeCtx;
+
         /**
          * @param factory Ignite SSL context factory.
          * @param clientAuth Whether a trusted client certificate is required.
@@ -549,8 +553,67 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override protected void doStart() throws Exception {
+            SSLContext ctx = currentContext();
+
+            setSslContext(ctx);
+
+            super.doStart();
+
+            activeCtx = ctx;
+        }
+
+        /** {@inheritDoc} */
         @Override public SSLContext getSslContext() {
-            return factory.create();
+            SSLContext prev = activeCtx;
+            SSLContext next = currentContext();
+
+            if (prev == next || !isStarted())
+                return next;
+
+            synchronized (this) {
+                // Another connection may have reloaded Jetty while the source was being read.
+                if (activeCtx != prev && activeCtx != next)
+                    next = currentContext();
+
+                if (activeCtx != next)
+                    replaceContext(next);
+
+                return activeCtx;
+            }
+        }
+
+        /** Applies the replacement and restores the active context if Jetty rejects it. */
+        private void replaceContext(SSLContext next) {
+            try {
+                reload(f -> f.setSslContext(next));
+                activeCtx = next;
+            }
+            catch (Exception | Error e) {
+                SSLContext prev = activeCtx;
+
+                // Jetty unloads its active context before it configures the replacement.
+                if (prev != null) {
+                    try {
+                        reload(f -> f.setSslContext(prev));
+                    }
+                    catch (Exception | Error restoreErr) {
+                        activeCtx = null;
+                        if (restoreErr != e)
+                            e.addSuppressed(restoreErr);
+                    }
+                }
+
+                if (e instanceof Error err)
+                    throw err;
+
+                throw new IgniteException("Failed to reload the HTTP REST SSL context.", e);
+            }
+        }
+
+        /** @return Initialized context for the HTTP connector. */
+        private SSLContext currentContext() {
+            return Objects.requireNonNull(factory.create(), "HTTP SSL factory returned a null context.");
         }
 
         /** {@inheritDoc} */

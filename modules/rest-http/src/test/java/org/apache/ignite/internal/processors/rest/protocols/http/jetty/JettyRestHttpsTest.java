@@ -28,9 +28,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -302,8 +304,8 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
     /**
      * Given: the factory enables no protocols or cipher suites, and Jetty requires a client certificate.
-     * When: the factory reloads with a protocol and cipher enabled.
-     * Then: each engine keeps the settings from the context that created it and requires a client certificate.
+     * When: the factory reloads with a TLS 1.2 context and a cipher enabled.
+     * Then: Jetty selects the new context's protocols. Each engine keeps its own TLS settings and requires a client certificate.
      */
     @Test
     public void testNewEngineUsesReloadedTlsSettings() throws Exception {
@@ -320,18 +322,51 @@ public class JettyRestHttpsTest extends GridCommonAbstractTest {
 
             SSLEngine first = jetty.newSSLEngine(peer);
 
-            factory.setProtocols("TLSv1.3");
-            factory.setCipherSuites("TLS_AES_128_GCM_SHA256");
+            assertTrue(Arrays.asList(jetty.getSelectedProtocols()).contains("TLSv1.3"));
+
+            factory.setProtocol("TLSv1.2");
+            factory.setProtocols("TLSv1.2");
+            factory.setCipherSuites("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256");
             factory.init();
 
             SSLEngine reloaded = jetty.newSSLEngine(peer);
 
+            assertFalse(Arrays.asList(jetty.getSelectedProtocols()).contains("TLSv1.3"));
             assertEquals(0, first.getEnabledProtocols().length);
             assertEquals(0, first.getEnabledCipherSuites().length);
             assertTrue(first.getNeedClientAuth());
             assertArrayEquals(factory.getProtocols(), reloaded.getEnabledProtocols());
             assertArrayEquals(factory.getCipherSuites(), reloaded.getEnabledCipherSuites());
             assertTrue(reloaded.getNeedClientAuth());
+        }
+        finally {
+            jetty.stop();
+        }
+    }
+
+    /**
+     * Given: Jetty has a working context. When: a custom factory supplies an uninitialized replacement.
+     * Then: Jetty rejects it and can use its previous TLS configuration again.
+     */
+    @Test
+    public void testJettyKeepsContextWhenReplacementIsInvalid() throws Exception {
+        SSLContext working = SSLContext.getDefault();
+        AtomicReference<SSLContext> src = new AtomicReference<>(working);
+        JettySslContextFactory jetty = new JettySslContextFactory(src::get, false);
+
+        try {
+            jetty.start();
+
+            String[] protocols = jetty.getSelectedProtocols();
+
+            src.set(SSLContext.getInstance("TLS"));
+
+            assertThrowsAnyCause(log, () -> jetty.newSSLEngine(), IllegalStateException.class, null);
+            assertArrayEquals(protocols, jetty.getSelectedProtocols());
+
+            src.set(working);
+
+            assertNotNull(jetty.newSSLEngine());
         }
         finally {
             jetty.stop();
