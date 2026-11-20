@@ -39,29 +39,39 @@ def rules_reference():
     else:
         process = f"{project}/pull/13760/files#diff-964c536dd887c02e46887244405c46d2d8b5e15dc7a4480eb3a33fb64844b15a"
     return (
-        f"The check flags known files. Reviewers decide whether a change affects [Ignite's public contracts]({scope}). "
+        f"See [Ignite's public contracts]({scope}) for the scope of compatibility review. "
         f"The [RFC process]({process}) describes the review rules."
     )
 
 
-def report(passed, reason, author, reviewer, paths=(), *, advisory=False):
+def report(passed, reason, author, reviewer, paths=(), *, advisory=False, changes=None):
     title = report_title(passed, advisory)
     reason, author, reviewer = _one_line(reason), _one_line(author), _one_line(reviewer, limit=3000)
-    status = "The automated checks passed. " if passed and advisory else ""
-    log = [f"{title}: {reason}", f"For the author: {author}", f"For the reviewer: {reviewer}"]
-    summary = [
-        f"## {title}", f"<p>{status}{escape(reason, quote=False)}</p>",
-        "### For the author", f"<p>{escape(author, quote=False)}</p>",
-        "### For the reviewer", f"<p>{escape(reviewer, quote=False)}</p>",
-    ]
+    status = "🟡 Reviewer action needed. " if passed and advisory else ""
+    log = [f"{title}: {reason}"]
+    summary = [f"## {title}", f"<p>{status}{escape(reason, quote=False)}</p>"]
+    for role, task in (("author", author), ("reviewer", reviewer)):
+        if task:
+            log.append(f"For the {role}: {task}")
+            summary.extend([f"### For the {role}", f"<p>{escape(task, quote=False)}</p>"])
 
     if paths:
-        shown = [_one_line(path) for path in paths[:8]]
-        log.extend(["Files to review:", *("  - " + path for path in shown)])
-        items = "\n".join(f"<li><code>{escape(path, quote=False)}</code></li>" for path in shown)
-        summary.extend(["### Files to review", f"<ul>\n{items}\n</ul>"])
-        if len(paths) > len(shown):
-            more = f"See {len(paths) - len(shown)} more in the PR diff."
+        items = []
+        log.append("Files to review:")
+        for path in paths[:8]:
+            name = _one_line(path)
+            log.append("  - " + name)
+            facts = (changes or {}).get(path, ())
+            lines = [_one_line(fact, limit=320) for fact in facts[:6]]
+            if len(facts) > len(lines):
+                lines.append(f"{len(facts) - len(lines)} more changes in this file.")
+            log.extend("    - " + line for line in lines)
+            details = "".join(f"<li>{escape(line, quote=False)}</li>" for line in lines)
+            listing = f"<ul>{details}</ul>" if details else ""
+            items.append(f"<li><code>{escape(name, quote=False)}</code>{listing}</li>")
+        summary.extend(["### Files to review", "<ul>\n" + "\n".join(items) + "\n</ul>"])
+        if len(paths) > 8:
+            more = f"See {len(paths) - 8} more in the PR diff."
             log.append(more)
             summary.append(more)
 
@@ -71,6 +81,9 @@ def report(passed, reason, author, reviewer, paths=(), *, advisory=False):
 
     # GitHub also accepts the older ##[command] syntax inside log lines.
     print("\n".join(log).replace("##[", r"##\["), file=sys.stdout if passed else sys.stderr)
+    if passed and advisory and os.environ.get("PUBLIC_BEHAVIOR_REVIEW_WARNING") == "true":
+        print("::warning title=Public behavior review::Review the RFC, any required dev@ vote, "
+              "and the files listed in the check summary.")
     destination = os.environ.get("GITHUB_STEP_SUMMARY")
     if destination:
         try:

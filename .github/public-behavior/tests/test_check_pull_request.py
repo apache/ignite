@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import chdir
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 import check_pull_request as ci
@@ -27,43 +30,31 @@ def file(name, status="modified", **kwargs):
 
 
 class CheckPullRequestTest(unittest.TestCase):
-    def test_rename_out_of_api_reports_the_old_path(self):
-        """Renaming a public API file keeps its original path in the advice."""
-        result = ci.check([file("other", "renamed", previous_filename=API)])
-        self.assertTrue(result.advisory)
-        self.assertIn(API, result.paths)
+    def test_implementation_only_and_standalone_rfc_pass_quietly(self):
+        for files in ([file(API)], [file(DOC)], [file("rfcs/TEMPLATE.md")]):
+            with self.subTest(files=files):
+                result = ci.check(files, {})
+                self.assertFalse(result.advisory)
+                self.assertEqual((result.author, result.reviewer, result.paths), ("", "", ()))
 
-    def test_ordinary_test_change_stays_quiet(self):
-        """A test and a template edit have no public-behavior advice."""
-        result = ci.check([file("modules/core/src/test/java/FooTest.java"), file("rfcs/TEMPLATE.md")])
-        self.assertFalse(result.advisory)
-        self.assertEqual(result.paths, ())
-        self.assertNotIn("RFC", result.reason)
+    def test_public_change_requires_a_proposal(self):
+        changes = {API: ["Added API method cacheTimeout"]}
+        with self.assertRaises(ci.CheckError) as caught:
+            ci.check([file(API)], changes)
+        result = caught.exception.result
+        self.assertIn("need an RFC", result.reason)
+        self.assertIn("rfcs/TEMPLATE.md", result.author)
+        self.assertEqual(result.changes, changes)
 
-    def test_known_paths_suggest_the_relevant_compatibility_checks(self):
-        """Storage, configuration and Maven changes each receive their own compatibility advice."""
-        java = "modules/core/src/main/java/org/apache/ignite/"
-        paths = [
-            java + "internal/processors/cache/persistence/wal/serializer/RecordSerializer.java",
-            java + "configuration/CacheConfiguration.java", java + "configuration/DataStorageConfiguration.java",
-            "modules/core/pom.xml",
-        ]
-        result = ci.check([file(path) for path in paths])
-        self.assertTrue(result.advisory)
-        self.assertIn("This PR does not add or update an RFC.", result.reason)
-        self.assertIn("data written by the previous version", result.reviewer)
-        self.assertEqual(result.reviewer.count("configuration names, accepted values and defaults"), 1)
-        self.assertIn("Maven coordinates and dependencies", result.reviewer)
-        self.assertNotIn("client and server", result.reviewer)
-
-    def test_added_updated_and_renamed_rfcs_are_present(self):
-        for proposal in [file(DOC, "added"), file(DOC), file(DOC, "renamed", previous_filename="notes/sql.md")]:
-            with self.subTest(status=proposal["status"]):
-                result = ci.check([proposal])
+    def test_public_change_with_rfc_goes_to_review(self):
+        changes = {API: ["Added API method cacheTimeout"]}
+        for status in ("added", "modified"):
+            with self.subTest(status=status):
+                result = ci.check([file(API), file(DOC, status)], changes)
                 self.assertTrue(result.advisory)
-                self.assertEqual(result.paths, (DOC,))
-                self.assertIn("This PR adds or updates an RFC.", result.reason)
-                self.assertIn("vote on dev@ and any later objections", result.reviewer)
+                self.assertEqual(result.paths, (DOC, API))
+                self.assertEqual(result.changes, changes)
+                self.assertIn("vote on dev@", result.reviewer)
 
     def test_invalid_filename_identifies_the_file_and_gives_an_example(self):
         for name in ["rfcs/cache-timeout.md", "rfcs/IGNITE-timeout.md", "rfcs/IGNITE-42-.md",
@@ -71,30 +62,52 @@ class CheckPullRequestTest(unittest.TestCase):
                      "rfcs/IGNITE-42-timeout.markdown", "rfcs/IGNITE-42-timeout.adoc"]:
             with self.subTest(name=name):
                 with self.assertRaises(ci.CheckError) as caught:
-                    ci.check([file(name, "added")])
+                    ci.check([file(name, "added")], {})
                 result = caught.exception.result
                 self.assertIn(f"Invalid RFC filename: {name}", result.reason)
                 self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", result.author)
                 self.assertEqual(result.paths, (name,))
 
-    def test_support_files_and_removed_proposals_do_not_count(self):
-        changes = [file("rfcs/TEMPLATE.md", "removed"), file("rfcs/README.md"), file(DOC, "removed"),
-                   file("rfcs/IGNITE-123-timeout.png"), file("rfcs/notes.adoc"),
-                   file("rfcs/assets/IGNITE-123-example.adoc"),
-                   file("notes/sql.md", "renamed", previous_filename="rfcs/IGNITE-42-original.md")]
-        self.assertFalse(ci.check(changes).advisory)
-        result = ci.check(changes + [file(API)])
-        self.assertIn("This PR does not add or update an RFC.", result.reason)
-        self.assertEqual(result.paths, (API,))
+class LinkedRfcsTest(unittest.TestCase):
+    def setUp(self):
+        self.enterContext(chdir(self.enterContext(TemporaryDirectory())))
+        Path("rfcs").mkdir()
+        Path(DOC).touch()
 
-    def test_rfc_with_other_documents_needs_no_implementation_review(self):
-        result = ci.check([file(DOC), file("rfcs/TEMPLATE.md"), file("CONTRIBUTING.md")])
-        self.assertIn("documentation or process RFC can stand alone", result.reviewer)
-
-    def test_rfc_edit_and_implementation_get_separate_review_advice(self):
-        result = ci.check([file(DOC), file(API)])
+    def test_implementation_can_follow_an_existing_plan(self):
+        changes = {API: ["Added API method cacheTimeout"]}
+        result = ci.check([file(API)], changes, f"See {DOC}")
         self.assertTrue(result.advisory)
         self.assertEqual(result.paths, (DOC, API))
-        self.assertIn("Wording-only edits need no new vote", result.reviewer)
-        self.assertIn("implementation and its compatibility tests", result.reviewer)
-        self.assertIn("Check results, errors and calls", result.reviewer)
+        self.assertIn("no new vote", result.reviewer)
+
+    def test_deleted_or_moved_plan_cannot_cover_implementation(self):
+        changes = {API: ["Added API method cacheTimeout"]}
+        for edit in (file(DOC, "removed"), file("docs/archive.md", "renamed", previous_filename=DOC)):
+            with self.subTest(edit=edit), self.assertRaises(ci.CheckError):
+                ci.check([file(API), edit], changes, f"See {DOC}")
+
+    def test_existing_plan_is_found_in_the_base_checkout(self):
+        """A later PR can reference its plan by path or by a link to its file in GitHub."""
+        for reference in (
+            f"The plan is `{DOC}`.",
+            f"See [SQL plan](./{DOC}).",
+            f"https://github.com/apache/ignite/blob/master/{DOC}",
+            f"[Implementation plan](https://github.com/fixture/ignite/blob/master/{DOC})",
+            f"[Approved change](https://github.com/apache/ignite/blob/master/{DOC}#proposed-change)",
+        ):
+            with self.subTest(reference=reference):
+                self.assertEqual(ci.linked_rfcs(reference, "fixture/ignite"), [DOC])
+
+    def test_reference_must_identify_an_existing_plan_in_the_project(self):
+        """Only links to existing files in the project can identify a plan."""
+        for reference in (
+            f"[{DOC}](https://example.com/design)",
+            f"https://example.com/blob/master/{DOC}",
+            f"https://github.com/another/project/blob/master/{DOC}",
+            f"https://github.com/apache/ignite/issues/42?file={DOC}",
+            f"https://github.com/apache/ignite/issues/42#{DOC}",
+            "rfcs/IGNITE-123-missing.md",
+        ):
+            with self.subTest(reference=reference):
+                self.assertEqual(ci.linked_rfcs(reference, "fixture/ignite"), [])

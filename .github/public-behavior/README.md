@@ -17,22 +17,30 @@ limitations under the License.
 
 # Public behavior changes
 
-This check helps reviewers spot changes to [Ignite's public contracts](../../rfcs/IGNITE-29219-public-api-and-compatibility.md). The [RFC process](../../rfcs/IGNITE-29220-rfc-development-process.md) explains when a proposal and a vote are required.
+The check compares source declarations at the PR head and its merge base. It reports changes it can identify from those declarations. The [public contract](../../rfcs/IGNITE-29219-public-api-and-compatibility.md) defines what Ignite supports. The [RFC process](../../rfcs/IGNITE-29220-rfc-development-process.md) defines when a proposal and a vote are required.
 
-## What appears in a PR
+## Results
 
-- **A file may affect public behavior.** The bot matches changed paths to known public contracts. It lists the matching files, says whether the PR includes an RFC, and suggests what to review. For example, a client protocol change calls for checking old clients against the new server.
-- **The PR adds or updates an RFC.** The bot lists the file. Its name must follow `rfcs/IGNITE-<ticket>-<short-title>.md`, for example `rfcs/IGNITE-12345-cache-timeout.md`. An invalid name fails the check. The comment shows the file and how to rename it. To update an existing RFC under a new ticket, edit the original file and keep its name.
-- **The PR changes both code and an RFC.** Review the implementation and its compatibility tests against the plan. A wording fix in the RFC can accompany code that changes public behavior.
+- **Fix the RFC.** A detected contract change needs a new or updated RFC in this PR. For work covered by an existing plan, link its file in the PR description. The bot lists the affected files and the declarations or values that changed.
+- **Review the change.** With an RFC, the job passes and adds a warning to Checks and the PR. The reviewer compares the code and compatibility tests with the plan and checks any required vote on dev@.
+- **No action.** When the check finds no contract change, it passes quietly. An internal change to a method body falls into this case. Reviewers assess any effects that the static checks cannot establish.
 
-Changes outside the known paths can also affect users. The reviewer decides whether an RFC or an exception applies, checks any required vote on dev@, and approves the PR when satisfied.
+RFC files must follow `rfcs/IGNITE-<ticket>-<short-title>.md`. An invalid filename fails even in a documentation-only PR. To update a plan under a new ticket, keep its original filename. For later implementation PRs, use a repository-relative path such as `rfcs/IGNITE-12345-cache-timeout.md` or a GitHub link to the file.
 
-The check runs when a PR to `master` opens, reopens, becomes ready for review, or changes its code or details. The result is available under **Checks**. When there is something to fix or review, the bot also comments in the PR. It replaces its comment when the advice changes and confirms when earlier issues are resolved. A clean PR with nothing to review gets no comment.
+The bot replaces its comment when the result changes and confirms when earlier issues are resolved.
+
+## What the check compares
+
+- Declarations in supported public Java packages, including API types, methods and literal constants. The analyzer uses the JDK parser. It skips method bodies and comparisons that need unresolved type or inheritance information. Reviewers check removals of deprecated API against the release rules.
+- Literal SQLState values, SQL error codes, client operation IDs and client feature IDs in their defining Java types.
+- Literal Maven `groupId` and `artifactId` changes in supported published modules.
+
+The report identifies the file and the specific change. For example, adding a setter can produce a finding. Editing only its implementation produces none. Changes to SQL execution, on-disk formats or other runtime behavior may still need an RFC under the public contract.
 
 ## Enabling the check on master
 
 1. Merge the public contract and process RFCs and the template, then merge the workflows.
-2. On a fork PR, change a known public API file. Check that the job passes and the bot posts review guidance. Add an RFC named `rfcs/cache-timeout.md`, then rename it to `rfcs/IGNITE-12345-cache-timeout.md`. Check that the job fails and then passes, and that the bot replaces its warning.
-3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). To stop blocking merges on this check, remove it from the required checks.
+2. On a fork PR, add a public method to a supported Java type. Verify that the check fails and names the method. Add a correctly named RFC and verify that the check passes with a review warning.
+3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). Remove that status from the required checks to stop blocking merges.
 
-To run the tests locally, use `python3 -m unittest discover -s tests` from `.github/public-behavior`.
+To run the tests locally, use `python3 -m unittest discover -s tests` from `.github/public-behavior` with JDK 17 or later on PATH.

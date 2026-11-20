@@ -69,6 +69,10 @@ def matches(pr, run, repo):
     )
 
 
+def description_digest(pr):
+    return hashlib.sha256((pr.get("body") or "").encode()).hexdigest()
+
+
 def recorded_job(root, run):
     attempt = f"{root}/actions/runs/{int(run['id'])}/attempts/{int(run['run_attempt'])}"
     jobs = [job for job in api(f"{attempt}/jobs?per_page=100")["jobs"] if job["name"] == "Public behavior changes"]
@@ -111,7 +115,7 @@ def prepare(repo, run, destination):
     if not matches(pr, run, repo):
         return
     event = {"number": pr["number"], "head": {"sha": pr["head"]["sha"]}, "base": {"sha": pr["base"]["sha"]}}
-    context = {"pull_request": event, "source_conclusion": conclusion}
+    context = {"pull_request": event, "source_conclusion": conclusion, "description_digest": description_digest(pr)}
     destination.write_text(json.dumps(context), encoding="utf-8")
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
         print(f"pr_number={int(pr['number'])}", f"base_sha={pr['base']['sha']}", f"conclusion={conclusion}", sep="\n", file=out)
@@ -182,6 +186,8 @@ def publish(repo, run, context, summary_file, outcome):
 
     current = api(route)
     if not matches(current, run, repo) or current["base"]["sha"] != context["pull_request"]["base"]["sha"]:
+        return
+    if description_digest(current) != context["description_digest"]:
         return
     if newer_run(repo, run, current):
         return

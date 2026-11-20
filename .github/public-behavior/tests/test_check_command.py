@@ -27,7 +27,7 @@ PUBLIC_API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
 HEAD = "a" * 40
 
 
-def run_checker(file_pages, *, changed_files=None, title=""):
+def run_checker(file_pages, *, sources=None, changed_files=None, title=""):
     """Run the workflow command with a fork PR event and GitHub responses for its list of files."""
     repo = "apache/ignite"
     pull = f"repos/{repo}/pulls/42"
@@ -42,6 +42,13 @@ def run_checker(file_pages, *, changed_files=None, title=""):
         f"api {pull}": pr,
         f"{paged} {pull}/files?per_page=100": file_pages,
     }
+    merge_base = "c" * 40
+    responses[f"api repos/{repo}/compare/{pr['base']['sha']}...{HEAD}?per_page=1"] = {
+        "merge_base_commit": {"sha": merge_base}
+    }
+    for (side, path), source in (sources or {}).items():
+        rev = merge_base if side == "before" else HEAD
+        responses[f"api -H Accept: application/vnd.github.raw+json repos/{repo}/contents/{path}?ref={rev}"] = source
     with TemporaryDirectory() as directory:
         work = Path(directory)
         event = work / "event.json"
@@ -53,12 +60,13 @@ def run_checker(file_pages, *, changed_files=None, title=""):
             "import json, sys\n"
             "from pathlib import Path\n"
             "responses = json.loads(Path('responses.json').read_text())\n"
-            "print(json.dumps(responses[' '.join(sys.argv[1:])]))\n"
+            "value = responses[' '.join(sys.argv[1:])]\n"
+            "sys.stdout.write(value if isinstance(value, str) else json.dumps(value))\n"
         )
         gh.chmod(0o755)
         summary = work / "summary.md"
         env = {
-            "PATH": os.pathsep.join((directory, str(Path(sys.executable).parent), os.defpath)),
+            "PATH": os.pathsep.join((directory, str(Path(sys.executable).parent), os.environ["PATH"])),
             "GITHUB_EVENT_PATH": str(event), "GITHUB_REPOSITORY": repo,
             "GITHUB_STEP_SUMMARY": str(summary),
         }
@@ -67,38 +75,45 @@ def run_checker(file_pages, *, changed_files=None, title=""):
 
 
 class CheckCommandTest(unittest.TestCase):
-    def test_public_api_on_second_page_shows_advice(self):
-        """A public API on page two produces guidance and a successful job."""
+    def test_new_public_method_is_reported_on_page_two(self):
         first_page = [{"filename": f"docs/page-{i}.md", "status": "modified"} for i in range(100)]
-        result, summary = run_checker([first_page, [{"filename": PUBLIC_API, "status": "modified"}]])
-        self.assertEqual(result.returncode, 0, result.stderr)
+        pages = [first_page, [{"filename": PUBLIC_API, "status": "modified"}]]
+        original = "package org.apache.ignite; public interface IgniteCache {}"
+        sources = {("before", PUBLIC_API): original,
+                   ("after", PUBLIC_API): original.replace("{}", "{ int cacheTimeout(); }")}
+        result, summary = run_checker(pages, sources=sources)
+        self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn(PUBLIC_API, summary)
-        self.assertIn("Check results, errors and calls", summary)
-        self.assertIn("process exception", summary)
-        self.assertIn("This PR does not add or update an RFC.", summary)
-
-    def test_empty_rfc_needs_only_its_filename(self):
-        empty = {"filename": "rfcs/IGNITE-123-cache-timeout.md", "status": "added",
-                 "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391", "changes": 0}
-        result, summary = run_checker([[empty]])
+        self.assertIn("cacheTimeout", summary)
+        self.assertIn("rfcs/TEMPLATE.md", summary)
+        named = {"filename": "rfcs/IGNITE-123-timeout.md", "status": "added"}
+        result, summary = run_checker([first_page, [*pages[1], named]], sources=sources)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("This PR adds or updates an RFC.", summary)
-        self.assertIn(empty["filename"], summary)
+        self.assertIn("🟡 Reviewer action needed", summary)
+        self.assertIn("cacheTimeout", summary)
+        self.assertIn("vote on dev@", summary)
 
-    def test_existing_rfc_can_be_updated_in_another_ticket(self):
-        path = "rfcs/IGNITE-123-cache-timeout.md"
-        result, summary = run_checker([[{"filename": path, "status": "modified"}]], title="IGNITE-456 Amend the RFC")
+    def test_method_body_change_is_quiet(self):
+        source = "package org.apache.ignite; public class IgniteCache { public int size() { return 1; } }"
+        edit = {"filename": PUBLIC_API, "status": "modified"}
+        result, summary = run_checker([[edit]], sources={("before", PUBLIC_API): source,
+                                                         ("after", PUBLIC_API): source.replace("return 1", "return 2")})
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(path, summary)
+        self.assertIn("No change was found by the static contract checks", summary)
+        self.assertNotIn("Reviewer action needed", summary)
 
-    def test_invalid_rfc_filename_fails_with_an_example(self):
-        result, summary = run_checker([[{"filename": "rfcs/cache-timeout.md", "status": "added"},
-                                        {"filename": PUBLIC_API, "status": "modified"}]])
+    def test_empty_correctly_named_rfc_needs_no_action(self):
+        file = {"filename": "rfcs/IGNITE-123-cache-timeout.md", "status": "modified"}
+        result, summary = run_checker([[file]], title="IGNITE-456 Amend an existing RFC")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Reviewer action needed", summary)
+
+    def test_invalid_filename_fails_even_in_document_only_pr(self):
+        file = {"filename": "rfcs/cache-timeout.md", "status": "added"}
+        result, summary = run_checker([[file]])
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("Invalid RFC filename: rfcs/cache-timeout.md.", summary)
         self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", summary)
-        self.assertIn("Invalid RFC filename", result.stderr)
-        self.assertIn("Check results, errors and calls", summary)
 
     def test_incomplete_file_list_requires_a_complete_pr(self):
         """Given an API file count mismatch, the job stops before review and explains GitHub's limit."""

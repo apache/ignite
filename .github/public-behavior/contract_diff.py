@@ -1,0 +1,93 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Compare the contract declarations on the two sides of a pull request."""
+
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path, PurePosixPath
+import subprocess
+from tempfile import TemporaryDirectory
+from urllib.parse import quote
+
+from contract_paths import java_contract_source
+from contract_values import contract_values, supports_values
+
+
+def _candidate(path):
+    if not path or path.startswith("/") or ".." in PurePosixPath(path).parts:
+        return False
+    return java_contract_source(path) or supports_values(path)
+
+
+def changed_contracts(files, repository, base, head, api):
+    pairs = []
+    for item in files:
+        path = item["filename"]
+        old = None if item["status"] in {"added", "copied"} else item.get("previous_filename", path)
+        new = None if item["status"] == "removed" else path
+        # We can compare a rename only when both locations are in a supported contract.
+        if all(_candidate(name) for name in (old, new) if name):
+            pairs.append((old, new))
+    if not pairs:
+        return {}
+
+    old_paths = {old for old, _ in pairs if old}
+    new_paths = {new for _, new in pairs if new}
+    revisions = {"after": head}
+    if old_paths:
+        # Compare against the PR's branch point. The base branch can move independently.
+        comparison = api(f"repos/{repository}/compare/{base}...{head}?per_page=1")
+        revisions["before"] = comparison["merge_base_commit"]["sha"]
+
+    def read(item):
+        side, path = item
+        route = f"repos/{repository}/contents/{quote(path)}?ref={revisions[side]}"
+        return item, api(route, raw=True)
+
+    jobs = [("before", path) for path in sorted(old_paths)] + [("after", path) for path in sorted(new_paths)]
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        sources = dict(pool.map(read, jobs))
+    return compare_sources(pairs, sources)
+
+
+def compare_sources(pairs, sources):
+    changes = defaultdict(list)
+    java = [(key, text) for key, text in sources.items() if java_contract_source(key[1])]
+    if java:
+        # Only the trusted analyzer is executed. The two directories contain PR sources as data.
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            for side in ("before", "after"):
+                (root / side).mkdir()
+            for (side, path), text in java:
+                target = root / side / path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text(text, encoding="utf-8")
+            analyzer = Path(__file__).with_name("JavaContracts.java")
+            run = subprocess.run(["java", str(analyzer), str(root / "before"), str(root / "after")],
+                                 text=True, stdout=subprocess.PIPE, check=True)
+            for line in run.stdout.splitlines():
+                path, fact = line.split("\t", 1)
+                changes[path].append(fact)
+
+    for old, new in pairs:
+        if old and new and supports_values(old) and supports_values(new):
+            before = contract_values(old, sources["before", old])
+            after = contract_values(new, sources["after", new])
+            for key in sorted(before.keys() & after.keys()):
+                if before[key] != after[key]:
+                    changes[new].append(f"{key} changed from {before[key]} to {after[key]}.")
+    return dict(sorted(changes.items()))

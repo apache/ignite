@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import redirect_stdout
 from copy import deepcopy
+from io import StringIO
 import json
 import os
 from pathlib import Path
@@ -22,6 +24,7 @@ import unittest
 from unittest.mock import patch
 
 import post_pr_comment as rc
+from check_summary import report
 
 
 REPO = "apache/ignite"
@@ -157,11 +160,16 @@ class PostPrCommentTest(unittest.TestCase):
         self.assertIn(copied_marker, self.comments)
 
     def test_posts_review_guidance_on_the_first_green_run(self):
-        """When the first check finds a public path, post the review guidance even though the job passed."""
-        self.publish(self.prepare(), "success", "Review the SQL result.", title=ADVISORY_TITLE)
+        """When the first check finds an RFC, publish its review marker even though the job passed."""
+        self.jobs[0]["conclusion"] = "success"
+        summary = self.root / "summary.md"
+        with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stdout(StringIO()):
+            report(True, "This PR adds an RFC.", "", "Review the SQL result.", advisory=True)
+        rc.publish(REPO, RUN, self.prepare(), summary, "success")
         self.assertEqual(self.writes, ["POST"])
         body = self.comments[0]["body"]
         self.assertIn("## Public behavior to review", body)
+        self.assertIn("🟡 Reviewer action needed", body)
         self.assertIn("Review the SQL result.", body)
         self.assertIn(CHECKS_LINK, body)
         self.assertNotIn("resolved", body)
@@ -261,12 +269,18 @@ class PostPrCommentTest(unittest.TestCase):
                 self.assertEqual(self.writes, [])
 
     def test_unrelated_edits_keep_the_report_current(self):
-        """When the PR title and description change, the report still applies to the same revision."""
+        """Changing the PR title does not affect its RFC or the public behavior check."""
         context = self.prepare()
         self.pr["title"] = "IGNITE-456 Update the original RFC"
-        self.pr["body"] = "Added steps to test the fix."
         self.publish(context, "failure", "Use the required RFC filename.")
         self.assertEqual(self.writes, ["POST"])
+
+    def test_rfc_link_added_while_reporting_discards_the_outdated_result(self):
+        """A missing-RFC warning is stale if the author adds the plan to the PR description."""
+        context = self.prepare()
+        self.pr["body"] = "See `rfcs/IGNITE-123-cache-timeout.md`."
+        self.publish(context, "failure", "Add an RFC for this change.")
+        self.assertEqual(self.writes, [])
 
     def test_retry_keeps_the_new_comment_when_deletion_failed(self):
         """Given a failed cleanup, retry by deleting the old comment without reposting the new one."""

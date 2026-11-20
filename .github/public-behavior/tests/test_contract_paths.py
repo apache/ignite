@@ -15,61 +15,16 @@
 
 import unittest
 
-from contract_paths import CONFIG, METRICS, STORAGE, contract_review
+from contract_paths import java_contract_source
 
 
 class ContractPathsTest(unittest.TestCase):
-    def test_internal_contract_definitions_get_specific_review_guidance(self):
-        core = "modules/core/src/main/java/org/apache/ignite/internal/"
-        for path, expected in (
-            ("jdbc/thin/ConnectionPropertiesImpl.java", CONFIG),
-            ("processors/metric/GridMetricManager.java", METRICS),
-            ("processors/cache/persistence/metastorage/MetastoreDataPageIO.java", STORAGE),
-        ):
-            with self.subTest(path=path):
-                self.assertEqual(contract_review(core + path), expected)
-
-    def test_paths_with_external_contracts(self):
-        """Edits to these APIs, wire formats, stored data and distribution files need review."""
+    def test_only_supported_java_sources_are_parsed(self):
         core = "modules/core/src/main/java/org/apache/ignite/"
-        for path in (
-            core + "IgniteCache.java",
-            core + "IgniteSystemProperties.java",
-            core + "spi/discovery/tcp/TcpDiscoverySpi.java",
-            core + "mxbean/IgniteMXBean.java",
-            core + "internal/management/DeactivateCommandArg.java",
-            core + "internal/processors/rest/GridRestCommand.java",
-            core + "internal/processors/odbc/SqlStateCode.java",
-            core + "internal/processors/platform/client/cache/ClientCacheGetRequest.java",
-            core + "internal/processors/cache/persistence/wal/serializer/RecordSerializer.java",
-            core + "internal/processors/cache/persistence/snapshot/IncrementalSnapshotMetadata.java",
-            "modules/thin-client/api/src/main/java/org/apache/ignite/client/IgniteClient.java",
-            "modules/binary/impl/src/main/java/org/apache/ignite/internal/binary/BinaryWriterExImpl.java",
-            "modules/calcite/src/main/codegen/includes/parserImpls.ftl",
-            "modules/platforms/dotnet/Apache.Ignite.Core/IIgnite.cs",
-            "modules/platforms/cpp/thin-client/include/ignite/thin/ignite_client.h",
-            "modules/core/pom.xml",
-            "assembly/release-apache-ignite.xml",
-            "bin/ignite.sh",
-        ):
+        self.assertTrue(java_contract_source(core + "IgniteCache.java"))
+        self.assertTrue(java_contract_source(core + "internal/processors/odbc/SqlStateCode.java"))
+        for path in ("rfcs/TEMPLATE.md", "modules/core/pom.xml", core + "internal/IgniteKernal.java",
+                     core + "spi/discovery/tcp/messages/TcpDiscoveryPingRequest.java",
+                     "modules/core/src/test/java/org/apache/ignite/CacheTest.java"):
             with self.subTest(path=path):
-                self.assertIsNotNone(contract_review(path))
-
-    def test_paths_outside_scope(self):
-        """A PR that only touches these internal, test or documentation paths gets no scope signal."""
-        for path in (
-            "modules/core/src/main/java/org/apache/ignite/internal/IgniteKernal.java",
-            "modules/core/src/main/java/org/apache/ignite/spi/discovery/tcp/messages/TcpDiscoveryPingRequest.java",
-            "modules/core/src/main/java/org/apache/ignite/spi/communication/tcp/internal/ConnectionKey.java",
-            "modules/core/src/test/java/org/apache/ignite/ClassPathContentLoggingTest.java",
-            "modules/extdata/p2p/src/main/java/org/apache/ignite/tests/p2p/classic/SingleSplitTestTask.java",
-            "modules/platforms/dotnet/Apache.Ignite.Core.Tests/Client/Cache/CacheTest.cs",
-            "modules/platforms/dotnet/Apache.Ignite.Core/Impl/Ignite.cs",
-            "modules/platforms/cpp/core/include/ignite/impl/ignite_impl.h",
-            "modules/platforms/cpp/core-test/include/ignite/test_type.h",
-            "examples/pom.xml",
-            "docs/_docs/sql-reference/data-types.adoc",
-            "rfcs/TEMPLATE.md",
-        ):
-            with self.subTest(path=path):
-                self.assertIsNone(contract_review(path))
+                self.assertFalse(java_contract_source(path))

@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from check_summary import report
-from contract_paths import contract_review
+from contract_diff import changed_contracts
 
 RFC_PATH = re.compile(r"rfcs/IGNITE-[0-9]+-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.md")
 
@@ -35,20 +35,26 @@ class CheckResult:
     reviewer: str
     paths: tuple = ()
     advisory: bool = False
+    changes: dict | None = None
 
 
 class CheckError(ValueError):
-    def __init__(self, reason, author, reviewer, paths=()):
+    def __init__(self, reason, author, reviewer, paths=(), changes=None):
         super().__init__(reason)
-        self.result = CheckResult(reason, author, reviewer, paths)
+        self.result = CheckResult(reason, author, reviewer, paths, changes=changes)
 
 
-def api(route, *, pages=False):
+def api(route, *, pages=False, raw=False):
     args = ["gh", "api"]
     if pages:
         args.extend(["--paginate", "--slurp"])
+    if raw:
+        args.extend(["-H", "Accept: application/vnd.github.raw+json"])
     try:
-        data = json.loads(subprocess.check_output([*args, route], stderr=subprocess.PIPE))
+        response = subprocess.check_output([*args, route], stderr=subprocess.PIPE)
+        if raw:
+            return response.decode("utf-8")
+        data = json.loads(response)
         return [item for page in data for item in page] if pages else data
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError) as exc:
         detail = str(exc)
@@ -73,44 +79,58 @@ def is_rfc_candidate(path):
             and re.match(r"IGNITE-[0-9]+\b", filename.name) is not None)
 
 
-def check(files):
-    changed = {path for f in files for path in (f["filename"], f.get("previous_filename")) if path}
-    signals = {path: hint for path in sorted(changed) if (hint := contract_review(path))}
-    docs = sorted(f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"]))
-    if not signals and not docs:
-        return CheckResult(
-            "No changed file matches a known public-contract path.",
-            "Continue with the usual PR review.",
-            "Consider whether this change affects users in ways the file paths do not show.",
-        )
+def linked_rfcs(body, repository):
+    """Find implementation plans named in the PR that exist in the trusted base checkout."""
+    # Use Markdown link destinations so that a link's display text cannot identify a different RFC.
+    destinations = re.sub(r"\[[^\]\n]*\]\(\s*<?([^\s)>]+)>?(?:\s+[^)\n]*)?\)", r" \1 ", body or "")
+    plans = set()
+    for word in destinations.split():
+        target = word.lstrip("(<`").rstrip(".,;)>`")
+        target = target.partition("#")[0].partition("?")[0]
+        blob = re.fullmatch(r"https://github\.com/([^/?#]+/[^/?#]+)/blob/[^/?#]+/(.+)", target, re.I)
+        if blob and blob[1].lower() in {"apache/ignite", repository.lower()}:
+            path = blob[2]
+        else:
+            path = target.removeprefix("./")
+        if RFC_PATH.fullmatch(path) and Path(path).is_file():
+            plans.add(path)
+    return sorted(plans)
 
-    paths = (*docs, *signals)
-    code_hints = list(dict.fromkeys(signals.values()))
+
+def check(files, changes, description="", repository="apache/ignite"):
+    docs = sorted(f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"]))
+    paths = (*docs, *changes)
     for path in docs:
         if not RFC_PATH.fullmatch(path):
             raise CheckError(
                 f"Invalid RFC filename: {path}.",
                 "Use rfcs/IGNITE-<ticket>-<short-title>.md, for example rfcs/IGNITE-12345-cache-timeout.md.",
-                " ".join(["Check that the filename contains the proposal's Jira ticket number.", *code_hints]), paths,
+                "Check that the filename contains the proposal's Jira ticket number.", paths, changes,
             )
 
-    hints = []
-    if docs:
-        reason = "This PR adds or updates an RFC."
-        author = "Discuss the proposal in this PR. Follow the RFC process for a new proposal or a change to the agreed plan."
-        hints.append("For a new proposal or a changed plan, check the vote on dev@ and any later objections. "
-                     "Wording-only edits need no new vote.")
-        if not signals:
-            hints.append("A product RFC goes with its first implementation. A documentation or process RFC can stand alone.")
-        hints.append("If this PR includes code, compare the implementation and its compatibility tests with the agreed plan.")
-    else:
-        reason = "This PR changes a file that may affect public behavior. This PR does not add or update an RFC."
-        author = ("If public behavior changes, start from rfcs/TEMPLATE.md unless an approved RFC "
-                  "or a process exception already covers the work.")
-        hints.append("Check whether the code preserves the contract, follows an approved plan or needs an RFC.")
+    if not changes:
+        return CheckResult("No change was found by the static contract checks.", "", "")
 
-    hints.extend(code_hints)
-    return CheckResult(reason, author, " ".join(hints), paths, advisory=True)
+    if docs:
+        reason = "This PR changes a public contract and adds or updates an RFC."
+    else:
+        removed = {f["filename"] for f in files if f["status"] == "removed"}
+        removed.update(f["previous_filename"] for f in files if f["status"] == "renamed")
+        linked = [p for p in linked_rfcs(description, repository) if p not in removed]
+        if not linked:
+            raise CheckError(
+                "The public contract changes listed below need an RFC.",
+                "Copy rfcs/TEMPLATE.md to rfcs/IGNITE-<ticket>-<short-title>.md and describe the change. "
+                "If an existing RFC already covers it, link that file in the PR description.",
+                "Check the detected changes and their effect on existing users.", paths, changes,
+            )
+        paths = (*linked, *changes)
+        reason = "The PR description links an existing RFC for the flagged changes."
+
+    review = ("Compare the changes below and their compatibility tests with the RFC. "
+              "For a new or revised plan, check its vote on dev@ and any unresolved objections. "
+              "Work covered by an approved plan needs no new vote.")
+    return CheckResult(reason, "", review, paths, advisory=True, changes=changes)
 
 
 def main():
@@ -130,7 +150,9 @@ def main():
             "Split PRs that exceed GitHub's limit of 3,000 files. For a smaller PR, rerun the job.",
             "Wait for a complete file list before assessing public-contract impact.",
         )
-    return check(files)
+    repository = os.environ["GITHUB_REPOSITORY"]
+    changes = changed_contracts(files, repository, pr["base"]["sha"], pr["head"]["sha"], api)
+    return check(files, changes, pr.get("body") or "", repository)
 
 
 if __name__ == "__main__":
@@ -140,12 +162,13 @@ if __name__ == "__main__":
     except CheckError as error:
         outcome = error.result
         passed = False
-    except (OSError, KeyError, TypeError, ValueError) as error:
+    except (OSError, KeyError, TypeError, ValueError, subprocess.SubprocessError) as error:
         outcome = CheckResult(
-            f"Could not read the workflow event or pull request data. {error}",
+            f"The public contract check could not finish. {error}",
             "Rerun the job for the current PR revision.",
             "If the error recurs, check the workflow event and GitHub API response in the job log.",
         )
         passed = False
-    report(passed, outcome.reason, outcome.author, outcome.reviewer, outcome.paths, advisory=outcome.advisory)
+    report(passed, outcome.reason, outcome.author, outcome.reviewer, outcome.paths,
+           advisory=outcome.advisory, changes=outcome.changes)
     sys.exit(0 if passed else 1)

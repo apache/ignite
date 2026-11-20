@@ -30,7 +30,8 @@ class CheckSummaryTest(unittest.TestCase):
         paths = ["a</code>\n##[warning]"] + [f"public/path{i}" for i in range(8)]
         with TemporaryDirectory() as directory:
             summary = Path(directory) / "summary.md"
-            with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stderr(StringIO()) as log:
+            with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary), PUBLIC_BEHAVIOR_REVIEW_WARNING="true"), \
+                    redirect_stderr(StringIO()) as log, redirect_stdout(StringIO()) as annotations:
                 report(False, "Invalid RFC filename.", "Rename the file.", "Check the migration plan.", paths)
             rendered = summary.read_text()
 
@@ -42,27 +43,41 @@ class CheckSummaryTest(unittest.TestCase):
         self.assertIn("See 1 more in the PR diff.", rendered)
         self.assertNotIn("public/path7", rendered)
         self.assertNotIn("##[warning]", log.getvalue())
+        self.assertEqual(annotations.getvalue(), "")
 
     def test_passing_check_shows_what_to_review(self):
+        """When an RFC needs review, the main job warns once and the summary names the review task."""
         with TemporaryDirectory() as directory:
             summary = Path(directory) / "summary.md"
-            with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary)), redirect_stdout(StringIO()):
-                report(True, "A client protocol file changed.", "Describe the change.", "Check old clients.", advisory=True)
+            with patch.dict(os.environ, GITHUB_STEP_SUMMARY=str(summary), PUBLIC_BEHAVIOR_REVIEW_WARNING="true"), \
+                    redirect_stdout(StringIO()) as log:
+                report(True, "A client protocol file changed.", "", "Check old clients.", advisory=True)
             rendered = summary.read_text()
 
         self.assertTrue(rendered.startswith("## Public behavior to review\n"))
-        self.assertIn("The automated checks passed.", rendered)
+        self.assertIn("🟡 Reviewer action needed", rendered)
         self.assertIn("Check old clients.", rendered)
+        self.assertNotIn("For the author", rendered)
+        self.assertEqual(sum(line.startswith("::warning ") for line in log.getvalue().splitlines()), 1)
 
-    def test_local_run_writes_guidance_to_the_log(self):
-        """Given no GitHub summary file, a passing local run prints the verdict and both actions."""
-        with patch.dict(os.environ, GITHUB_STEP_SUMMARY=""), redirect_stdout(StringIO()) as log:
-            report(True, "RFC filename checked.", "Continue the usual review.", "Check the implementation.")
+    def test_clean_check_reports_no_tasks_or_warnings(self):
+        """When a PR has no flagged changes, the check prints just the result and rule links."""
+        with patch.dict(os.environ, GITHUB_STEP_SUMMARY="", PUBLIC_BEHAVIOR_REVIEW_WARNING="true"), \
+                redirect_stdout(StringIO()) as log:
+            report(True, "No matching files.", "", "")
 
-        self.assertIn("Public behavior check passed: RFC filename checked.", log.getvalue())
+        self.assertIn("Public behavior check passed: No matching files.", log.getvalue())
         self.assertIn(rules_reference(), log.getvalue())
-        self.assertIn("For the author: Continue the usual review.", log.getvalue())
-        self.assertIn("For the reviewer: Check the implementation.", log.getvalue())
+        self.assertNotIn("For the author", log.getvalue())
+        self.assertNotIn("For the reviewer", log.getvalue())
+        self.assertNotIn("::warning", log.getvalue())
+
+    def test_comment_reporter_does_not_repeat_warning(self):
+        """When the reporter checks the PR again, it renders the marker without a second annotation."""
+        with patch.dict(os.environ, GITHUB_STEP_SUMMARY="", PUBLIC_BEHAVIOR_REVIEW_WARNING=""), \
+                redirect_stdout(StringIO()) as log:
+            report(True, "An RFC was added.", "", "Review the API.", advisory=True)
+        self.assertNotIn("::warning", log.getvalue())
 
     def test_links_to_the_process_document_available_on_apache(self):
         """Use the PR until the process has landed in the trusted Ignite checkout."""

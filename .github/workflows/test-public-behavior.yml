@@ -20,6 +20,7 @@ on:
     paths:
       - '.github/workflows/*public-behavior.yml'
       - '.github/public-behavior/**/*.py'
+      - '.github/public-behavior/**/*.java'
 
 permissions:
   contents: read
