@@ -40,9 +40,6 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -63,9 +60,6 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
     /** Size of an entry value that takes a data page of its own. */
     static final int ENTRY_SIZE = PAGE_SIZE - 200;
-
-    /** Payload of an empty data page: the size of a whole-page fragment of a row. */
-    static final int PAGE_PAYLOAD = PAGE_SIZE - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
 
     /** Number of entries. */
     static final int ENTRIES = 12_000;
@@ -244,9 +238,14 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         return defaultRegion(ignite).metrics().isEvictionsStarted();
     }
 
-    /** @return Number of pages reserved by in-flight inserts into the free list. */
-    protected static long reservedPages(FreeList<?> freeList) {
-        return ((AbstractFreeList<?>)freeList).reservedPages();
+    /** @return Number of pages reserved by in-flight inserts into the data region. */
+    protected static long reservedPages(DataRegion region) {
+        return ((PageAbstractEvictionTracker)region.evictionTracker()).reservedPages();
+    }
+
+    /** @return Payload of an empty data page of the default data region: the size of a whole-page fragment of a row. */
+    protected static int pagePayload(IgniteEx ignite) throws IgniteCheckedException {
+        return ((PageAbstractEvictionTracker)defaultRegion(ignite).evictionTracker()).pagePayload();
     }
 
     /**

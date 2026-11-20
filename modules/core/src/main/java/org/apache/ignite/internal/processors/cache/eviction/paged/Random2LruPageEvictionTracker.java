@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.persistence.evict;
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,14 +52,16 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     /**
      * @param pageMem Page memory.
      * @param plcCfg Policy config.
+     * @param memMetrics Data region metrics.
      * @param sharedCtx Shared context.
      */
     public Random2LruPageEvictionTracker(
         PageMemoryNoStoreImpl pageMem,
         DataRegionConfiguration plcCfg,
+        DataRegionMetricsImpl memMetrics,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
-        super(pageMem, sharedCtx);
+        super(pageMem, plcCfg, memMetrics, sharedCtx);
 
         DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 

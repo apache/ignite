@@ -15,14 +15,16 @@
 * limitations under the License.
 */
 
-package org.apache.ignite.internal.processors.cache.persistence.evict;
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.LinkedList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 
 /**
  * On-heap FIFO page eviction tracker. Only for test purposes.
@@ -33,10 +35,17 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /**
      * @param pageMem Page memory.
+     * @param plcCfg Data region configuration.
+     * @param memMetrics Data region metrics.
      * @param sharedCtx Shared context.
      */
-    public FairFifoPageEvictionTracker(PageMemoryNoStoreImpl pageMem, GridCacheSharedContext sharedCtx) {
-        super(pageMem, sharedCtx);
+    public FairFifoPageEvictionTracker(
+        PageMemoryNoStoreImpl pageMem,
+        DataRegionConfiguration plcCfg,
+        DataRegionMetricsImpl memMetrics,
+        GridCacheSharedContext sharedCtx
+    ) {
+        super(pageMem, plcCfg, memMetrics, sharedCtx);
     }
 
     /** {@inheritDoc} */

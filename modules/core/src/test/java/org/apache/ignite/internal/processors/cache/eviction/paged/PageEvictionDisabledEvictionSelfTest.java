@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -101,12 +100,10 @@ public class PageEvictionDisabledEvictionSelfTest extends PageEvictionAbstractTe
 
         DataRegion region = defaultRegion(ignite);
 
-        FreeList<?> freeList = ignite.context().cache().context().database().freeList(region.config().getName());
-
         int hugeRow = (int)Math.min(Integer.MAX_VALUE, regionMaxSize(ignite) * 2);
 
         assertEquals(0, ignite.context().cache().context().database().reserveInRegion(region, hugeRow, false));
-        assertEquals(0, freeList.reserve(hugeRow, false));
+        assertFalse(region.evictionTracker().reserveEnabled());
         assertEquals(0, OOM_FAILURES.get());
 
         GridTestUtils.assertThrows(log, () -> {

@@ -14,9 +14,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.persistence.evict;
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
  *
@@ -49,6 +51,26 @@ public class NoOpPageEvictionTracker implements PageEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean reserveEnabled() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reserve(long rowSize, boolean bestEffort) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long reserve(Collection<? extends Storable> rows, boolean bestEffort) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void releaseReserved(long pages) {
         // No-op.
     }
 }

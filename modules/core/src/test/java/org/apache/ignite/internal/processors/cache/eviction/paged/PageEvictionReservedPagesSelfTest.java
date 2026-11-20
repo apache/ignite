@@ -37,9 +37,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -92,7 +92,7 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
         // Phase 3: rows sized to an exact multiple of the whole-page fragment size (whole-page fragments only).
         int fixedSize = row(cacheContext(ignite), 0, 0).size();
 
-        insertBatchesAndCheckReservedPages(ignite, freeList, 2 * PAGE_PAYLOAD - fixedSize);
+        insertBatchesAndCheckReservedPages(ignite, freeList, 2 * pagePayload(ignite) - fixedSize);
     }
 
     /** */
@@ -236,23 +236,23 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
         assertTrue(writers * LARGE_EMPTY_PAGES_POOL_SIZE > totalPages(ignite));
 
-        FreeList<CacheDataRow> freeList = freeList(ignite);
+        DataRegion region = cacheContext(ignite).dataRegion();
 
         long[] reserved = new long[writers];
 
         try {
             for (int i = 0; i < writers; i++) {
-                reserved[i] = freeList.reserve(pageSize(ignite) / 2, false);
+                reserved[i] = region.evictionTracker().reserve(pageSize(ignite) / 2, false);
 
                 assertEquals(1, reserved[i]);
             }
         }
         finally {
             for (long pages : reserved)
-                freeList.releaseReserved(pages);
+                region.evictionTracker().releaseReserved(pages);
         }
 
-        assertEquals(0, reservedPages(freeList));
+        assertEquals(0, reservedPages(region));
     }
 
     /** @return Cache with a backup on two started nodes. */
@@ -270,18 +270,16 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
     }
 
     /**
-     * Asserts that {@code reservedPages} is {@code 0} on every data store of every started node, waiting up to 10 seconds
-     * for the reservation to drain.
+     * Asserts that {@code reservedPages} is {@code 0} in the data region of the cache on every started node, waiting up
+     * to 10 seconds for the reservation to drain.
      *
      * @throws Exception If the reservation does not drain in time.
      */
     private static void assertAllReleased() throws Exception {
         for (Ignite ignite : Ignition.allGrids()) {
-            for (CacheDataStore store : cacheContext((IgniteEx)ignite).offheap().cacheDataStores()) {
-                FreeList<CacheDataRow> freeList = (FreeList<CacheDataRow>)store.rowStore().freeList();
+            DataRegion region = cacheContext((IgniteEx)ignite).dataRegion();
 
-                assertTrue(GridTestUtils.waitForCondition(() -> reservedPages(freeList) == 0, 10_000));
-            }
+            assertTrue(GridTestUtils.waitForCondition(() -> reservedPages(region) == 0, 10_000));
         }
     }
 
@@ -308,7 +306,7 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
             freeList.insertDataRows(rows, IoStatisticsHolderNoOp.INSTANCE);
 
-            assertEquals(0, reservedPages(freeList));
+            assertEquals(0, reservedPages(cctx.dataRegion()));
         }
     }
 
@@ -334,7 +332,7 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
         @Override public Long process(MutableEntry<Integer, Object> entry, Object... args) {
             entry.setValue(1);
 
-            return reservedPages(freeList((IgniteEx)Ignition.allGrids().get(0)));
+            return reservedPages(cacheContext((IgniteEx)Ignition.allGrids().get(0)).dataRegion());
         }
     }
 }
