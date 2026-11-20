@@ -99,6 +99,10 @@ class FormatAndPackageContractsTest(unittest.TestCase):
                   "Added Maven BOM dependency: org.apache.ignite:ignite-new"],
             "parent/pom.xml": ["Java release for compiled artifacts changed from 17 to 21."],
         })
+        same = before[BOM].replace("</dependency>", "<type> jar </type><scope> compile </scope></dependency>")
+        self.assertEqual(changes({BOM: before[BOM]}, {BOM: same}), {})
+        imported = before[BOM].replace("</dependency>", "<type>pom</type><scope>import</scope></dependency>")
+        self.assertEqual(changes({BOM: before[BOM]}, {BOM: imported}), {})
         self.assertEqual(changes({ODBC: before[ODBC]}, {ODBC: before[ODBC].replace("SQLDisconnect", "SQLDisconnect=impl")}), {})
 
     def test_dotnet_configuration_schema(self):

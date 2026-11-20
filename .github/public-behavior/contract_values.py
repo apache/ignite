@@ -151,12 +151,14 @@ def contract_values(path, source):
         if dependencies is not None:
             managed = set()
             for dependency in dependencies.findall(namespace + "dependency"):
-                if (dependency.findtext(namespace + "type", "jar") != "jar"
-                        or dependency.find(namespace + "classifier") is not None
-                        or dependency.findtext(namespace + "scope", "compile") != "compile"):
+                kind = dependency.findtext(namespace + "type", "jar").strip()
+                scope = dependency.findtext(namespace + "scope", "compile").strip()
+                if kind == "pom" and scope == "import":
+                    break
+                if kind != "jar" or dependency.find(namespace + "classifier") is not None or scope != "compile":
                     continue
-                artifact = dependency.findtext(namespace + "artifactId", "")
-                group = dependency.findtext(namespace + "groupId", "")
+                artifact = dependency.findtext(namespace + "artifactId", "").strip()
+                group = dependency.findtext(namespace + "groupId", "").strip()
                 if group == "${project.groupId}":
                     group = values.get("Maven groupId", "")
                 if not all(re.fullmatch(r"[A-Za-z0-9_.-]+", part) for part in (group, artifact)):
