@@ -23,6 +23,7 @@ import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
+import org.apache.ignite.internal.GridLoggerProxyMetricsTest;
 import org.apache.ignite.internal.GridMBeansTest;
 import org.apache.ignite.internal.GridMbeansMiscTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
@@ -135,6 +136,7 @@ import org.junit.runners.Suite;
     GridEventConsumeSelfTest.class,
     GridSuppressedExceptionSelfTest.class,
     GridLifecycleAwareSelfTest.class,
+    GridLoggerProxyMetricsTest.class,
     GridMessageListenSelfTest.class,
     GridFailFastNodeFailureDetectionSelfTest.class,
     IgniteSlowClientDetectionSelfTest.class,

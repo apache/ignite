@@ -274,7 +274,12 @@ public class CdcMain implements Runnable {
         try {
             U.initWorkDir(igniteCfg);
 
-            log = U.initLogger(igniteCfg, "ignite-cdc");
+            log = new GridLoggerProxy(
+                U.initLogger(igniteCfg, "ignite-cdc"),
+                null,
+                cdcInstanceName(igniteCfg.getIgniteInstanceName()),
+                igniteCfg.getNodeId() == null ? null : U.id8(igniteCfg.getNodeId())
+            );
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -401,6 +406,8 @@ public class CdcMain implements Runnable {
         for (IgniteSpi metricSpi : kctx.config().getMetricExporterSpi()) {
             metricSpi.onContextInitialized(new StandaloneSpiContext());
         }
+
+        ((GridLoggerProxy)log).registerMetrics(kctx.metric());
 
         mreg = kctx.metric().registry("cdc");
     }

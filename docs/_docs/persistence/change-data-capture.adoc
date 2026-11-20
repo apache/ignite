@@ -120,6 +120,7 @@ The consumer of change events.  It should be implemented by the user.
 They are configured by the `metricExporterSpi` property of `CdcConfiguration`, the JMX exporter is used by default.
 The application registers its metrics in the `cdc` register.
 The `cdc.consumer` register is passed to `CdcConsumer.start(MetricRegistry)` and is reserved for the consumer-specific metrics.
+The `log.count` register contains the application's log message counters, grouped by logging level.
 
 Register name: `cdc`
 
@@ -143,7 +144,12 @@ Register name: `cdc`
 
 == Logging
 
-`ignite-cdc.sh` uses the same logging configuration as the Ignite node does. The only difference is that the log is written in the"ignite-cdc.log" file.
+`ignite-cdc.sh` uses the same logging configuration as the Ignite node does, but writes its log to the "ignite-cdc.log" file.
+
+When either the `IGNITE_LOG_INSTANCE_NAME` or the legacy `IGNITE_LOG_GRID_NAME` system property is set, CDC log messages are prefixed with `cdc-` followed by the configured Ignite instance name, for example, `<cdc-metrics-demo>`.
+The short node ID is appended if configured; otherwise, it is omitted.
+
+In quiet mode, the CDC startup banner also displays the underlying logger information in the `Logging by '...'` line.
 
 == Lifecycle
 
