@@ -26,7 +26,8 @@ JAVA_MODULES = {
     "thin-client/impl", "urideploy", "web", "zookeeper",
 }
 
-PUBLIC_API = "Check that existing applications still compile and that the same calls return the same results or errors."
+PUBLIC_API = ("Check that existing source still compiles and existing binaries still run. "
+              "Check results, errors and calls to user overrides or callbacks.")
 COMMAND = "Run existing commands with their current flags and check their output and exit codes."
 PROTOCOL = "Check request, response and error handling between supported client and server versions."
 CONFIG = "Check that existing configuration names, accepted values and defaults still work."

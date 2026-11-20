@@ -26,7 +26,7 @@ from urllib.parse import quote
 
 from rfc_report import report
 from rfc_scope import contract_review
-from rfc_vote import EvidenceUnavailable, ManualReviewRequired, PERMALINK, VoteError, verify_vote
+from rfc_vote import EvidenceUnavailable, ManualReviewRequired, OpeningReviewRequired, PERMALINK, VoteError, verify_vote
 
 RFC_PATH = r"rfcs/IGNITE-([0-9]+)-[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.md"
 TEMPLATE = "rfcs/TEMPLATE.md"
@@ -144,8 +144,9 @@ def result_link(pr):
             return link
     raise CheckError(
         "The PR description does not identify one Apache dev-list result.",
-        "Add RFC-result: <Apache archive URL of the RESULT message> on its own line in the PR description.",
-        "Open the linked message and check that its own subject announces the result for this proposal.",
+        "Discuss the RFC in this PR. When it is ready, start a [VOTE] on dev@ with links to the PR and the RFC revision. "
+        "Once the vote closes, add RFC-result: <RESULT URL> to the PR description.",
+        "Review the proposal and its compatibility plan now. Before merge, check the published result for this revision.",
     )
 
 
@@ -292,16 +293,33 @@ def check_evidence(pr, files, signals, marked, template):
             )
 
     result = result_link(pr)
+    verification = r"RFC-verified:\s*" + re.escape(result) + r"\s+"
+
+    def reviewer_opening():
+        links = {m[1] for m in review_matches(verification + r"(\S+)\s+\S.*") if PERMALINK.fullmatch(m[1])}
+        return links.pop() if len(links) == 1 else None
+
     try:
-        evidence = verify_vote(result, pr["html_url"], list(docs))
+        evidence = verify_vote(result, pr["html_url"], list(docs), reviewer_opening=reviewer_opening)
+        notes = [evidence.review_note] if evidence.review_note else []
         for path, blob in blobs.items():
             if path not in evidence.versions:
-                raise ManualReviewRequired(f"Check the voted version of {path}.")
+                notes.append(f"Check the voted version of {path}.")
+                continue
             _, voted_blob = content(pr["base"]["repo"]["full_name"], path, evidence.versions[path])
             if voted_blob != blob:
-                raise ManualReviewRequired(f"{path} differs from the voted version. Check whether the agreed plan changed.")
+                notes.append(f"{path} differs from the voted version. Check whether the agreed plan changed.")
+        if notes:
+            raise ManualReviewRequired(" ".join(notes))
+    except OpeningReviewRequired as error:
+        raise CheckError(
+            str(error), "Point the reviewer to the original [VOTE] on dev@.",
+            "Read both threads and compare the voted text with this revision. Check three committer votes, or an announced "
+            "seven days without objections for compatible additions only. Give the opening link and evidence in your approval: "
+            f"RFC-verified: {result} <opening VOTE URL> <what you checked>.",
+        ) from error
     except ManualReviewRequired as error:
-        verified = next(review_matches(r"RFC-verified:\s*" + re.escape(result) + r"\s+(\S.*)"), None)
+        verified = next(review_matches(verification + r"(\S.*)"), None)
         if verified:
             return CheckResult(
                 f"Reviewer verified the result and the RFC at this revision. {verified[1]}",
@@ -330,8 +348,9 @@ def check_evidence(pr, files, signals, marked, template):
     return CheckResult(
         f"Verified the dev-list vote. {evidence.tally}",
         "Keep the result linked. Take changes to the agreed behavior or migration plan back to the dev list.",
-        f"Compare the implementation and migration tests with the plan approved at {result}. "
-        "Check that any approval by silence covered only compatible additions and that any request to skip deprecation had explicit approval.",
+        f"Compare the implementation and compatibility tests with the plan approved at {result}. "
+        "If the RFC skips deprecation, check that the vote explicitly approved it. "
+        "Merge a product RFC with its first implementation. A documentation or process RFC can stand alone.",
     )
 
 

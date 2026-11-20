@@ -106,13 +106,13 @@ class RFCCheckTest(unittest.TestCase):
         self.assertIn(DOC, result.reason)
 
     def test_new_rfc_must_match_approved_document(self):
-        evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result")
+        evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result", review_note="")
         with patch.object(ci, "content", return_value=(TEXT, "blob")), patch.object(ci, "verify_vote", return_value=evidence):
             result = ci.check(PR, [file(DOC, "added"), file(API)], TEMPLATE)
             self.assertEqual(set(result.paths), {DOC, API})
             self.assertIn(evidence.tally, result.reason)
-            self.assertIn("only compatible additions", result.reviewer)
-            self.assertIn("skip deprecation had explicit approval", result.reviewer)
+            self.assertIn("first implementation", result.reviewer)
+            self.assertIn("vote explicitly approved", result.reviewer)
         with patch.object(ci, "content", side_effect=[(TEXT, "changed"), (TEXT, "voted")]), \
                 patch.object(ci, "verify_vote", return_value=evidence), \
                 patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError):
@@ -137,7 +137,7 @@ class RFCCheckTest(unittest.TestCase):
             with self.assertRaisesRegex(ci.CheckError, "reuses the Jira ticket"):
                 ci.check(dict(PR, body=""), [file(DOC)], TEMPLATE)
             ci.check(dict(PR, title="IGNITE-456 Clarify the timeout", body=""), [file(DOC)], TEMPLATE)
-        evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result")
+        evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result", review_note="")
         with patch.object(ci, "content", return_value=(TEXT, "blob")), patch.object(ci, "review_lines", return_value=[]), \
                 patch.object(ci, "verify_vote", return_value=evidence):
             ci.check(dict(PR, title="IGNITE-456 Extend the plan"), [file(DOC)], TEMPLATE)
@@ -167,6 +167,34 @@ class RFCCheckTest(unittest.TestCase):
             with self.assertRaisesRegex(ci.CheckError, "PR description") as caught:
                 ci.result_link(dict(PR, body=""))
         self.assertIn("RFC-result:", caught.exception.result.author)
+        self.assertIn("Discuss the RFC", caught.exception.result.author)
+        self.assertIn("Review the proposal", caught.exception.result.reviewer)
+
+    def test_separate_result_uses_opening_from_review_of_this_result(self):
+        opening = "https://lists.apache.org/thread/opening"
+
+        def verify(*args, reviewer_opening):
+            if reviewer_opening() != opening:
+                raise ci.OpeningReviewRequired("The result does not identify its opening vote.")
+            return SimpleNamespace(versions={DOC: "voted"}, tally="positive result", review_note="")
+
+        with patch.object(ci, "content", return_value=(TEXT, "blob")), patch.object(ci, "verify_vote", side_effect=verify):
+            line = f"RFC-verified: {RESULT} {opening} checked the vote and RFC text"
+            with patch.object(ci, "review_lines", return_value=[line.replace(RESULT, RESULT + "2")]), \
+                    self.assertRaises(ci.CheckError) as caught:
+                ci.check(PR, [file(DOC, "added")], TEMPLATE)
+            self.assertIn("<opening VOTE URL>", caught.exception.result.reviewer)
+            with patch.object(ci, "review_lines", return_value=[line]):
+                self.assertIn("positive result", ci.check(PR, [file(DOC, "added")], TEMPLATE).reason)
+
+    def test_unclear_ballot_and_changed_rfc_are_reported_together(self):
+        evidence = SimpleNamespace(versions={DOC: "voted"}, tally="", review_note="Check the committer's identity.")
+        with patch.object(ci, "content", side_effect=[(TEXT, "current"), (TEXT, "voted")]), \
+                patch.object(ci, "verify_vote", return_value=evidence), patch.object(ci, "review_lines", return_value=[]), \
+                self.assertRaises(ci.CheckError) as caught:
+            ci.check(PR, [file(DOC, "added")], TEMPLATE)
+        self.assertIn("identity", caught.exception.result.reason)
+        self.assertIn("differs from the voted version", caught.exception.result.reason)
 
     def test_archive_outage_calls_for_a_rerun(self):
         """Given an unavailable archive, checking a new RFC asks for readable evidence and a rerun."""

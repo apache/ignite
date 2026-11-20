@@ -71,13 +71,55 @@ class VoteTest(unittest.TestCase):
         self.assertEqual(query["find_parent"], ["true"])
         return {"thread": self.tree[mid]}
 
-    def check(self, url=RESULT):
-        return rfc_vote.verify_vote(url, PR, [RFC])
+    def check(self, url=RESULT, *, reviewer_opening=None):
+        return rfc_vote.verify_vote(url, PR, [RFC], reviewer_opening=reviewer_opening)
 
     def test_separate_result_and_version(self):
         """Given a separate RESULT, following its opening link returns the voted version."""
         self.mails["result"]["body"] = "The vote has passed.\n\n" + VOTE.replace("/thread/", "/thread.html/")
         self.assertEqual(self.check().versions, {RFC: SHA})
+
+    def test_reviewer_can_identify_an_unlinked_opening(self):
+        """Given a standalone RESULT with no vote link, a reviewed opening supplies the file and tally."""
+        self.mails["result"]["body"] = "The vote has passed."
+        with self.assertRaises(rfc_vote.OpeningReviewRequired):
+            self.check()
+        evidence = self.check(reviewer_opening=lambda: VOTE)
+        self.assertEqual(evidence.versions, {RFC: SHA})
+        self.assertEqual(evidence.review_note, "")
+        self.assertIn("alice, bob, carol", evidence.tally)
+
+    def test_reviewer_cannot_override_a_linked_opening(self):
+        """Given links to another PR's vote and a discussion, the result belongs to the linked vote."""
+        self.mails["open"]["body"] = f"https://github.com/apache/ignite/pull/99\n{BLOB}"
+        self.mails["result"]["body"] += "\n" + VOTE.replace("/open", "/discussion")
+        self.mails["discussion"] = mail("discussion", "[DISCUSS] Example", "A discussion.", 0)
+        with self.assertRaisesRegex(rfc_vote.VoteError, "this pull request"):
+            self.check(reviewer_opening=lambda: self.fail("The result already identifies a vote."))
+
+    def test_reviewer_must_choose_among_linked_openings(self):
+        """Given a result linking two votes, a reviewer can select one of those votes."""
+        self.mails["result"]["body"] += "\n" + VOTE.replace("/open", "/older")
+        self.mails["older"] = mail("older", "[VOTE] Earlier proposal", "Earlier proposal.", 0)
+        with self.assertRaises(rfc_vote.OpeningReviewRequired):
+            self.check(reviewer_opening=lambda: VOTE.replace("/open", "/other"))
+        self.assertEqual(self.check(reviewer_opening=lambda: VOTE).opening_url, VOTE)
+
+    def test_unreadable_result_reference_requires_archive_evidence(self):
+        """Given a missing archived reference, a review cannot substitute another opening."""
+        self.mails["result"]["body"] += "\n" + VOTE.replace("/open", "/missing")
+        with self.assertRaisesRegex(rfc_vote.VoteError, "requested message"):
+            self.check(reviewer_opening=lambda: self.fail("The archive response was incomplete."))
+
+    def test_reviewed_opening_cannot_clear_a_failed_vote(self):
+        """Given an unlinked opening, a reviewer-supplied link still rejects an early or failed result."""
+        for body, epoch, reason in [
+            ("The vote has passed.", 72 * 3600, "Fewer than 72"),
+            ("The vote failed.", 10 + 72 * 3600, "says the vote failed"),
+        ]:
+            with self.subTest(reason=reason), patch.dict(self.mails["result"], body=body, epoch=epoch):
+                with self.assertRaisesRegex(rfc_vote.VoteError, reason):
+                    self.check(reviewer_opening=lambda: VOTE)
 
     def test_result_inside_vote_thread(self):
         """Given a RESULT replying to a ballot, its exact permalink identifies the opening."""
@@ -141,14 +183,14 @@ class VoteTest(unittest.TestCase):
     def test_result_and_vote_name_different_proposals(self):
         """Given a standalone RESULT naming another proposal, its opening link needs confirmation."""
         self.mails["result"]["subject"] = "[RESULT] [VOTE] A different RFC"
-        with self.assertRaisesRegex(rfc_vote.ManualReviewRequired, "different subjects"):
-            self.check()
+        self.assertIn("different subjects", self.check().review_note)
 
     def test_ambiguous_ballot_requires_review(self):
         """Given free-form vote text, checking complete evidence requests maintainer interpretation."""
         self.mails["bob"]["body"] = "+1 if the migration plan is confirmed."
-        with self.assertRaises(rfc_vote.ManualReviewRequired):
-            self.check()
+        evidence = self.check()
+        self.assertIn("Manual review", evidence.review_note)
+        self.assertEqual(evidence.versions, {RFC: SHA})
 
 
 if __name__ == "__main__":

@@ -37,8 +37,8 @@ def rules_reference():
     else:
         process = f"{project}/pull/13760/files#diff-964c536dd887c02e46887244405c46d2d8b5e15dc7a4480eb3a33fb64844b15a"
     return (
-        f"This check covers changes to [Ignite's public contracts]({scope}). "
-        f"The [RFC process]({process}) explains how to approve those changes."
+        f"The check flags known files. Reviewers decide whether a change affects [Ignite's public contracts]({scope}). "
+        f"The [RFC process]({process}) explains when a vote is required."
     )
 
 

@@ -44,6 +44,10 @@ class ManualReviewRequired(VoteError):
     """A maintainer must interpret the evidence for this PR and RFC."""
 
 
+class OpeningReviewRequired(VoteError):
+    """A reviewer must identify the vote closed by a separate result."""
+
+
 @dataclass
 class VoteEvidence:
     opening_url: str
@@ -51,6 +55,7 @@ class VoteEvidence:
     elapsed_hours: float
     versions: dict
     tally: str
+    review_note: str = ""
 
 
 def _load_json(url):
@@ -79,11 +84,13 @@ def _archive(endpoint, mid, **params):
     return _load_json(f"{ARCHIVE}/api/{endpoint}.lua?" + urlencode({"id": mid, **params}))
 
 
-def _message(mid):
+def _message(mid, *, skip_other_lists=False):
     mail = _archive("email", mid)
     if not isinstance(mail, dict) or mail.get("id") != mid:
         raise VoteError("Apache Lists did not return the requested message.")
     if mail.get("list") != "<dev.ignite.apache.org>" or mail.get("private") is not False:
+        if skip_other_lists:
+            return None
         raise VoteError("The message must be public and archived on dev@ignite.apache.org.")
     if (not isinstance(mail.get("subject"), str) or not isinstance(mail.get("body"), str)
             or type(mail.get("epoch")) is not int):
@@ -118,6 +125,30 @@ def _is_opening(mail):
     return subject.startswith("[VOTE]") and "[RESULT]" not in subject
 
 
+def _separate_opening(result, reviewer_opening):
+    try:
+        links = _links(result["body"])
+    except VoteError:
+        # A forwarded message does not establish which links belong to the result.
+        links = set()
+    ids = {match[1] for url in links if (match := PERMALINK.fullmatch(url))}
+    openings = {}
+    for mid in ids:
+        message = _message(mid, skip_other_lists=True)
+        if message and _is_opening(message):
+            openings[mid] = message
+    if len(openings) == 1:
+        return next(iter(openings.values()))
+
+    url = reviewer_opening() if reviewer_opening else None
+    match = PERMALINK.fullmatch(url or "")
+    if not match:
+        raise OpeningReviewRequired("The separate [RESULT] does not identify a single opening [VOTE].")
+    if openings and match[1] not in openings:
+        raise OpeningReviewRequired("Choose one of the opening [VOTE] messages linked from the [RESULT].")
+    return openings.get(match[1]) or _message(match[1])
+
+
 def _topic(mail):
     title = re.sub(r"^\s*(?:(?:\[(?:RESULT|VOTE)\]|Re:)\s*)+", "", mail["subject"], flags=re.I)
     return " ".join(title.casefold().split())
@@ -142,7 +173,7 @@ def _versions(links, paths):
     return versions
 
 
-def verify_vote(result_url, pr_url, rfc_paths, *, minimum_hours=72):
+def verify_vote(result_url, pr_url, rfc_paths, *, minimum_hours=72, reviewer_opening=None):
     """Return archive evidence or raise VoteError. Versions maps file paths to voted commit SHAs.
 
     The caller compares each voted blob with the RFC at the current head. Other link formats
@@ -164,14 +195,10 @@ def verify_vote(result_url, pr_url, rfc_paths, *, minimum_hours=72):
             raise VoteError("The linked [RESULT] is a reply outside an opening [VOTE] thread.")
         vote_thread = result_thread
     else:
-        links = {m[1] for url in _links(result["body"]) if (m := PERMALINK.fullmatch(url))}
-        if len(links) != 1:
-            raise VoteError("The separate [RESULT] must identify one opening [VOTE] permalink.")
-        opening_id = links.pop()
-        opening = _message(opening_id)
-        vote_thread = _thread(opening_id)
-        if vote_thread[0] != opening_id or not _is_opening(opening):
-            raise VoteError("The [RESULT] must link the original opening [VOTE] message.")
+        opening = _separate_opening(result, reviewer_opening)
+        vote_thread = _thread(opening["id"])
+        if vote_thread[0] != opening["id"] or not _is_opening(opening):
+            raise VoteError("The vote link must identify the original opening [VOTE] message.")
 
     links = _links(opening["body"])
     if pr_url.rstrip("/") not in {link.rstrip("/") for link in links}:
@@ -183,22 +210,22 @@ def verify_vote(result_url, pr_url, rfc_paths, *, minimum_hours=72):
 
     reply_ids = dict.fromkeys(vote_thread + result_thread)
     replies = [_message(mid) for mid in reply_ids if mid not in (opening["id"], result_id)]
+    notes = []
     try:
         tally = verify_tally(opening, replies, result, _load_json)
     except VoteError:
         raise
     except ValueError as exc:
-        if str(exc).startswith("Manual review:"):
-            raise ManualReviewRequired(str(exc)) from exc
-        raise VoteError(str(exc)) from exc
+        if not str(exc).startswith("Manual review:"):
+            raise VoteError(str(exc)) from exc
+        notes.append(str(exc))
+        tally = ""
     except (KeyError, TypeError, AttributeError) as exc:
         raise VoteError("Apache returned incomplete committer roster data.") from exc
     if separate_result and _topic(result) != _topic(opening):
-        raise ManualReviewRequired(
-            "Confirm that the separate [RESULT] and [VOTE] with different subjects refer to the same RFC."
-        )
+        notes.append("Confirm that the separate [RESULT] and [VOTE] with different subjects refer to the same RFC.")
 
     return VoteEvidence(
         f"{ARCHIVE}/thread/{opening['id']}", f"{ARCHIVE}/thread/{result_id}",
-        elapsed / 3600, versions, tally,
+        elapsed / 3600, versions, tally, " ".join(notes),
     )
