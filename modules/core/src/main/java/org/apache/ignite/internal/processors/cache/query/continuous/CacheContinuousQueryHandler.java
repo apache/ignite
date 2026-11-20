@@ -1786,9 +1786,7 @@ public final class CacheContinuousQueryHandler<K, V> extends AbstractMessage imp
             evt.entry().partition(),
             evt.entry().updateCounter(),
             evt.entry().topologyVersion(),
-            // The copied flags are cleared first, because the constructor only sets the keep binary bit and never
-            // clears it. The constructor sets the bit again if keepBinary is true.
-            CacheContinuousQueryEntry.removeKeepBinary(evt.entry().flags()));
+            (byte)0);
     }
 
     /**

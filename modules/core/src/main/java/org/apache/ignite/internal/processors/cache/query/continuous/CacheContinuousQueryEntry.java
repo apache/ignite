@@ -303,16 +303,6 @@ public class CacheContinuousQueryEntry extends AbstractMessage implements GridCa
         return oldVal;
     }
 
-    /**
-     * Clears the keep binary flag.
-     *
-     * @param flags Flags.
-     * @return Flags without the keep binary flag.
-     */
-    static byte removeKeepBinary(byte flags) {
-        return (byte)(flags & ~KEEP_BINARY);
-    }
-
     /** {@inheritDoc} */
     @Override public void deploy(GridDeploymentInfo depInfo) {
         this.depInfo = depInfo;
