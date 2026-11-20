@@ -1320,7 +1320,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         for (final ServiceContextImpl srvcCtx : toInit) {
             final Service srvc;
 
-            try {
+            try (Scope ignored = ctx.security().withContext(ctx.localNodeId())) {
                 srvc = copyAndInject(cfg, srvcCtx);
 
                 // Initialize service.
@@ -1358,7 +1358,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
             exe.execute(new Runnable() {
                 @Override public void run() {
-                    try {
+                    try (Scope ignored = ctx.security().withContext(ctx.localNodeId())) {
                         srvc.execute(srvcCtx);
                     }
                     catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
@@ -1531,7 +1531,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
         Service srvc = ctx.service();
 
         if (srvc != null) {
-            try {
+            try (Scope ignored = this.ctx.security().withContext(this.ctx.localNodeId())) {
                 srvc.cancel(ctx);
             }
             catch (Throwable e) {

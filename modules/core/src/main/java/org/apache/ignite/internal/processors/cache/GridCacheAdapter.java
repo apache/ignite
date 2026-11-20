@@ -6123,6 +6123,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      */
     protected abstract static class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
+        /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = 3734584972859205191L;
+
         /** */
         protected final CacheMetricsImpl metrics;
 

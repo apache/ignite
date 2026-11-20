@@ -16,18 +16,40 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
+import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.integration.CacheLoaderException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static javax.cache.expiry.CreatedExpiryPolicy.factoryOf;
 
 /**
  *
@@ -39,6 +61,12 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /** Page size. */
     static final int PAGE_SIZE = 2048;
 
+    /** Size of an entry value that takes a data page of its own. */
+    static final int ENTRY_SIZE = PAGE_SIZE - 200;
+
+    /** Payload of an empty data page: the size of a whole-page fragment of a row. */
+    static final int PAGE_PAYLOAD = PAGE_SIZE - AbstractDataPageIO.MIN_DATA_PAGE_OVERHEAD;
+
     /** Number of entries. */
     static final int ENTRIES = 12_000;
 
@@ -46,10 +74,16 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     private static final int EMPTY_PAGES_POOL_SIZE = 100;
 
     /** Eviction threshold. */
-    private static final double EVICTION_THRESHOLD = 0.9;
+    static final double EVICTION_THRESHOLD = 0.95;
+
+    /** Timeout of the concurrent operations: a deadlock fails the test instead of hanging it. */
+    static final long TIMEOUT = MINUTES.toMillis(1);
 
     /** Default policy name. */
     private static final String DEFAULT_POLICY_NAME = "dfltPlc";
+
+    /** Number of out-of-memory failures reported to the failure handler. */
+    protected static final AtomicInteger OOM_FAILURES = new AtomicInteger();
 
     /**
      * @param mode Eviction mode.
@@ -99,6 +133,26 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new OomCountingFailureHandler();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        OOM_FAILURES.set(0);
+    }
+
+    /**
+     * Checks that no out-of-memory reached the failure handler. It tells a refused reservation, which is reported to the
+     * caller only, from a page memory out-of-memory: the caller sees the same exception cause for both of them.
+     */
+    protected static void assertNoOomFailures() {
+        assertEquals("An out-of-memory must not reach the failure handler", 0, OOM_FAILURES.get());
+    }
+
     /**
      * @param name Name.
      * @param cacheMode Cache mode.
@@ -129,5 +183,128 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
             cacheConfiguration.setNearConfiguration(new NearCacheConfiguration<>());
 
         return cacheConfiguration;
+    }
+
+    /**
+     * @param ignite Node.
+     * @param cacheName Cache name.
+     * @return Atomic cache without expiry.
+     */
+    protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName) {
+        return createCache(ignite, cacheName, 0, false);
+    }
+
+    /**
+     * @param ignite Node.
+     * @param cacheName Cache name.
+     * @param ttl TTL in milliseconds ({@code 0} for no expiry).
+     * @param transactional {@code True} for a transactional cache, {@code false} for an atomic one.
+     * @return Cache with eager TTL expiry if {@code ttl > 0}.
+     */
+    protected static IgniteCache<Integer, Object> createCache(IgniteEx ignite, String cacheName, long ttl, boolean transactional) {
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<Integer, Object>(cacheName)
+            .setAffinity(new RendezvousAffinityFunction(false, 32));
+
+        if (transactional)
+            ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        if (ttl > 0)
+            ccfg.setExpiryPolicyFactory(factoryOf(new Duration(MILLISECONDS, ttl))).setEagerTtl(true);
+
+        return ignite.createCache(ccfg);
+    }
+
+    /** @return Default data region. */
+    protected static DataRegion defaultRegion(IgniteEx ignite) throws IgniteCheckedException {
+        return ignite.context().cache().context().database().dataRegion(null);
+    }
+
+    /** @return The maximum default data region size in bytes. */
+    protected static long regionMaxSize(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).config().getMaxSize();
+    }
+
+    /** @return The page size in bytes for the default data region. */
+    protected static int pageSize(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).pageMemory().pageSize();
+    }
+
+    /** @return The total number of pages in the default data region. */
+    protected static long totalPages(IgniteEx ignite) throws IgniteCheckedException {
+        return regionMaxSize(ignite) / defaultRegion(ignite).pageMemory().systemPageSize();
+    }
+
+    /** @return The number of loaded pages in the default data region. */
+    protected static long loadedPages(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).pageMemory().loadedPages();
+    }
+
+    /** @return {@code true} if page eviction has started in the default data region. */
+    protected static boolean isEvictionsStarted(IgniteEx ignite) throws IgniteCheckedException {
+        return defaultRegion(ignite).metrics().isEvictionsStarted();
+    }
+
+    /** @return Number of pages reserved by in-flight inserts into the free list. */
+    protected static long reservedPages(FreeList<?> freeList) {
+        return ((AbstractFreeList<?>)freeList).reservedPages();
+    }
+
+    /**
+     * Pre-fills the cache with {@code totalPages * fraction} page-sized entries (one data page each), i.e. loads about
+     * {@code fraction} of the default data region. Entries are written with zero-filled {@link #ENTRY_SIZE} byte
+     * values at consecutive keys starting from {@code 0}.
+     *
+     * @param ignite Node.
+     * @param cache Cache.
+     * @param fraction Target fraction of total pages to load (e.g. {@code 0.85}).
+     * @return Number of entries written.
+     * @throws Exception If failed.
+     */
+    protected static int fillRegion(IgniteEx ignite, IgniteCache<Integer, Object> cache, double fraction) throws Exception {
+        int entries = (int)(totalPages(ignite) * fraction);
+
+        byte[] small = new byte[ENTRY_SIZE];
+
+        for (int i = 0; i < entries; i++)
+            cache.put(i, small);
+
+        return entries;
+    }
+
+    /** Counts out-of-memory failures and ignores them (does not stop the node). */
+    private static class OomCountingFailureHandler implements FailureHandler {
+        /** {@inheritDoc} */
+        @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+            if (X.hasCause(failureCtx.error(), IgniteOutOfMemoryException.class))
+                OOM_FAILURES.incrementAndGet();
+
+            return false;
+        }
+    }
+
+    /** */
+    protected static class TestStoreFactory implements Factory<TestCacheStore> {
+        /** {@inheritDoc} */
+        @Override public TestCacheStore create() {
+            return new TestCacheStore();
+        }
+    }
+
+    /** */
+    protected static class TestCacheStore extends CacheStoreAdapter<Integer, byte[]> {
+        /** {@inheritDoc} */
+        @Override public byte[] load(Integer key) throws CacheLoaderException {
+            return new byte[ENTRY_SIZE];
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<? extends Integer, ? extends byte[]> entry) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            // No-op.
+        }
     }
 }
