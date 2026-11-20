@@ -30,7 +30,7 @@ MARKER = re.compile(r"^<!-- ignite-rfc-check (\d+) (\d+) (success|failure) ([a-f
 RESOLVED = "## RFC check passed\n\nThe RFC issues from the previous check are resolved."
 RERUN = (
     "## RFC check needs a rerun\n\n"
-    "The current PR passes the RFC check, but the original GitHub job failed.\n\n"
+    "GitHub still shows a failed job. The current PR passed when the reporter checked again.\n\n"
     "### For the author\n\nRerun the failed RFC process job from the Checks tab.\n\n"
     "### For the reviewer\n\nWait for the RFC process job to pass on this commit."
 )
@@ -52,7 +52,7 @@ def matches(pr, run, repo):
     # Review events on forks can report the base repository as head_repository.
     fork_review = run["event"] == "pull_request_review" and source == repo
     return (
-        run["display_title"] == f"RFC check for PR #{pr['number']}"
+        run.get("display_title") == f"RFC check for PR #{pr['number']}"
         and pr["state"] == "open" and pr["base"]["ref"] == "master" and pr["base"]["repo"]["full_name"] == repo
         and head["repo"] and (head["repo"]["full_name"] == source or fork_review)
         and head["ref"] == run["head_branch"] and head["sha"] == run["head_sha"]
@@ -108,7 +108,7 @@ def prepare(repo, run, destination):
         return
 
     # Fork events can omit workflow_run.pull_requests. Verify the run's PR number against the live head.
-    title = re.fullmatch(r"RFC check for PR #([1-9][0-9]*)", run["display_title"])
+    title = re.fullmatch(r"RFC check for PR #([1-9][0-9]*)", run.get("display_title") or "")
     if not title:
         return
     pr = api(f"{root}/pulls/{title[1]}")
@@ -132,15 +132,14 @@ def update(method, route, body=None):
 def publish(repo, run, context, summary_file, outcome):
     if not eligible(run, repo) or outcome not in {"success", "failure"}:
         return
-    previous = context["pull_request"]
     root = f"repos/{repo}"
-    number = int(previous["number"])
+    number = int(context["pull_request"]["number"])
     route = f"{root}/pulls/{number}"
     comments = []
     for comment in api(f"{root}/issues/{number}/comments?per_page=100", pages=True):
-        user = comment["user"]
+        user = comment.get("user") or {}
         marker = MARKER.match(comment["body"] or "")
-        if user["login"] == "github-actions[bot]" and user["type"] == "Bot" and marker:
+        if user.get("login") == "github-actions[bot]" and user.get("type") == "Bot" and marker:
             comments.append((comment["id"], marker))
 
     source = int(run["id"]), int(run["run_attempt"])
