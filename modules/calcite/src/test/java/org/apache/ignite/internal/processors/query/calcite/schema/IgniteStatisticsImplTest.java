@@ -196,7 +196,7 @@ public class IgniteStatisticsImplTest extends GridCommonAbstractWrapperTest {
     /** */
     @Test
     public void testConcurrentSelectsUseIndex() throws Exception {
-        String query = "select _key, _val from Person where salary >= ? and salary <= ?";
+        String qryStr = "select _key, _val from Person where salary >= ? and salary <= ?";
 
         IgniteEx client = startClientGrid(3);
 
@@ -218,10 +218,10 @@ public class IgniteStatisticsImplTest extends GridCommonAbstractWrapperTest {
             runMultiThreaded(() -> {
                 start.await();
 
-                return cache.query(new SqlFieldsQuery(query).setArgs(0, 1000)).getAll();
+                return cache.query(new SqlFieldsQuery(qryStr).setArgs(0, 1000)).getAll();
             }, 2, "select");
 
-            SqlFieldsQuery qry = new SqlFieldsQuery("EXPLAIN PLAN FOR " + query).setArgs(0, 1000);
+            SqlFieldsQuery qry = new SqlFieldsQuery("EXPLAIN PLAN FOR " + qryStr).setArgs(0, 1000);
             String plan;
 
             try (FieldsQueryCursor<List<?>> cur = cache.withKeepBinary().query(new SqlFieldsQuery(qry).setArgs(0, 1000))) {
