@@ -1330,9 +1330,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * which will acquire explicit locks for relevant cache operations.
      *
      * @param keys Keys to unlock.
+     * @return {@code True} if all the keys were locked by the current thread, {@code false} if the lock on any of
+     *      the keys isn't held by the current thread (for example, it has been released externally).
      * @throws IgniteCheckedException If unlock execution resulted in error.
      */
-    public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+    public boolean unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Checks if any node owns a lock for this key.

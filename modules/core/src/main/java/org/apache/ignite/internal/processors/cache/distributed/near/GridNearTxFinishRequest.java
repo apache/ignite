@@ -46,7 +46,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @param futId Future ID.
      * @param xidVer Transaction ID.
-     * @param threadId Thread ID.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
      * @param plc IO policy.
@@ -57,12 +56,10 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param taskNameHash Task name hash.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
         GridCacheVersion xidVer,
-        long threadId,
         boolean commit,
         boolean invalidate,
         byte plc,
@@ -72,22 +69,19 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         @NotNull AffinityTopologyVersion topVer,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash) {
+        Collection<GridCacheVersion> rolledbackVers) {
         super(
             xidVer,
             futId,
             topVer,
             null,
-            threadId,
             commit,
             invalidate,
             plc,
             syncMode,
             baseVer,
             committedVers,
-            rolledbackVers,
-            taskNameHash
+            rolledbackVers
         );
 
         explicitLock(explicitLock);

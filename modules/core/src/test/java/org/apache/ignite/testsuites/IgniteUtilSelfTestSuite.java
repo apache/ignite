@@ -45,10 +45,7 @@ import org.apache.ignite.internal.util.nio.GridNioServerTest;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKeySelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
 import org.apache.ignite.internal.util.nio.impl.GridNioFilterChainSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMapSelfTest;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemorySelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafePartitionedMapSelfTest;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeStripedLruSefTest;
 import org.apache.ignite.internal.util.tostring.CircularStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilderSelfTest;
 import org.apache.ignite.internal.util.tostring.IncludeSensitiveAtomicTest;
@@ -64,11 +61,8 @@ import org.apache.ignite.util.GridIntListSelfTest;
 import org.apache.ignite.util.GridLogThrottleTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridPartitionMapSelfTest;
-import org.apache.ignite.util.GridQueueSelfTest;
 import org.apache.ignite.util.GridRandomSelfTest;
-import org.apache.ignite.util.GridSnapshotLockSelfTest;
 import org.apache.ignite.util.GridSpinReadWriteLockSelfTest;
-import org.apache.ignite.util.GridStringBuilderFactorySelfTest;
 import org.apache.ignite.util.GridTopologyHeapSizeSelfTest;
 import org.apache.ignite.util.GridTransientTest;
 import org.apache.ignite.util.mbeans.GridMBeanBaselineTest;
@@ -90,8 +84,6 @@ import org.junit.runners.Suite;
     IgniteUtilsUnitTest.class,
     IgniteVersionUtilsSelfTest.class,
     GridSpinReadWriteLockSelfTest.class,
-    GridQueueSelfTest.class,
-    GridStringBuilderFactorySelfTest.class,
     GridToStringBuilderSelfTest.class,
     CircularStringBuilderSelfTest.class,
     GridByteArrayListSelfTest.class,
@@ -108,7 +100,6 @@ import org.junit.runners.Suite;
     GridConcurrentLinkedDequeMultiThreadedTest.class,
     GridLogThrottleTest.class,
     GridRandomSelfTest.class,
-    GridSnapshotLockSelfTest.class,
     GridTopologyHeapSizeSelfTest.class,
     GridTransientTest.class,
     IgniteDevOnlyLogTest.class,
@@ -129,9 +120,6 @@ import org.junit.runners.Suite;
 
     // Unsafe.
     GridUnsafeMemorySelfTest.class,
-    GridUnsafeStripedLruSefTest.class,
-    GridUnsafeMapSelfTest.class,
-    GridUnsafePartitionedMapSelfTest.class,
 
     // NIO.
     GridNioSessionMetaKeySelfTest.class,

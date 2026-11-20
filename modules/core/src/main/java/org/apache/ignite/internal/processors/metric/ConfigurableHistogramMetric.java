@@ -25,4 +25,7 @@ import org.apache.ignite.spi.metric.HistogramMetric;
 public interface ConfigurableHistogramMetric extends HistogramMetric {
     /** Sets bounds for this histogram. */
     public void bounds(long[] bounds);
+
+    /** Checks that the bounds can be set for this histogram, throws {@link IllegalArgumentException} otherwise. */
+    public void checkBounds(long[] bounds);
 }

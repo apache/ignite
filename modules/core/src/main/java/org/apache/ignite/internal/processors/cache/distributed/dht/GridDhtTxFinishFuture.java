@@ -345,13 +345,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             add(fut); // Append new future.
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
-                tx.nearNodeId(),
                 futId,
                 fut.futureId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
                 tx.commitVersion(),
-                tx.threadId(),
                 false,
                 tx.isInvalidate(),
                 tx.ioPolicy(),
@@ -360,7 +358,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
-                tx.taskNameHash(),
                 false,
                 false,
                 cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
@@ -437,13 +434,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
             add(fut); // Append new future.
 
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
-                tx.nearNodeId(),
                 futId,
                 fut.futureId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
                 tx.commitVersion(),
-                tx.threadId(),
                 commit,
                 tx.isInvalidate(),
                 tx.ioPolicy(),
@@ -452,7 +447,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.completedBase(),
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
-                tx.taskNameHash(),
                 false,
                 false,
                 commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
@@ -506,13 +500,11 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 add(fut); // Append new future.
 
                 GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
-                    tx.nearNodeId(),
                     futId,
                     fut.futureId(),
                     tx.topologyVersion(),
                     tx.xidVersion(),
                     tx.commitVersion(),
-                    tx.threadId(),
                     commit,
                     tx.isInvalidate(),
                     tx.ioPolicy(),
@@ -521,7 +513,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.completedBase(),
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
-                    tx.taskNameHash(),
                     false,
                     false,
                     null);

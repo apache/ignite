@@ -65,6 +65,7 @@ import static org.apache.ignite.configuration.SqlConfiguration.DFLT_SQL_PLAN_HIS
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_PLAN_HIST_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.apache.ignite.testframework.GridTestUtils.waitForNextClockTick;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -445,9 +446,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractWrapperTest
 
         firstTs = F.first(getSqlPlanHistory()).lastStartTime().getTime();
 
-        long curTs = U.currentTimeMillis();
-
-        assertTrue(waitForCondition(() -> (U.currentTimeMillis() != curTs), 1000));
+        waitForNextClockTick();
 
         cacheQuery(new SqlFieldsQuery(SQL), "A");
 

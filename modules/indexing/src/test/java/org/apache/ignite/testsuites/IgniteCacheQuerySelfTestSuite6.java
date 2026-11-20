@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerPartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerRandomOperationsTest;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousWithTransformerUnregisteredClassTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationNearEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationStoreEnabledTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheKeepBinaryIterationTest;
@@ -61,6 +62,7 @@ import org.junit.runners.Suite;
     IgniteInsertNullableDuplicatesSqlTest.class,
     GridCacheContinuousQueryPartitionAtomicOneNodeTest.class,
     CacheContinuousWithTransformerPartitionedSelfTest.class,
+    CacheContinuousWithTransformerUnregisteredClassTest.class,
     GridCacheContinuousQueryReplicatedAtomicOneNodeTest.class,
     ContinuousQueryMarshallerTest.class,
     GridCacheContinuousQueryReplicatedAtomicSelfTest.class,

@@ -65,7 +65,17 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
     /** */
     @Test
     public void testBasic() throws Exception {
-        ProtocolVersion srvVer = ProtocolVersion.V1_6_0;
+        testBasic(ProtocolVersion.V1_6_0);
+    }
+
+    /** Tests a server with feature negotiation but without connection ID support. */
+    @Test
+    public void testWithoutConnectionIdFeature() throws Exception {
+        testBasic(ProtocolVersion.V1_7_0);
+    }
+
+    /** @param srvVer Server protocol version. */
+    private void testBasic(ProtocolVersion srvVer) throws Exception {
         try (FakeIgniteServer srv = new FakeIgniteServer(LOCALHOST, SRV_PORT, log(), srvVer)) {
             srv.start();
 
@@ -95,6 +105,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
                 assertEquals(SRV_PORT, hsStartEv.connectionDescription().remoteAddress().getPort());
                 assertEquals(LOCALHOST, hsStartEv.connectionDescription().localAddress().getAddress());
                 assertEquals(null, hsStartEv.connectionDescription().serverNodeId());
+                assertNull(hsStartEv.connectionDescription().connectionId());
 
                 HandshakeSuccessEvent hsSuccEv = (HandshakeSuccessEvent)evSet.get(HandshakeSuccessEvent.class);
 
@@ -103,6 +114,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
                 assertEquals(SRV_PORT, hsSuccEv.connectionDescription().remoteAddress().getPort());
                 assertEquals(LOCALHOST, hsSuccEv.connectionDescription().localAddress().getAddress());
                 assertEquals(srv.nodeId(), hsSuccEv.connectionDescription().serverNodeId());
+                assertNull(hsSuccEv.connectionDescription().connectionId());
                 assertTrue(System.nanoTime() - startNano >= hsSuccEv.elapsedTime(TimeUnit.NANOSECONDS));
             }
 
@@ -115,6 +127,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
             assertEquals(SRV_PORT, closedEv.connectionDescription().remoteAddress().getPort());
             assertEquals(LOCALHOST, closedEv.connectionDescription().localAddress().getAddress());
             assertEquals(srv.nodeId(), closedEv.connectionDescription().serverNodeId());
+            assertNull(closedEv.connectionDescription().connectionId());
         }
     }
 
@@ -213,6 +226,7 @@ public class IgniteClientConnectionEventListenerTest extends GridCommonAbstractT
             Event failEv = (Event)evSet.get(eventCls);
 
             assertNotNull(failEv);
+            assertNull(failEv.connectionDescription().connectionId());
             assertEquals(failEv.connectionDescription().protocol(), "ProtocolContext [version=" + ProtocolVersion.V1_7_0
                 + ", features=[]]");
             assertEquals(LOCALHOST, failEv.connectionDescription().remoteAddress().getAddress());

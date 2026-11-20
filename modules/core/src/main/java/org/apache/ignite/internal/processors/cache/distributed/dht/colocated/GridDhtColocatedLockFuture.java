@@ -140,6 +140,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Lock wait timeout. */
     private final long waitTimeout;
 
+    /** Time when the first primary batch starts, or zero before mapping. */
+    private long lockWaitStartTime;
+
     /** Transaction. */
     @GridToStringExclude
     private final GridNearTxLocal tx;
@@ -185,6 +188,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** */
     private boolean trackable = true;
+
+    /** Whether the thread already holds some of the keys. */
+    private boolean reentrant;
 
     /**
      * @param cctx Registry.
@@ -324,8 +330,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      *
      * @param entry Entry to add.
      * @return Non-reentry candidate if lock should be acquired on remote node,
-     *      reentry candidate if locks has been already acquired and {@code null} if explicit locks is held and
-     *      implicit transaction accesses locked entry.
+     *      reentry candidate if the key is repeated in the collection and {@code null} if the thread already holds
+     *      the key, within an implicit transaction or the thread locks it again.
      * @throws IgniteCheckedException If failed to add entry due to external locking.
      */
     @Nullable private GridCacheMvccCandidate addEntry(GridDistributedCacheEntry entry) throws IgniteCheckedException {
@@ -386,13 +392,30 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                 cand.topologyVersion(topVer);
             }
-            else
+            else if (cand.version().equals(lockVer))
+                // Key repeated in lockAll([k, k]): this attempt created the base, the reentry is released with it on failure.
                 cand = cand.reenter();
+            else {
+                // The thread already holds the key.
+                reentrant = true;
+
+                return null;
+            }
 
             cctx.mvcc().addExplicitLock(threadId, cand, topVer);
         }
 
         return cand;
+    }
+
+    /** Reenters the keys the thread already held, on success only: a failed attempt has nothing to release on them. */
+    private void reenterHeldKeys() {
+        for (KeyCacheObject key : keys) {
+            GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId, cctx.txKey(key));
+
+            if (cand != null && !cand.version().equals(lockVer))
+                cctx.mvcc().addExplicitLock(threadId, cand.reenter(), cand.topologyVersion());
+        }
     }
 
     /**
@@ -601,6 +624,11 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     }
             }
         }
+        else if (timeoutObj != null) {
+            synchronized (timeoutObj) {
+                return onComplete(false, true);
+            }
+        }
 
         return onComplete(false, true);
     }
@@ -666,6 +694,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (!rollback)
                 tx.clearLockFuture(this);
         }
+
+        if (success && reentrant)
+            reenterHeldKeys();
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
@@ -777,7 +808,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         if (isDone()) // Possible due to async rollback.
             return;
 
-        if (lockTimeout() > 0) {
+        if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);
@@ -933,10 +964,15 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      */
     private void map(Collection<KeyCacheObject> keys, boolean remap, boolean topLocked) {
         try {
-            map0(
-                keys,
-                remap,
-                topLocked);
+            if (tx != null || timeoutObj == null)
+                map0(keys, remap, topLocked);
+            else {
+                // Same monitor as in the timeout and cancel(); transactions release their locks on rollback.
+                synchronized (timeoutObj) {
+                    if (!isDone())
+                        map0(keys, remap, topLocked);
+                }
+            }
         }
         catch (IgniteCheckedException ex) {
             onDone(false, ex);
@@ -1091,7 +1127,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         isolation(),
                                         isInvalidate(),
                                         timeout,
-                                        waitTimeout,
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
                                         inTx() && tx.syncMode() == FULL_SYNC,
@@ -1217,9 +1252,24 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         final Collection<KeyCacheObject> mappedKeys = map.distributedKeys();
         final ClusterNode node = map.node();
 
+        long remainingWaitTimeout = waitTimeout;
+
+        if (waitTimeout > 0) {
+            long now = U.currentTimeMillis();
+
+            if (lockWaitStartTime == 0)
+                lockWaitStartTime = now;
+
+            long elapsed = now - lockWaitStartTime;
+
+            remainingWaitTimeout = elapsed < waitTimeout ? waitTimeout - elapsed : -1;
+        }
+
         if (node.isLocal())
-            lockLocally(mappedKeys, req.topologyVersion());
+            lockLocally(mappedKeys, req.topologyVersion(), remainingWaitTimeout);
         else {
+            req.waitTimeout(remainingWaitTimeout);
+
             final MiniFuture fut = new MiniFuture(node, mappedKeys, ++miniId);
 
             req.miniId(fut.futureId());
@@ -1247,10 +1297,12 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * Locks given keys directly through dht cache.
      * @param keys Collection of keys.
      * @param topVer Topology version to lock on.
+     * @param remainingWaitTimeout Remaining lock wait budget for this batch.
      */
     private void lockLocally(
         final Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        long remainingWaitTimeout
     ) {
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
@@ -1264,7 +1316,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             read,
             retval,
             timeout,
-            waitTimeout,
+            remainingWaitTimeout,
             createTtl,
             accessTtl,
             skipStore,
@@ -1385,7 +1437,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
             }
 
-            lockLocally(distributedKeys, topVer);
+            lockLocally(distributedKeys, topVer, waitTimeout);
         }
 
         GridDhtPartitionsExchangeFuture lastFinishedFut = cctx.shared().exchange().lastFinishedFuture();
@@ -1493,13 +1545,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     }
 
     /**
-     * @return Timeout value for this lock future.
-     */
-    private long lockTimeout() {
-        return CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout) ? waitTimeout : timeout;
-    }
-
-    /**
      * Lock request timeout object.
      */
     private class LockTimeoutObject extends GridTimeoutObjectAdapter {
@@ -1507,7 +1552,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
          * Default constructor.
          */
         LockTimeoutObject() {
-            super(lockTimeout());
+            super(timeout);
         }
 
         /** Requested keys. */
@@ -1517,20 +1562,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         @Override public void onTimeout() {
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
-
-            if (CU.isWaitTimeoutExpiresFirst(waitTimeout, timeout)) {
-                synchronized (GridDhtColocatedLockFuture.this) {
-                    requestedKeys = requestedKeys0();
-
-                    clear(); // Stop response processing.
-                }
-
-                synchronized (this) {
-                    onComplete(false, true, false);
-                }
-
-                return;
-            }
 
             if (inTx()) {
                 if (cctx.tm().deadlockDetectionEnabled()) {

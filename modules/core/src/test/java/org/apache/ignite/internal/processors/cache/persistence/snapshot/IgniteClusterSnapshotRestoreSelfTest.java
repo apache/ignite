@@ -857,15 +857,6 @@ public class IgniteClusterSnapshotRestoreSelfTest extends IgniteClusterSnapshotR
 
         ign.cluster().state(ClusterState.ACTIVE);
 
-        GridTestUtils.waitForCondition(() -> {
-            for (int n = 0; n < nodes; n++) {
-                if (grid(n).context().state().clusterState().transition())
-                    return false;
-            }
-
-            return true;
-        }, getTestTimeout());
-
         ign.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(DEFAULT_CACHE_NAME)).get(TIMEOUT);
 
         assertCacheKeys(ign.cache(DEFAULT_CACHE_NAME), keysCnt);

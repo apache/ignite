@@ -165,12 +165,6 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         assertContains(
             log,
-            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, "some.metric", "3,2,1"),
-            "Bounds must be sorted"
-        );
-
-        assertContains(
-            log,
             executeCommand(
                 EXIT_CODE_INVALID_ARGUMENTS,
                 CMD_METRIC,
@@ -201,6 +195,12 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         assertEquals(2, bounds.length);
         assertEquals(50, bounds[0]);
         assertEquals(500, bounds[1]);
+
+        assertContains(
+            log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CMD_METRIC, CONFIGURE_HISTOGRAM, histogram.name(), "3,2,1"),
+            "bounds should be sorted"
+        );
 
         executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HISTOGRAM, histogram.name(), "1,2,3");
 

@@ -5392,8 +5392,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void beforeBinaryMemoryRestore(
             IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
-            for (DynamicCacheDescriptor cacheDescriptor : persistentCaches())
-                preparePageStore(cacheDescriptor, true);
+            // Reserve at least 2 threads for system operations.
+            int parallelismLvl = U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2);
+
+            doInParallel(
+                parallelismLvl,
+                ctx.pools().getSystemExecutorService(),
+                persistentCaches(),
+                cacheDescriptor -> {
+                    preparePageStore(cacheDescriptor, true);
+
+                    return null;
+                }
+            );
         }
 
         /** {@inheritDoc} */

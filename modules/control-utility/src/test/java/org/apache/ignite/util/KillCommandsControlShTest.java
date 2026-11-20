@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -38,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -46,10 +48,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_CONNECTION_FAILED;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.doSnapshotCancellationTest;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
@@ -163,6 +167,50 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
 
             assertEquals(EXIT_CODE_OK, res);
         });
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testKillLock() throws Exception {
+        int key = 0;
+
+        Lock lock = client.cache(DEFAULT_CACHE_NAME).lock(key);
+
+        // Explicit lock is bound to the thread and stays held after the thread finishes.
+        long threadId = GridTestUtils.runAsync(() -> {
+            lock.lock();
+
+            return Thread.currentThread().getId();
+        }).get();
+
+        CacheExplicitLockView view = F.find(client.context().systemView().view(CACHE_EXPLICIT_LOCKS_VIEW), null,
+            v -> v.threadId() == threadId);
+
+        assertNotNull(view);
+
+        IgniteUuid xid = view.xid();
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--kill", "lock", xid.toString()));
+
+        Lock srvLock = srvs.get(0).cache(DEFAULT_CACHE_NAME).lock(key);
+
+        assertTrue(srvLock.tryLock(getTestTimeout(), MILLISECONDS));
+
+        srvLock.unlock();
+
+        assertContains(log, testOut.toString(),
+            "Lock with xid " + xid + " has been killed on node " + client.localNode().id() + '.');
+
+        String notFoundMsg = "Lock with xid " + xid + " is not found.";
+
+        assertNotContains(log, testOut.toString(), notFoundMsg);
+
+        // The lock is already killed.
+        assertEquals(EXIT_CODE_OK, execute("--kill", "lock", xid.toString()));
+
+        assertContains(log, testOut.toString(), notFoundMsg);
     }
 
     /** @throws Exception If failed. */

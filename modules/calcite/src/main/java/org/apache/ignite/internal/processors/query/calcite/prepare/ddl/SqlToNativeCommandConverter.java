@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlDropUser
 import org.apache.ignite.internal.processors.query.calcite.sql.IgniteSqlKill;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillComputeTask;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillContinuousQuery;
+import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillLock;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillScanQuery;
 import org.apache.ignite.internal.processors.query.calcite.sql.kill.IgniteSqlKillService;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.sql.command.SqlDropViewCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.sql.command.SqlKillComputeTaskCommand;
 import org.apache.ignite.internal.sql.command.SqlKillContinuousQueryCommand;
+import org.apache.ignite.internal.sql.command.SqlKillLockCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillScanQueryCommand;
 import org.apache.ignite.internal.sql.command.SqlKillServiceCommand;
@@ -266,6 +268,11 @@ public class SqlToNativeCommandConverter {
         else if (cmd instanceof IgniteSqlKillQuery) {
             IgniteSqlKillQuery cmd0 = (IgniteSqlKillQuery)cmd;
             return new SqlKillQueryCommand(cmd0.nodeId(), cmd0.queryId(), cmd0.isAsync());
+        }
+        else if (cmd instanceof IgniteSqlKillLock) {
+            IgniteSqlKillLock cmd0 = (IgniteSqlKillLock)cmd;
+            IgniteUuid xid = IgniteUuid.fromString(cmd0.xid().getValueAs(String.class));
+            return new SqlKillLockCommand(xid);
         }
         else {
             throw new IgniteSQLException("Unsupported native operation [" +

@@ -75,8 +75,12 @@ See link:security/authentication[Authentication] and link:sql-reference/ddl#crea
 |Number of rows returned in response to a fetching request to the data source. Default value should be fine in most cases. Setting a low value can result in slow data fetching while setting a high value can result in additional memory usage by the driver, and additional delay when the next page is being retrieved.
 |`1024`
 
+|`QUERY_ENGINE`
+|Name of the SQL engine that executes the queries of this connection: `calcite` or `h2`. The engine must be available on the server, see link:SQL/sql-calcite#configuring-query-engines[Configuring Query Engines]; otherwise the connection fails with `Not found configuration for query engine: <name>`. See also link:SQL/sql-calcite#routing-queries-to-query-engine[Routing Queries to Query Engine].
+|The default engine of the server
+
 |`DISTRIBUTED_JOINS`
-|Enables the link:SQL/distributed-joins#non-colocated-joins[non-colocated distributed joins] feature for all queries that are executed over the ODBC connection.
+|Enables the link:SQL/distributed-joins#non-colocated-joins[non-colocated distributed joins] feature for all queries that are executed over the ODBC connection. Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only; the Calcite-based engine executes non-colocated joins without this flag.
 |`false`
 
 |`ENFORCE_JOIN_ORDER`
@@ -88,7 +92,7 @@ See link:security/authentication[Authentication] and link:sql-reference/ddl#crea
 |`2.3.0`
 
 |`REPLICATED_ONLY`
-|Set this property to `true` if the query is to be executed over fully replicated tables. This can enforce execution optimizations.
+|Deprecated. The attribute is ignored by both SQL engines since version 2.8.
 |`false`
 
 |`COLLOCATED`
@@ -97,10 +101,11 @@ or affinity key. When Ignite executes a distributed query, it sends sub-queries 
 you know in advance that the elements of your query selection are colocated together on the same node and you group by
 a primary or affinity key, then Ignite makes significant performance and network optimizations by grouping data locally
  on each node participating in the query.
+Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only; the Calcite-based engine ignores it.
 |`false`
 
 |`SKIP_REDUCER_ON_UPDATE`
-|Enables server side update feature.
+|Enables server side update feature. Applies to the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] only.
 When Ignite executes a DML operation, first, it fetches all the affected intermediate rows for analysis to the query initiator (also known as reducer), and only then prepares batches of updated values that will be sent to remote nodes.
 This approach might affect performance, and saturate the network if a DML operation has to move many entries over it.
 Use this flag to tell Ignite to do all intermediate rows analysis and updates "in-place" on corresponding remote data nodes.

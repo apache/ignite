@@ -19,9 +19,12 @@ If the tables are joined on the partitioning column (affinity key), the join is 
 
 Colocated joins are more efficient because they can be effectively distributed between the cluster nodes.
 
-By default, Ignite treats each join query as if it is a colocated join and executes it accordingly (see the corresponding section below).
+The Calcite-based SQL engine (the default) executes both kinds of joins correctly without additional settings: the query planner detects that the joined data is not colocated and inserts data exchange operators into the execution plan. Colocation still matters for performance, see the recommendation below.
 
-WARNING: If your query is non-colocated, you have to enable the non-colocated mode of query execution by setting `SqlFieldsQuery.setDistributedJoins(true)`; otherwise, the results of the query execution may be incorrect.
+[NOTE]
+====
+The link:SQL/sql-calcite#legacy-h2-engine[legacy H2 engine] treats each join query as a colocated join by default. If your query is non-colocated and runs on the H2 engine, you have to enable the non-colocated mode of query execution by setting `SqlFieldsQuery.setDistributedJoins(true)` (the `distributedJoins` JDBC parameter or the `DISTRIBUTED_JOINS` ODBC attribute); otherwise, the results of the query execution may be incorrect. The Calcite-based engine ignores this flag.
+====
 
 [CAUTION]
 ====
@@ -36,9 +39,9 @@ The following image illustrates the procedure of executing a colocated join. A c
 
 image::images/collocated_joins.png[]
 
-=== Limitations
+=== Limitations of the Legacy H2 Engine
 
-Collocation joins have the following known limitations:
+Colocated joins executed by the legacy H2 engine have the following known limitations:
 
 ==== OUTER JOIN and REPLICATED Tables
 
@@ -60,7 +63,11 @@ If all of the above is true, then the JOIN can be performed correctly.
 
 == Non-colocated Joins
 
-If you execute a query in a non-colocated mode, the SQL Engine executes the query locally on all the nodes that store the data matching the query condition. But because the data is not colocated, each node will request missing data (that is not present locally) from other nodes by sending either broadcast or unicast requests. This process is depicted on the image below.
+With the Calcite-based engine, a non-colocated join needs no special mode. The planner chooses how to distribute the join: it either re-partitions one or both sides of the join by the join keys, so that the matching rows meet on the same node, or collects both sides on a single node; a replicated table is joined locally on every node. The distribution cannot be set by a hint; the join link:SQL/sql-calcite#hints[hints] select the join algorithm. Use `EXPLAIN PLAN FOR` to see the chosen plan.
+
+The rest of this section describes the non-colocated mode of the legacy H2 engine.
+
+If you execute a query in a non-colocated mode, the H2 engine executes the query locally on all the nodes that store the data matching the query condition. But because the data is not colocated, each node will request missing data (that is not present locally) from other nodes by sending either broadcast or unicast requests. This process is depicted on the image below.
 
 image::images/non_collocated_joins.png[]
 

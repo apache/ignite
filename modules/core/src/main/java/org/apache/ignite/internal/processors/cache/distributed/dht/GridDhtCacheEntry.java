@@ -190,7 +190,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
-                for (GridCacheMvccCandidate c : mvcc.localCandidatesNoCopy(false)) {
+                for (GridCacheMvccCandidate c : mvcc.localCandidatesNoCopy()) {
                     GridCacheVersion ver = c.otherVersion();
 
                     if (ver != null && ver.equals(nearVer))
@@ -218,7 +218,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @param ver Lock version.
      * @param serOrder Version for serializable transactions ordering.
      * @param timeout Timeout to acquire lock.
-     * @param reenter Reentry flag.
      * @param tx Tx flag.
      * @param implicitSingle Implicit flag.
      * @param read Read lock flag.
@@ -234,13 +233,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         GridCacheVersion ver,
         @Nullable GridCacheVersion serOrder,
         long timeout,
-        boolean reenter,
         boolean tx,
         boolean implicitSingle,
         boolean read)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
-        assert !reenter || serOrder == null;
-
         GridCacheMvccCandidate cand;
         CacheLockCandidates prev;
         CacheLockCandidates owner;
@@ -276,7 +272,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 ver,
                 timeout,
                 serOrder,
-                reenter,
                 tx,
                 implicitSingle,
                 /*dht-local*/true,
@@ -306,10 +301,8 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             unlockEntry();
         }
 
-        // Don't link reentries.
-        if (!cand.reentry())
-            // Link with other candidates in the same thread.
-            cctx.mvcc().addNext(cctx, cand);
+        // Link with other candidates in the same thread.
+        cctx.mvcc().addNext(cctx, cand);
 
         checkOwnerChanged(prev, owner, val);
 
@@ -320,7 +313,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
         @Nullable GridCacheVersion serOrder,
-        GridCacheVersion serReadVer,
         boolean read
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
@@ -335,7 +327,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 tx.xidVersion(),
                 serOrder,
                 timeout,
-                /*reenter*/false,
                 /*tx*/true,
                 tx.implicitSingle(),
                 read) != null;
@@ -827,13 +818,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         finally {
             unlockEntry();
         }
-    }
-
-    /**
-     * @return Cache name.
-     */
-    protected final String cacheName() {
-        return cctx.name();
     }
 
     /** {@inheritDoc} */

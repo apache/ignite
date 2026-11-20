@@ -20,7 +20,6 @@ package org.apache.ignite.internal.management.metric;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** */
 public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
@@ -40,9 +39,6 @@ public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
 
     /** */
     public void newBounds(long[] bounds) {
-        if (!F.isSorted(bounds))
-            throw new IllegalArgumentException("Bounds must be sorted");
-
         this.newBounds = bounds;
     }
 }

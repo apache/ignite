@@ -1405,7 +1405,7 @@ public class BinaryUtils {
      * @return {@code True} if {@code val} instance of {@code BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {
-        return val instanceof BinaryObjectEx && ((BinaryObjectEx)val).isArray();
+        return binariesFactory.binaryArrayClass().isInstance(val);
     }
 
     /** @return {@code True} if typed arrays should be used, {@code false} otherwise. */

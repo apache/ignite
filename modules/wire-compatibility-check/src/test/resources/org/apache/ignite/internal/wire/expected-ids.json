@@ -1,0 +1,4 @@
+{
+  "42": "org.apache.ignite.internal.wire.TestMessage",
+  "5000": "org.apache.ignite.internal.managers.communication.CompressedMessage"
+}

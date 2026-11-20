@@ -97,9 +97,6 @@ public class DiscoCache {
     final Map<UUID, Short> nodeIdToConsIdx;
 
     /** */
-    final Map<Short, UUID> consIdxToNodeId;
-
-    /** */
     private final P1<BaselineNode> aliveBaselineNodePred;
 
     /** */
@@ -119,7 +116,6 @@ public class DiscoCache {
      * @param nodeMap Node map.
      * @param alives0 Alive nodes.
      * @param nodeIdToConsIdx Node ID to consistent ID mapping.
-     * @param consIdxToNodeId Consistent ID to node ID mapping.
      * @param minNodeVer Minimum node version.
      */
     DiscoCache(
@@ -136,7 +132,6 @@ public class DiscoCache {
         Map<UUID, ClusterNode> nodeMap,
         Set<UUID> alives0,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
-        @Nullable Map<Short, UUID> consIdxToNodeId,
         IgniteProductVersion minNodeVer,
         IgniteProductVersion minSrvNodeVer
     ) {
@@ -155,7 +150,6 @@ public class DiscoCache {
         this.minNodeVer = minNodeVer;
         this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
-        this.consIdxToNodeId = consIdxToNodeId;
 
         aliveBaselineNodePred = new P1<BaselineNode>() {
             @Override public boolean apply(BaselineNode node) {
@@ -238,11 +232,6 @@ public class DiscoCache {
     /** @return Consistent id map UUID -> Short (compacted consistent id). */
     public Map<UUID, Short> consistentIdMap() {
         return nodeIdToConsIdx;
-    }
-
-    /** @return Consistent id map Short (compacted consistent id) -> UUID. */
-    public Map<Short, UUID> nodeIdMap() {
-        return consIdxToNodeId;
     }
 
     /**
@@ -460,7 +449,6 @@ public class DiscoCache {
             nodeMap,
             alives,
             nodeIdToConsIdx,
-            consIdxToNodeId,
             minNodeVer,
             minSrvNodeVer);
     }

@@ -76,7 +76,8 @@ The minimum set of jars for Ignite.NET is:
 
 * `ignite-core-{VER}.jar`
 * `cache-api-1.0.0.jar`
-* `ignite-indexing` folder (if SQL queries are used)
+* `ignite-calcite` folder (if SQL queries are used)
+* `ignite-indexing` folder (if the link:SQL/sql-calcite#legacy-h2-engine[legacy H2 SQL engine] is used)
 * `ignite-spring` folder (if a Spring XML configuration is used)
 
 === Deploying JARs to a default location:

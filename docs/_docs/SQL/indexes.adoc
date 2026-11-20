@@ -21,7 +21,7 @@ In addition to common DDL commands, such as CREATE/DROP INDEX, developers can us
 
 [NOTE]
 ====
-Indexing capabilities are provided by the 'ignite-indexing' module. If you start Ignite from Java code, link:setup#enabling-modules[add this module to your classpath].
+SQL and indexes are provided by the `ignite-calcite` module, which is enabled in the binary distribution by default. If you start Ignite from Java code, link:setup#enabling-modules[add this module to your classpath]. See link:SQL/sql-calcite[SQL Engines] for details.
 ====
 
 Ignite automatically creates indexes for each primary key and affinity key field.
@@ -159,6 +159,8 @@ tab:C++[unsupported]
 
 This method accepts only pairs of types: one for key class and another for value class. Primitives are passed as boxed types.
 
+In Java, repeated `CacheConfiguration.setIndexedTypes(...)` calls replace the previously registered types and query entities. To register multiple key/value type pairs, pass all pairs in the same call. Do not combine this method with `CacheConfiguration.setQueryEntities(...)` on the same configuration instance.
+
 [NOTE]
 ====
 [discrete]
@@ -196,6 +198,15 @@ NOTE: Annotating a field with `@QuerySqlField.Group` outside of `@QuerySqlField(
 Indexes and queryable fields can also be configured via the `org.apache.ignite.cache.QueryEntity` class which is convenient for Spring XML based configuration.
 
 All concepts that are discussed as part of the annotation based configuration above are also valid for the `QueryEntity` based approach. Furthermore, the types whose fields are configured with the `@QuerySqlField` annotation and are registered with the `CacheConfiguration.setIndexedTypes()` method are internally converted into query entities.
+
+[IMPORTANT]
+====
+The internal conversion does not allow combining the two Java configuration APIs. Calling both `setIndexedTypes(...)` and `setQueryEntities(...)` on the same `CacheConfiguration` throws `CacheException`.
+
+When using `setQueryEntities(...)`, provide the complete collection of query entities with all required index definitions. Repeated calls replace the collection rather than merge it.
+
+See link:SQL/sql-api#repeated-configuration-calls[Repeated Configuration Calls].
+====
 
 The example below shows how to define a single field index, group indexes, and queryable fields.
 
@@ -244,7 +255,7 @@ Use the link:sql-reference/ddl#create-index[CREATE/DROP INDEX] command if you ne
 
 Proper index inline size can help speed up queries on indexed fields.
 //For primitive types and BinaryObjects, Ignite uses a predefined inline index size
-Refer to the dedicated section in the link:SQL/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
+Refer to the dedicated section in the link:perf-and-troubleshooting/sql-tuning#increasing-index-inline-size[SQL Tuning guide] for the information on how to choose a proper inline size.
 
 In most cases, you will only need to set the inline size for indexes on variable-length fields, such as strings or arrays.
 The default value is 10.

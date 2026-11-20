@@ -73,7 +73,7 @@ public class QueryParser {
         "^(create|drop)\\s+index|^analyze\\s|^refresh\\s+statistics|^drop\\s+statistics|^alter\\s+table|^copy" +
             "|^set|^begin|^start|^commit|^rollback|^(create|alter|drop)\\s+user" +
             "|^(create|create\\s+or\\s+replace|drop)\\s+view" +
-            "|^kill\\s+(query|scan|continuous|compute|service|transaction|client)|show|help|grant|revoke",
+            "|^kill\\s+(query|scan|continuous|compute|service|transaction|client|lock)|show|help|grant|revoke",
         Pattern.CASE_INSENSITIVE);
 
     /** Indexing. */
@@ -515,7 +515,8 @@ public class QueryParser {
                         IgniteQueryErrorCode.DB_UNRECOVERABLE_ERROR, e);
                 }
                 else
-                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+                    throw new IgniteSQLException("Failed to parse query. " + e.getMessage(),
+                        H2Utils.h2ErrorCode(e.getErrorCode()), e);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteSQLException("Failed to parse query. " + e.getMessage(), IgniteQueryErrorCode.PARSING, e);

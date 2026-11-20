@@ -80,7 +80,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.thread.IgniteThread;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -723,10 +722,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long timeout,
         long waitTimeout,
         IgniteTxLocalEx txx,
-        boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        TransactionIsolation isolation,
         long createTtl,
         long accessTtl) {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -736,10 +733,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             timeout,
             waitTimeout,
             txx,
-            isInvalidate,
             isRead,
             retval,
-            isolation,
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
@@ -755,10 +750,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param timeout Transaction timeout.
      * @param waitTimeout Lock wait timeout.
      * @param txx Transaction.
-     * @param isInvalidate Invalidate flag.
      * @param isRead Read flag.
      * @param retval Return value flag.
-     * @param isolation Transaction isolation.
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
@@ -770,10 +763,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long timeout,
         long waitTimeout,
         IgniteTxLocalEx txx,
-        boolean isInvalidate,
         boolean isRead,
         boolean retval,
-        TransactionIsolation isolation,
         long createTtl,
         long accessTtl,
         boolean skipStore,
@@ -1484,7 +1475,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         entry.doneRemote(
                             req.version(),
                             req.version(),
-                            null,
                             null,
                             null,
                             /*system invalidate*/false);

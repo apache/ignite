@@ -34,6 +34,10 @@ import org.jetbrains.annotations.NotNull;
  *
  */
 class CacheLockImpl<K, V> implements Lock {
+    /** */
+    private static final String LOCK_CANCELLED_MSG = "Failed to acquire lock, the lock request has been cancelled " +
+        "(was the lock killed?).";
+
     /** Gateway. */
     private final GridCacheGateway<K, V> gate;
 
@@ -76,7 +80,8 @@ class CacheLockImpl<K, V> implements Lock {
         try {
             checkTx();
 
-            delegate.lockAll(keys, 0);
+            if (!delegate.lockAll(keys, 0))
+                throw new CacheException(LOCK_CANCELLED_MSG);
 
             incrementLockCounter();
         }
@@ -104,7 +109,9 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void lockInterruptibly() throws InterruptedException {
-        tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+        // The lock can't be timed out, so it is not acquired only if it is cancelled.
+        if (!tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS))
+            throw new CacheException(LOCK_CANCELLED_MSG);
     }
 
     /** {@inheritDoc} */
@@ -212,7 +219,11 @@ class CacheLockImpl<K, V> implements Lock {
                 cctx.shared().txMetrics().onExplicitLockRelease(U.nanosToMillis(holdTimeNanos));
             }
 
-            delegate.unlockAll(keys);
+            // The lock state of the instance is reset above, so it stays usable after the exception.
+            if (!delegate.unlockAll(keys)) {
+                throw new IllegalStateException("Failed to unlock keys, the lock has been released externally " +
+                    "(was the lock killed?).");
+            }
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);

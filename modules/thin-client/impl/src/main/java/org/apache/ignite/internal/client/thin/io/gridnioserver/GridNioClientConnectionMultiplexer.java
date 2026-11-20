@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -63,7 +64,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
     private final GridNioServer<ByteBuffer> srv;
 
     /** */
-    private final SSLContext sslCtx;
+    private final boolean sslEnabled;
 
     /** */
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
@@ -83,10 +84,12 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         GridNioFilter codecFilter = new GridNioCodecFilter(new GridNioClientParser(), gridLog, false);
 
-        sslCtx = ClientSslUtils.getSslContext(cfg);
+        Factory<SSLContext> sslCtxFactory = ClientSslUtils.getSslContextFactory(cfg);
 
-        if (sslCtx != null) {
-            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog, null, null);
+        sslEnabled = sslCtxFactory != null;
+
+        if (sslEnabled) {
+            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory, true, ByteOrder.nativeOrder(), gridLog, null, null);
             sslFilter.directMode(false);
             filters = new GridNioFilter[] {codecFilter, sslFilter};
         }
@@ -189,7 +192,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
 
         GridFutureAdapter<?> sslHandshakeFut = null;
 
-        if (sslCtx != null) {
+        if (sslEnabled) {
             sslHandshakeFut = new GridFutureAdapter<>();
 
             meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);

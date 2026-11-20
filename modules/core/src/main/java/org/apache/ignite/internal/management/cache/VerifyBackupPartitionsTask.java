@@ -85,12 +85,21 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int PARTITION_FUTURE_TIMEOUT = 100;
+
+    /** */
+    private static final long LOG_PROGRESS_TIMEOUT = 3 * 60 * 1000L;
+
     /** Error thrown when idle_verify is called on an inactive cluster with persistence. */
     public static final String IDLE_VERIFY_ON_INACTIVE_CLUSTER_ERROR_MESSAGE = "Cannot perform the operation because " +
         "the cluster is inactive.";
 
     /** */
-    public static final String CACL_PART_HASH_ERR_MSG = "Can't calculate partition hash";
+    public static final String CALC_PART_HASH_ERR_MSG = "Can't calculate partition hash";
+
+    /** */
+    private static final String CALC_CANCELLED_ERR_MSG = "Partition hash calculation has been cancelled";
 
     /** Checkpoint reason. */
     public static final String CP_REASON = "VerifyBackupPartitions";
@@ -206,7 +215,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             }
 
             if (isCancelled())
-                throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
+                throw new IgniteException(CALC_CANCELLED_ERR_MSG);
 
             Set<Integer> grpIds = getGroupIds();
 
@@ -217,81 +226,102 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
             completionCntr.set(0);
 
-            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts =
-                calcPartitionHashAsync(grpIds);
+            IgniteException jobFailure = null;
+            List<IgniteException> exceptions = null;
+            boolean interrupted = false;
 
             Map<PartitionKey, PartitionHashRecord> res = new HashMap<>();
 
-            List<IgniteException> exceptions = new ArrayList<>();
-
             long lastProgressLogTs = U.currentTimeMillis();
 
-            for (int i = 0; i < partHashCalcFuts.size(); ) {
-                if (isCancelled()) {
-                    cancelFuts(i, partHashCalcFuts);
+            List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts = calcPartitionHashAsync(grpIds);
 
-                    throw new IgniteException(getClass().getSimpleName() + " was cancelled.");
-                }
-
+            for (int i = 0; i < partHashCalcFuts.size(); i++) {
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFuts.get(i);
 
                 try {
-                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
+                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(PARTITION_FUTURE_TIMEOUT, TimeUnit.MILLISECONDS);
 
-                    res.putAll(partHash);
-
-                    i++;
+                    if (jobFailure == null)
+                        res.putAll(partHash);
                 }
-                catch (InterruptedException | ExecutionException e) {
+                catch (ExecutionException e) {
                     if (e.getCause() instanceof IgniteException && !(e.getCause() instanceof GridNotIdleException)) {
+                        if (exceptions == null)
+                            exceptions = new ArrayList<>();
+
                         exceptions.add((IgniteException)e.getCause());
-
-                        i++;
-
-                        continue;
                     }
+                    else if (jobFailure == null) {
+                        jobFailure = new IgniteException("Failed to execute a partition hash calculation [grpIds=" +
+                            grpIds + ", reason=" + e.getCause().getMessage() + ']', e.getCause());
 
-                    cancelFuts(i, partHashCalcFuts);
-
-                    if (e instanceof InterruptedException)
-                        throw new IgniteInterruptedException((InterruptedException)e);
+                        cancel();
+                    }
                     else
-                        throw new IgniteException(e.getCause());
+                        jobFailure.addSuppressed(e.getCause());
                 }
-                catch (TimeoutException ignored) {
-                    if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
+                catch (InterruptedException e) {
+                    interrupted = true;
+
+                    if (jobFailure == null) {
+                        jobFailure = new IgniteInterruptedException("Partition hash calculation has been interrupted " +
+                            "[grpIds=" + grpIds + "].", e);
+
+                        cancel();
+                    }
+                    else
+                        jobFailure.addSuppressed(e);
+                }
+                catch (TimeoutException e) {
+                    if (U.currentTimeMillis() - lastProgressLogTs > LOG_PROGRESS_TIMEOUT) {
                         lastProgressLogTs = U.currentTimeMillis();
 
                         log.warning("idle_verify is still running, processed " + completionCntr.get() + " of " +
                             partHashCalcFuts.size() + " local partitions");
                     }
+
+                    --i;
                 }
             }
 
-            if (log.isInfoEnabled())
-                log.info("Idle verify procedure has finished.");
+            if (interrupted)
+                Thread.currentThread().interrupt();
 
-            if (!F.isEmpty(exceptions))
+            if (jobFailure != null)
+                throw jobFailure;
+
+            if (isCancelled())
+                throw new IgniteException(CALC_CANCELLED_ERR_MSG + " [grpIds=" + grpIds + "].");
+
+            if (!F.isEmpty(exceptions)) {
+                if (ignite.context().isStopping()) {
+                    throw new IgniteException(CALC_CANCELLED_ERR_MSG + " because the local node is stopping [grpIds=" +
+                        grpIds + "].");
+                }
+
+                Integer stoppingGrpId = F.find(grpIds, null, this::isGroupStopping);
+
+                if (stoppingGrpId != null) {
+                    throw new IgniteException(CALC_CANCELLED_ERR_MSG + " because the cache group is stopping [grpId=" +
+                        stoppingGrpId + "].");
+                }
+
                 throw new IdleVerifyException(exceptions);
+            }
+
+            if (log.isInfoEnabled()) {
+                log.info("Idle verify procedure has finished [skipZeros=" + arg.skipZeros() + ", checkCrc=" +
+                    arg.checkCrc() + ", grpIds=" + grpIds + "].");
+            }
 
             return res;
         }
 
         /**
-         * Cancels futures from given index.
-         *
-         * @param start Index to start from.
-         * @param partHashCalcFuts Partitions hash calculation futures to cancel.
-         */
-        private void cancelFuts(int start, List<Future<Map<PartitionKey, PartitionHashRecord>>> partHashCalcFuts) {
-            for (int i = start; i < partHashCalcFuts.size(); i++)
-                partHashCalcFuts.get(i).cancel(false);
-        }
-
-        /**
          * Class that processes cache filtering chain.
          */
-        private class CachesFiltering {
+        private static class CachesFiltering {
             /**
              * Initially all cache descriptors are included.
              */
@@ -489,6 +519,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
             final BooleanSupplier cancelled
         ) {
             return pool.submit(() -> {
+                if (isCancelledOrStopped(cancelled, gctx))
+                    throw cancellationException(gctx, part);
+
                 Map<PartitionKey, PartitionHashRecord> res = emptyMap();
 
                 if (!part.reserve())
@@ -497,30 +530,42 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 try {
                     PartitionUpdateCounter updCntr = part.dataStore().partUpdateCounter();
                     PartitionUpdateCounter updateCntrBefore = updCntr == null ? null : updCntr.copy();
+                    PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
+                    PartitionHashRecord hash;
 
-                    if (arg.checkCrc() && gctx.persistenceEnabled()) {
-                        FilePageStoreManager pageStoreMgr =
-                            (FilePageStoreManager)ignite.context().cache().context().pageStore();
+                    // The cache group can be destroyed concurrently.
+                    if (!gctx.offheap().enterBusy())
+                        throw cancellationException(gctx, part);
 
-                        checkPartitionsPageCrcSum(
-                            () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
-                            part.id(),
-                            FLAG_DATA,
-                            cancelled
+                    try {
+                        // Also hold the lock during the read to avoid a concurrent deletion of the partition
+                        // file when the cache is destroyed.
+                        if (arg.checkCrc() && gctx.persistenceEnabled()) {
+                            FilePageStoreManager pageStoreMgr =
+                                (FilePageStoreManager)ignite.context().cache().context().pageStore();
+
+                            checkPartitionsPageCrcSum(
+                                () -> (FilePageStore)pageStoreMgr.getStore(gctx.groupId(), part.id()),
+                                part.id(),
+                                FLAG_DATA,
+                                () -> isCancelledOrStopped(cancelled, gctx)
+                            );
+                        }
+
+                        hash = calculatePartitionHash(
+                            key,
+                            updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
+                            ignite.context().discovery().localNode().consistentId(),
+                            part.state(),
+                            part.primary(gctx.topology().readyTopologyVersion()),
+                            part.dataStore().fullSize(),
+                            gctx.offheap().partitionIterator(part.id()),
+                            () -> isCancelledOrStopped(cancelled, gctx)
                         );
                     }
-
-                    PartitionKey key = new PartitionKey(gctx.groupId(), part.id(), gctx.cacheOrGroupName());
-
-                    PartitionHashRecord hash = calculatePartitionHash(key,
-                        updateCntrBefore == null ? 0 : updateCntrBefore.comparableState(),
-                        ignite.context().discovery().localNode().consistentId(),
-                        part.state(),
-                        part.primary(gctx.topology().readyTopologyVersion()),
-                        part.dataStore().fullSize(),
-                        gctx.offheap().partitionIterator(part.id()),
-                        cancelled
-                    );
+                    finally {
+                        gctx.offheap().leaveBusy();
+                    }
 
                     if (hash != null)
                         res = Collections.singletonMap(key, hash);
@@ -534,7 +579,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    String msg = CACL_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() + "]";
+                    String msg = CALC_PART_HASH_ERR_MSG + " [grpId=" + gctx.groupId() + ", partId=" + part.id() +
+                        ", reason=" + e.getMessage() + "]";
 
                     U.error(log, msg, e);
 
@@ -548,6 +594,32 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
 
                 return res;
             });
+        }
+
+        /**
+         * Checks whether the work should be stopped: the task was cancelled, the local node is stopping,
+         * or the cache group is stopping or being destroyed.
+         *
+         * @param cancelled Supplier that returns {@code true} if the task cancellation was requested.
+         * @param gctx Cache group context.
+         * @return {@code true} if the work should be stopped.
+         */
+        private boolean isCancelledOrStopped(BooleanSupplier cancelled, CacheGroupContext gctx) {
+            return cancelled.getAsBoolean() || gctx.isPreparedToStop() || ignite.context().isStopping();
+        }
+
+        /** */
+        private boolean isGroupStopping(int grpId) {
+            CacheGroupContext grp = ignite.context().cache().cacheGroup(grpId);
+
+            return grp == null || grp.isPreparedToStop();
+        }
+
+        /** */
+        private static IgniteException cancellationException(CacheGroupContext gctx, GridDhtLocalPartition part) {
+            return new IgniteException(CALC_CANCELLED_ERR_MSG + ". The task has been cancelled, or the local node is stopping, " +
+                "or the cache group is stopping [groupId=" + gctx.groupId() +
+                ", groupName=" + gctx.cacheOrGroupName() + ", partId=" + part.id() + "].");
         }
     }
 }
