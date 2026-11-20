@@ -110,7 +110,8 @@ def prepare(repo, run, destination):
     pr = api(f"{root}/pulls/{title[1]}")
     if not matches(pr, run, repo):
         return
-    event = {"number": pr["number"], "head": {"sha": pr["head"]["sha"]}, "base": {"sha": pr["base"]["sha"]}}
+    event = {"number": pr["number"], "head": {"sha": pr["head"]["sha"]}, "base": {"sha": pr["base"]["sha"]},
+             "body": pr.get("body") or ""}
     context = {"pull_request": event, "source_conclusion": conclusion}
     destination.write_text(json.dumps(context), encoding="utf-8")
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
@@ -181,7 +182,9 @@ def publish(repo, run, context, summary_file, outcome):
         return
 
     current = api(route)
-    if not matches(current, run, repo) or current["base"]["sha"] != context["pull_request"]["base"]["sha"]:
+    checked = context["pull_request"]
+    if (not matches(current, run, repo) or current["base"]["sha"] != checked["base"]["sha"]
+            or (current.get("body") or "") != checked["body"]):
         return
     if newer_run(repo, run, current):
         return

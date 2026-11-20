@@ -22,10 +22,10 @@ The check compares source declarations at the PR head and its merge base. It rep
 ## Results
 
 - **No action.** If the check finds no public contract change, it passes without checking RFC files. This includes PRs that only edit an RFC or a method body.
-- **Fix the RFC.** If the check finds a contract change, add a new RFC file or update an existing one in the same PR. The bot lists the affected files and the declarations or values that changed. It also flags an invalid RFC filename.
-- **Review the change.** With an RFC, the job passes and adds a warning to Checks and the PR. The reviewer compares the code and compatibility tests with the plan and checks any required vote on dev@.
+- **RFC needed.** If the check finds a contract change, add or update an RFC file in the PR. For work covered by an existing plan, paste the GitHub URL of the merged PR that added or updated it into the PR description. Use a PR from this repository. The RFC must still exist on the target branch.
+- **Review the change.** Once the check finds an RFC, it passes with a warning. Checks and the bot comment link to the RFC file and its PR, and list the declarations or values that changed. The reviewer checks that the plan covers the changes, reviews compatibility tests and checks any required vote on dev@.
 
-Use `rfcs/IGNITE-<ticket>-<short-title>.md` for a new RFC. To update a plan under a new ticket, keep its original filename.
+Use `rfcs/IGNITE-<ticket>-<short-title>.md` for a new RFC. To update a plan under a new ticket, keep its original filename. If an RFC in the current PR has an invalid name, the check asks the author to fix it.
 
 The bot replaces its comment when the result changes and confirms when earlier issues are resolved.
 
@@ -39,10 +39,8 @@ The report identifies the file and the specific change. For example, adding a se
 
 ## Enabling the check on master
 
-The RFC process lets a later implementation PR link to an approved plan. With this check required, that PR will be blocked if it changes a public contract and only links to the RFC.
-
 1. Merge the public contract and process RFCs and the template, then merge the workflows.
-2. On a fork PR, add a public method to a supported Java type. Verify that the check fails and names the method. Add a correctly named RFC and verify that the check passes with a review warning.
+2. On a fork PR, add a public method to a supported Java type. Verify that the check fails and names the method. Check both ways to get a review warning. Add a correctly named RFC file, or link to a merged PR with the RFC and open the file from the report.
 3. Require trusted review for the workflow and checker files. Add `Public behavior changes` to the required checks for `master` in [`.asf.yaml`](../../.asf.yaml). Remove that status from the required checks to stop blocking merges.
 
 To run the tests locally, use `python3 -m unittest discover -s tests` from `.github/public-behavior` with JDK 17 or later on PATH.

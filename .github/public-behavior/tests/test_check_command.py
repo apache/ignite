@@ -25,23 +25,35 @@ import unittest
 CHECKER = Path(__file__).resolve().parents[1] / "check_pull_request.py"
 PUBLIC_API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
 HEAD = "a" * 40
+BASE = "b" * 40
+PLAN = "rfcs/IGNITE-123-timeout.md"
+NEW_PLAN = {"filename": PLAN, "status": "added"}
+PLAN_PR = "https://github.com/apache/ignite/pull/17"
 
 
-def run_checker(file_pages, *, sources=None, changed_files=None, title="", linked_rfc=None):
+def run_checker(file_pages, *, sources=None, changed_files=None, title="", link="", base_rfc=None,
+                prior_files=None, merged=False):
     """Run the workflow command with a fork PR event and GitHub responses for its list of files."""
     repo = "apache/ignite"
     pull = f"repos/{repo}/pulls/42"
     pr = {
-        "number": 42, "title": title,
+        "number": 42, "title": title, "body": link,
         "head": {"repo": {"full_name": "contributor/ignite"}, "sha": HEAD},
-        "base": {"repo": {"full_name": repo}, "sha": "b" * 40},
+        "base": {"repo": {"full_name": repo}, "ref": "master", "sha": BASE},
         "changed_files": sum(map(len, file_pages)) if changed_files is None else changed_files,
     }
     paged = "api --paginate --slurp"
     responses = {
-        f"api {pull}": pr,
+        f"api -H Accept: application/vnd.github.full+json {pull}":
+            dict(pr, body_html=f'<p><a href="{link}">{link}</a></p>' if link else ""),
         f"{paged} {pull}/files?per_page=100": file_pages,
     }
+    if prior_files is not None:
+        route = f"repos/{repo}/pulls/17"
+        responses[f"api {route}"] = {"number": 17, "html_url": PLAN_PR, "base": pr["base"],
+                                      "merged_at": "2026-10-01T00:00:00Z" if merged else None,
+                                      "changed_files": len(prior_files)}
+        responses[f"{paged} {route}/files?per_page=100"] = [prior_files]
     merge_base = "c" * 40
     responses[f"api repos/{repo}/compare/{pr['base']['sha']}...{HEAD}?per_page=1"] = {
         "merge_base_commit": {"sha": merge_base}
@@ -51,11 +63,10 @@ def run_checker(file_pages, *, sources=None, changed_files=None, title="", linke
         responses[f"api -H Accept: application/vnd.github.raw+json repos/{repo}/contents/{path}?ref={rev}"] = source
     with TemporaryDirectory() as directory:
         work = Path(directory)
-        if linked_rfc:
-            plan = work / linked_rfc
+        if base_rfc:
+            plan = work / base_rfc
             plan.parent.mkdir()
             plan.write_text("# Accepted plan\n")
-            pr["body"] = f"See https://github.com/{repo}/blob/master/{linked_rfc}"
         event = work / "event.json"
         event.write_text(json.dumps({"pull_request": pr}))
         (work / "responses.json").write_text(json.dumps(responses))
@@ -79,6 +90,14 @@ def run_checker(file_pages, *, sources=None, changed_files=None, title="", linke
         return result, summary.read_text()
 
 
+def run_artifact_rename(*rfc_files, **fixture):
+    """Run the workflow on a public artifact rename and the RFC files supplied by the test."""
+    pom = "modules/core/pom.xml"
+    before = "<project><artifactId>ignite-core</artifactId></project>"
+    sources = {("before", pom): before, ("after", pom): before.replace("ignite-core", "ignite-runtime")}
+    return run_checker([[{"filename": pom, "status": "modified"}, *rfc_files]], sources=sources, **fixture)
+
+
 class CheckCommandTest(unittest.TestCase):
     def test_new_public_method_is_reported_on_page_two(self):
         first_page = [{"filename": f"docs/page-{i}.md", "status": "modified"} for i in range(100)]
@@ -86,18 +105,56 @@ class CheckCommandTest(unittest.TestCase):
         original = "package org.apache.ignite; public interface IgniteCache {}"
         sources = {("before", PUBLIC_API): original,
                    ("after", PUBLIC_API): original.replace("{}", "{ int cacheTimeout(); }")}
-        result, summary = run_checker(pages, sources=sources, linked_rfc="rfcs/IGNITE-123-timeout.md")
+        result, summary = run_checker(pages, sources=sources, base_rfc=PLAN,
+                                      link=f"https://github.com/apache/ignite/blob/master/{PLAN}")
         self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertIn("require an RFC file in this PR", summary)
+        self.assertIn("require an RFC", summary)
         self.assertIn(PUBLIC_API, summary)
         self.assertIn("cacheTimeout", summary)
         self.assertIn("rfcs/TEMPLATE.md", summary)
-        named = {"filename": "rfcs/IGNITE-123-timeout.md", "status": "added"}
-        result, summary = run_checker([first_page, [*pages[1], named]], sources=sources)
+        result, summary = run_checker([first_page, [*pages[1], NEW_PLAN]], sources=sources, link=PLAN_PR)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("🟡 Reviewer action needed", summary)
         self.assertIn("cacheTimeout", summary)
         self.assertIn("vote on dev@", summary)
+
+    def test_follow_up_pr_links_a_merged_rfc(self):
+        """The bot finds the linked PR's plan in the base branch and shows it alongside the detected change."""
+        result, summary = run_artifact_rename(link=PLAN_PR, base_rfc=PLAN, prior_files=[NEW_PLAN], merged=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("🟡 Reviewer action needed", summary)
+        self.assertIn(PLAN_PR, summary)
+        self.assertIn(f"https://github.com/apache/ignite/blob/{BASE}/{PLAN}", summary)
+        self.assertIn("Maven artifactId changed from ignite-core to ignite-runtime", summary)
+
+    def test_link_requires_a_merged_pr_with_an_rfc(self):
+        """An open RFC PR or a merged PR without an RFC leaves the change without a plan."""
+        doc = {"filename": "docs/cache-timeout.md", "status": "added"}
+        for merged, prior_files in ((False, [NEW_PLAN]), (True, [doc])):
+            with self.subTest(merged=merged, prior_files=prior_files):
+                result, summary = run_artifact_rename(link=PLAN_PR, base_rfc=PLAN, prior_files=prior_files, merged=merged)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn("rfcs/TEMPLATE.md", summary)
+                self.assertIn("Maven artifactId changed", summary)
+
+    def test_linked_plan_must_still_exist_after_the_change(self):
+        """A past RFC cannot cover the change once it is missing from the base or removed by this PR."""
+        removed = {"filename": PLAN, "status": "removed"}
+        moved = {"filename": "docs/archive.md", "status": "renamed", "previous_filename": PLAN}
+        for base_rfc, edits in ((None, []), (PLAN, [removed]), (PLAN, [moved])):
+            with self.subTest(base_rfc=base_rfc, edits=edits):
+                result, summary = run_artifact_rename(*edits, link=PLAN_PR, base_rfc=base_rfc,
+                                                      prior_files=[NEW_PLAN], merged=True)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn("PR #17 has no matching RFC", summary)
+                self.assertIn("rfcs/TEMPLATE.md", summary)
+
+    def test_merged_rfc_link_does_not_hide_an_invalid_local_name(self):
+        """When the PR adds a misnamed RFC, ask for the correct name even if it also links a valid RFC PR."""
+        local = {"filename": "rfcs/timeout.md", "status": "added"}
+        result, summary = run_artifact_rename(local, link=PLAN_PR, base_rfc=PLAN, prior_files=[NEW_PLAN], merged=True)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("Invalid RFC filename: rfcs/timeout.md", summary)
 
     def test_method_body_change_skips_rfc_checks(self):
         """A PR edits a method body and adds a misnamed RFC. The check reports no contract change."""

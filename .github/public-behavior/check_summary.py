@@ -44,7 +44,7 @@ def rules_reference():
     )
 
 
-def report(passed, reason, author, reviewer, paths=(), *, advisory=False, changes=None):
+def report(passed, reason, author, reviewer, paths=(), *, advisory=False, changes=None, rfc_links=()):
     title = report_title(passed, advisory)
     reason, author, reviewer = _one_line(reason), _one_line(author), _one_line(reviewer, limit=3000)
     status = "🟡 Reviewer action needed. " if passed and advisory else ""
@@ -54,6 +54,14 @@ def report(passed, reason, author, reviewer, paths=(), *, advisory=False, change
         if task:
             log.append(f"For the {role}: {task}")
             summary.extend([f"### For the {role}", f"<p>{escape(task, quote=False)}</p>"])
+
+    if rfc_links:
+        summary.append("### RFC files")
+        for path, file_url, pr_url in rfc_links[:8]:
+            summary.append(f"[{path}]({file_url}) ([source PR]({pr_url}))")
+            log.append(f"RFC: {file_url} ({pr_url})")
+        if len(rfc_links) > 8:
+            summary.append(f"See {len(rfc_links) - 8} more RFCs in the linked PRs.")
 
     if paths:
         items = []
