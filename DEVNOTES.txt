@@ -1,3 +1,10 @@
+Development processes
+=====================
+
+See the rfcs/ directory for the development processes agreed by the Ignite community.
+https://github.com/apache/ignite/tree/master/rfcs
+
+
 A Note about Invoking Maven
 ===========================
 
