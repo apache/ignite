@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.GridCommonAbstractWrapperTest;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.junit.jupiter.api.AfterEach;
@@ -175,22 +176,22 @@ public class IgniteStatisticsImplTest extends GridCommonAbstractWrapperTest {
 
             String plan = (String)curr.get(0).get(0);
 
-            // Plan for single item table need to goes through table scan,
-            // but due to IgniteStatisticsImpl.DFLT_ROW_CNT hack it plans through index scan, this part
-            // need to be fixed after cache for plans invalidation is done.
-            assertTrue(plan, !plan.contains(IgniteTableScan.class.getSimpleName()));
+            assertTrue(plan, plan.contains(IgniteTableScan.class.getSimpleName()));
         }
+
+        assertEquals(1, statistics().getRowCount(), 0.0);
 
         createAndFillTable(CacheMode.PARTITIONED, 1, ROW_CNT);
 
-        assertTrue(waitForCondition(() -> {
-            try (FieldsQueryCursor<List<?>> cur = client.context().query().querySqlFields(qry, false)) {
-                List<List<?>> curr = cur.getAll();
+        assertTrue(waitForCondition(() -> statistics().getRowCount() == ROW_CNT, 2 * STATS_REFRESH_INTERVAL));
 
-                String plan = (String)curr.get(0).get(0);
-                return !plan.contains(IgniteTableScan.class.getSimpleName());
-            }
-        }, 2 * STATS_REFRESH_INTERVAL));
+        SqlFieldsQuery freshQry = new SqlFieldsQuery(sql + " /* after refresh */").setSchema("PUBLIC");
+
+        try (FieldsQueryCursor<List<?>> cur = client.context().query().querySqlFields(freshQry, false)) {
+            String plan = (String)cur.getAll().get(0).get(0);
+
+            assertTrue(plan, plan.contains(IgniteIndexScan.class.getSimpleName()) && plan.contains("IDXVAL"));
+        }
     }
 
     /** */

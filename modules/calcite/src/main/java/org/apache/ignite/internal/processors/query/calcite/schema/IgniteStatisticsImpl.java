@@ -49,7 +49,7 @@ public class IgniteStatisticsImpl implements Statistic {
     /** */
     private static final long LOCAL_CACHE_SIZE_TIMEOUT = 1_000;
 
-    /** An initial and minimum estimate, to avoid favoring full scans while a small table is growing. */
+    /** Fallback estimate until a row count measurement succeeds. */
     static final long DFLT_ROW_CNT = 1_000;
 
     /** */
@@ -218,7 +218,7 @@ public class IgniteStatisticsImpl implements Statistic {
             Long size = localCacheSize(desc.cacheInfo().cacheContext());
 
             if (size != null)
-                primaryRowCnt = Math.max(size, DFLT_ROW_CNT);
+                primaryRowCnt = size;
         }
         catch (IgniteCheckedException ignore) {
             // No-op.
