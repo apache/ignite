@@ -80,7 +80,8 @@ class TallyTests(unittest.TestCase):
 
     def test_withdrawal_needs_human_review(self):
         """Given a -1 followed by its author's withdrawal, closing requires a reader to confirm resolution."""
-        replies = [mail("ben@apache.org", "-1", 100), mail("ben@apache.org", "I withdraw my -1.", 200)]
+        replies = [mail("ben@apache.org", "-1", 100), mail("ben@apache.org", "I no longer object.", 200)]
+        replies.extend(mail(uid + "@apache.org", "+1", 300) for uid in ("ada", "ben", "cid"))
         with self.assertRaisesRegex(ValueError, "^Manual review:"):
             verify_tally(mail("ada@apache.org", NOTICE, 0), replies, mail("ada@apache.org", PASSED, 7 * DAY), directory)
 

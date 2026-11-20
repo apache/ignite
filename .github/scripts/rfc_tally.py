@@ -160,8 +160,7 @@ def committer_tally(ballots, load_json):
 def read_replies(replies, start, finish):
     ballots = []
     problems = []
-    objections = {}
-    withdrawals = {}
+    has_negative_vote = False
     possible_positives = 0
     for reply in replies:
         try:
@@ -169,13 +168,8 @@ def read_replies(replies, start, finish):
         except ValueError as exc:
             problems.append(str(exc).removeprefix("Manual review: "))
             continue
-        voter = sender_key(reply)
         if re.match(r"(?:my vote is |i vote |my )?(?:\[x\]\s*)?-1\b", text, re.I):
-            objections[voter] = max(reply["epoch"], objections.get(voter, 0))
-        if start <= reply["epoch"] <= finish and re.fullmatch(
-            r"I (?:withdraw|retract) my (?:-1(?: vote)?|objection|veto)[.!]?", text, re.I,
-        ):
-            withdrawals[voter] = max(reply["epoch"], withdrawals.get(voter, 0))
+            has_negative_vote = True
         match = BALLOT.fullmatch(text)
         if not start <= reply["epoch"] <= finish:
             problems.append("a reply outside the voting period needs review")
@@ -184,17 +178,14 @@ def read_replies(replies, start, finish):
             problems.append("the vote thread contains an objection, discussion, or an unclear ballot")
         else:
             ballots.append((reply, match))
-    for voter, epoch in objections.items():
-        if not voter[1] or withdrawals.get(voter, -1) <= epoch:
-            raise ValueError("The archive contains an explicit -1. Publish its resolution on the vote thread.")
-    return ballots, problems, possible_positives
+    return ballots, problems, possible_positives, has_negative_vote
 
 
 def verify_tally(opening, replies, result, load_json):
     duration = result["epoch"] - opening["epoch"]
     if duration < 3 * DAY:
         raise ValueError("The RESULT was published before the vote had been open for 72 hours.")
-    ballots, problems, possible_positives = read_replies(replies, opening["epoch"], result["epoch"])
+    ballots, problems, possible_positives, has_negative_vote = read_replies(replies, opening["epoch"], result["epoch"])
     own_result = FORWARDED.split(result["body"], maxsplit=1)[0]
     result_text = " ".join(unquoted_body(own_result).split()) if own_result.strip() else ""
     if re.search(r"\b(?:vote|rfc|proposal|motion) (?:has |has been |is |was |did )?"
@@ -218,7 +209,7 @@ def verify_tally(opening, replies, result, load_json):
     for line in announcement.splitlines():
         if re.match(r"\s*(?:my (?:vote|[+-]\d)|i vote)\b", line, re.I):
             if re.match(r"\s*(?:my vote is|my|i vote)\s+-1\b", line, re.I):
-                raise ValueError("The opening message contains an explicit -1.")
+                has_negative_vote = True
             match = BALLOT.fullmatch(line.strip())
             if match:
                 ballots.append((opening, match))
@@ -228,6 +219,10 @@ def verify_tally(opening, replies, result, load_json):
 
     positive = [(message, match) for message, match in ballots if match["vote"] == "+1"]
     eligible = [(message, match) for message, match in positive if not (match["kind"] or "").lower().startswith("non")]
+    if has_negative_vote:
+        if len(eligible) + possible_positives < 3:
+            raise ValueError("The archive contains an explicit -1 and fewer than three eligible +1 ballots.")
+        manual("confirm that technical objections were resolved and any valid code veto was withdrawn")
     if incompatible and len(eligible) + possible_positives < 3:
         raise ValueError("The opening excludes approval by silence and the archive has fewer than three clear +1 ballots.")
     if duration < 7 * DAY and len(eligible) + possible_positives < 3 and seven_day_notice:
