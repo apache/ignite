@@ -15,10 +15,20 @@
 
 import unittest
 
-from rfc_scope import contract_review
+from rfc_scope import CONFIG, METRICS, STORAGE, contract_review
 
 
 class ContractPathsTest(unittest.TestCase):
+    def test_internal_contract_definitions_get_specific_review_guidance(self):
+        core = "modules/core/src/main/java/org/apache/ignite/internal/"
+        for path, expected in (
+            ("jdbc/thin/ConnectionPropertiesImpl.java", CONFIG),
+            ("processors/metric/GridMetricManager.java", METRICS),
+            ("processors/cache/persistence/metastorage/MetastoreDataPageIO.java", STORAGE),
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(contract_review(core + path), expected)
+
     def test_paths_with_external_contracts(self):
         """Edits to these APIs, wire formats, stored data and distribution files need review."""
         core = "modules/core/src/main/java/org/apache/ignite/"

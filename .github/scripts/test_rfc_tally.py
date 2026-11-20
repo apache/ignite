@@ -53,9 +53,16 @@ class TallyTests(unittest.TestCase):
                  ("Cid Three <cid@apache.org>", "+1 (binding)\n\n> previous vote\n\n-- \nBest wishes,\nCid Three")]
         self.assertIn("ada, ben, cid", tally(votes, opening="My vote is +1.", result=result))
 
-    def test_silent_approval(self):
-        """Given a seven-day notice, closing after seven full days accepts a thread without objections."""
-        self.assertIn("seven days", tally([], opening="Hi all,\n\n" + NOTICE, duration=7 * DAY))
+    def test_silent_approval_requires_a_scope_check(self):
+        """A seven-day vote still needs a reviewer to verify that the proposal qualifies."""
+        for opening in (NOTICE, NOTICE + " We request permission to skip deprecation for the old option."):
+            with self.subTest(opening=opening), self.assertRaisesRegex(ValueError, "^Manual review:.*only adds compatible"):
+                tally([], opening=opening, duration=7 * DAY)
+
+    def test_three_committer_votes_do_not_need_the_seven_day_rule(self):
+        """Three explicit committer votes establish approval even when the opening also offers seven days."""
+        votes = [(uid + "@apache.org", "+1") for uid in ("ada", "ben", "cid")]
+        self.assertIn("ada, ben, cid", tally(votes, opening=NOTICE, duration=7 * DAY))
 
     def test_early_seven_day_close(self):
         """Given a compatible addition, closing one second early blocks the shortcut even with discussion."""
@@ -86,8 +93,8 @@ class TallyTests(unittest.TestCase):
             verify_tally(mail("ada@apache.org", NOTICE, 0), replies, mail("ada@apache.org", PASSED, 7 * DAY), directory)
 
     def test_ballot_must_be_the_authors_own_and_unconditional(self):
-        """Given two clear votes, a third quoted, forwarded, conditional or amended vote needs review."""
-        for text in ("> +1", "----- Forwarded message -----\n+1", "+1 if fixed", "+1\n> prior\nI withdraw it"):
+        """Given two clear votes, a third forwarded, conditional or amended vote needs review."""
+        for text in ("----- Forwarded message -----\n+1", "+1 if fixed", "+1\n> prior\nI withdraw it"):
             with self.subTest(text=text), self.assertRaisesRegex(ValueError, "^Manual review:"):
                 tally([("ada@apache.org", "+1"), ("ben@apache.org", "+1"), ("cid@apache.org", text)])
 
@@ -96,10 +103,22 @@ class TallyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "^The archive has fewer than three"):
             tally([("ben@apache.org", "+1"), ("cid@apache.org", "+1")])
 
+    def test_discussion_and_quotes_cannot_supply_a_missing_vote(self):
+        """Two votes and a question or a quotation still fall short of three explicit votes."""
+        for text in ("When would we release this?", "> +1"):
+            with self.subTest(text=text), self.assertRaisesRegex(ValueError, "^The archive has fewer than three"):
+                tally([("ada@apache.org", "+1"), ("ben@apache.org", "+1"), ("cid@apache.org", text)])
+
+    def test_bare_ballot_in_the_opening_can_be_verified(self):
+        """A reviewer can verify whether the author's standalone ballot is their own vote."""
+        with self.assertRaisesRegex(ValueError, "^Manual review:.*opening email"):
+            tally([("ben@apache.org", "+1"), ("cid@apache.org", "+1")], opening="Please review the proposal.\n\n+1 (binding)")
+
     def test_repeated_vote(self):
-        """Given a sender who votes twice under different display names, closing requires review."""
+        """When a committer changes their vote and quorum is possible, a reviewer checks their final vote."""
         with self.assertRaisesRegex(ValueError, "^Manual review: one sender"):
-            tally([("Ben <ben@apache.org>", "+1"), ("B <ben@apache.org>", "0"), ("cid@apache.org", "+1")])
+            tally([("Ben <ben@apache.org>", "+1"), ("B <ben@apache.org>", "0"), ("cid@apache.org", "+1"),
+                   ("ada@apache.org", "+1")])
 
     def test_result_must_agree_with_ballots(self):
         """Given three archived votes, a conflicting total or qualification in the RESULT needs review."""

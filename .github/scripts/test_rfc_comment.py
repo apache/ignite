@@ -28,8 +28,8 @@ REPO = "apache/ignite"
 FORK = {"full_name": "contributor/ignite"}
 RUN = {"status": "completed", "conclusion": "failure", "event": "pull_request_review",
        "repository": {"full_name": REPO}, "head_repository": FORK, "head_sha": "a" * 40,
-       "head_branch": "proposal", "path": ".github/workflows/rfc-check.yml", "id": 12, "run_attempt": 1,
-       "pull_requests": [], "display_title": "RFC check for PR #42"}
+       "head_branch": "proposal", "path": ".github/workflows/public-behavior.yml", "id": 12, "run_attempt": 1,
+       "pull_requests": [], "display_title": "Public behavior changes for PR #42"}
 PR = {"state": "open", "number": 42, "head": {"ref": "proposal", "sha": RUN["head_sha"], "repo": FORK},
       "base": {"ref": "master", "sha": "b" * 40, "repo": RUN["repository"]},
       "title": "IGNITE-123 Proposal", "body": "", "labels": []}
@@ -44,7 +44,7 @@ class RFCCommentTest(unittest.TestCase):
         self.reviews = []
         self.writes = []
         self.runs = [RUN]
-        self.jobs = [{"name": "RFC process", "conclusion": "failure"}]
+        self.jobs = [{"name": "Public behavior changes", "conclusion": "failure"}]
         directory = TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         self.root = Path(directory.name)
@@ -57,8 +57,8 @@ class RFCCommentTest(unittest.TestCase):
         if route == f"{prefix}/actions/runs/12/attempts/1/jobs?per_page=100":
             return {"jobs": self.jobs}
         if route == f"{prefix}/actions/runs/13/attempts/1/jobs?per_page=100":
-            return {"jobs": [{"name": "RFC process", "conclusion": "success"}]}
-        if route == (f"{prefix}/actions/workflows/rfc-check.yml/runs?head_sha={RUN['head_sha']}"
+            return {"jobs": [{"name": "Public behavior changes", "conclusion": "success"}]}
+        if route == (f"{prefix}/actions/workflows/public-behavior.yml/runs?head_sha={RUN['head_sha']}"
                      "&status=completed&per_page=100&page=1"):
             return {"total_count": len(self.runs), "workflow_runs": self.runs}
         if route == f"{prefix}/pulls/42":
@@ -93,17 +93,16 @@ class RFCCommentTest(unittest.TestCase):
 
     def publish(self, context, outcome, text="", *, original=None):
         """Write the trusted summary and pair it with the original job outcome."""
-        verdict = "passed" if outcome == "success" else "failed"
         summary = self.root / "summary.md"
-        summary.write_text(f"## RFC check {verdict}\n\n{text}\n")
+        summary.write_text(f"## {rc.report_title(outcome == 'success')}\n\n{text}\n\n{rc.rules_reference()}\n")
         rc.publish(REPO, RUN, dict(context, source_conclusion=original or outcome), summary, outcome)
 
     def test_prepare_resolves_fork_and_skips_an_unrelated_job(self):
-        """Given a fork run without a PR number, resolve its current PR only for the RFC job."""
-        self.jobs[0]["name"] = "RFC checker tests"
+        """Given a fork run without a PR number, resolve its current PR only for the public behavior job."""
+        self.jobs[0]["name"] = "Public behavior check tests"
         rc.prepare(REPO, RUN, self.root / "pr.json")
         self.assertFalse((self.root / "output").exists())
-        self.jobs[0]["name"] = "RFC process"
+        self.jobs[0]["name"] = "Public behavior changes"
         context = self.prepare()
         self.assertEqual(context["pull_request"],
                          {"number": 42, "head": {"sha": PR["head"]["sha"]}, "base": {"sha": PR["base"]["sha"]}})
@@ -122,7 +121,7 @@ class RFCCommentTest(unittest.TestCase):
     def test_run_title_alone_cannot_select_a_different_pr(self):
         """Given a run title from a fork, require the exact template and matching live head before checking."""
         dest = self.root / "pr.json"
-        rc.prepare(REPO, dict(RUN, display_title="A reference to RFC check for PR #42"), dest)
+        rc.prepare(REPO, dict(RUN, display_title="A reference to Public behavior changes for PR #42"), dest)
         self.assertFalse(dest.exists())
         rc.prepare(REPO, dict(RUN, event="pull_request", head_sha="9" * 40), dest)
         self.assertFalse(dest.exists())
@@ -147,16 +146,39 @@ class RFCCommentTest(unittest.TestCase):
         self.publish(context, "success", "Vote verified.")
         self.assertEqual(self.writes, ["POST", "POST", "DELETE", "POST", "DELETE"])
         self.assertIn("resolved", self.comments[-1]["body"])
+        self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.publish(context, "success", "No matching paths.")
         self.assertEqual(len(self.writes), 5)
         self.assertIn(copied_marker, self.comments)
+
+    def test_replaces_only_its_own_comment_from_the_old_workflow(self):
+        """Given an old bot status, post the renamed status once and preserve comments from other authors."""
+        context = self.prepare()
+        for verdict in ("failure", "success"):
+            with self.subTest(verdict=verdict):
+                self.comments.clear()
+                self.writes.clear()
+                self.publish(context, "failure", "Link the vote.")
+                if verdict == "success":
+                    self.publish(context, "success", "Vote verified.")
+                old = self.comments[0]
+                old["body"] = old["body"].replace("<!-- ignite-public-behavior ", "<!-- ignite-rfc-check ", 1)
+                other_bot = {**old, "id": 20, "user": {"login": "another[bot]", "type": "Bot"}}
+                human = {**old, "id": 21, "user": {"login": "contributor", "type": "User"}}
+                self.comments.extend([other_bot, human])
+                self.writes.clear()
+                self.publish(context, verdict, "Link the vote." if verdict == "failure" else "Vote verified.")
+                self.assertEqual(self.writes, ["POST", "DELETE"])
+                self.assertEqual(self.comments[:-1], [other_bot, human])
+                self.assertTrue(self.comments[-1]["body"].startswith("<!-- ignite-public-behavior "))
 
     def test_requires_a_green_job_before_reporting_resolution(self):
         """Given a failed job, ask for a rerun even if the evidence already passes on a second check."""
         context = self.prepare()
         self.publish(context, "success", "Vote verified.", original="failure")
         self.assertEqual(self.writes, ["POST"])
-        self.assertIn("Rerun the failed RFC process job", self.comments[-1]["body"])
+        self.assertIn("Update the PR description to start a fresh **Public behavior changes** check", self.comments[-1]["body"])
+        self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.assertNotIn(rc.RESOLVED, self.comments[-1]["body"])
         self.publish(context, "success", "Vote verified.", original="success")
         self.assertIn(rc.RESOLVED, self.comments[-1]["body"])
@@ -166,7 +188,23 @@ class RFCCommentTest(unittest.TestCase):
         """Given a green original job, publish current failures and ask for an updated check."""
         self.publish(self.prepare(), "failure", "Link the vote.", original="success")
         self.assertIn("Link the vote.", self.comments[0]["body"])
-        self.assertIn("Rerun RFC process", self.comments[0]["body"])
+        self.assertIn("start a fresh **Public behavior changes** check", self.comments[0]["body"])
+        self.assertEqual(self.comments[0]["body"].count(rc.rules_reference()), 1)
+
+    def test_timeout_replaces_a_previous_resolution_without_waiting_for_evidence(self):
+        """Given a resolved warning, when the next job times out, replace the old confirmation with recovery steps."""
+        context = self.prepare()
+        self.publish(context, "failure", "Link the vote.")
+        self.publish(context, "success", "Vote verified.")
+        self.jobs[0]["conclusion"] = "timed_out"
+        run = dict(RUN, conclusion="timed_out")
+        rc.prepare(REPO, run, self.root / "timeout.json")
+        timeout = json.loads((self.root / "timeout.json").read_text())
+        self.assertIn("conclusion=timed_out\n", (self.root / "output").read_text())
+        rc.publish(REPO, run, timeout, self.root / "no-summary", "timed_out")
+        self.assertEqual(len(self.comments), 1)
+        self.assertIn(rc.TIMEOUT, self.comments[0]["body"])
+        self.assertEqual(self.comments[0]["body"].count(rc.rules_reference()), 1)
 
     def test_late_failure_cannot_replace_a_newer_silent_success(self):
         """Given a first green with no comment, ignore an older failure delivered afterward on the same commit."""

@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import chdir
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -59,6 +61,14 @@ class RFCCheckTest(unittest.TestCase):
             with self.subTest(args=args), self.assertRaises(ci.CheckError):
                 run(*args)
 
+    def test_deleted_reviewer_does_not_hide_a_current_review(self):
+        review = {"state": "APPROVED", "commit_id": "h", "submitted_at": "2026-11-20T10:00:00Z",
+                  "body": "RFC-exempt: refactoring"}
+        reviews = [dict(review, user=None), dict(review, user={"login": "maintainer"})]
+        with patch.object(ci, "api", side_effect=[reviews, [], {"permission": "write"}]):
+            result = ci.check(PR, [file(API)], TEMPLATE)
+        self.assertIn("Reviewer confirmed the RFC exception", result.reason)
+
     def test_required_label_also_catches_behavior_outside_known_paths(self):
         pr = dict(PR, labels=[{"name": "rfc-required"}])
         with patch.object(ci, "review_lines", return_value=[]), self.assertRaises(ci.CheckError) as caught:
@@ -84,12 +94,16 @@ class RFCCheckTest(unittest.TestCase):
         self.assertNotIn("client and server", reviewer)
         self.assertIn("RFC-exempt:", reviewer)
 
-    def test_follow_up_links_existing_rfc(self):
-        with patch.object(ci, "review_lines", return_value=["RFC-covered: " + DOC]):
-            with patch.object(Path, "is_file", return_value=True):
+    def test_follow_up_accepts_an_existing_rfc_after_an_incorrect_path(self):
+        reviews = ["RFC-covered: rfcs/IGNITE-123-typo.md", "RFC-covered: " + DOC]
+        with TemporaryDirectory() as base, chdir(base), patch.object(ci, "review_lines", return_value=reviews):
+            with self.assertRaises(ci.CheckError) as missing:
                 ci.check(PR, [file(API)], TEMPLATE)
-            with patch.object(Path, "is_file", return_value=False), self.assertRaises(ci.CheckError):
-                ci.check(PR, [file(API)], TEMPLATE)
+            self.assertIn("rfcs/IGNITE-123-typo.md", missing.exception.result.reason)
+            Path(DOC).parent.mkdir()
+            Path(DOC).write_text(TEXT)
+            result = ci.check(PR, [file(API)], TEMPLATE)
+        self.assertIn(DOC, result.reason)
 
     def test_new_rfc_must_match_approved_document(self):
         evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result")
@@ -120,7 +134,9 @@ class RFCCheckTest(unittest.TestCase):
     def test_existing_file_can_be_clarified_or_amended_in_a_new_ticket(self):
         with patch.object(ci, "content", return_value=(TEXT, "blob")), \
                 patch.object(ci, "review_lines", return_value=["RFC-exempt: typo only"]):
-            ci.check(dict(PR, body=""), [file(DOC)], TEMPLATE)
+            with self.assertRaisesRegex(ci.CheckError, "reuses the Jira ticket"):
+                ci.check(dict(PR, body=""), [file(DOC)], TEMPLATE)
+            ci.check(dict(PR, title="IGNITE-456 Clarify the timeout", body=""), [file(DOC)], TEMPLATE)
         evidence = SimpleNamespace(versions={DOC: "voted"}, tally="positive result")
         with patch.object(ci, "content", return_value=(TEXT, "blob")), patch.object(ci, "review_lines", return_value=[]), \
                 patch.object(ci, "verify_vote", return_value=evidence):

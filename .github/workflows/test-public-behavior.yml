@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Test RFC checker
+name: Test public behavior check
 
 on:
   pull_request:
     paths:
-      - '.github/workflows/*rfc-check.yml'
+      - '.github/workflows/*public-behavior.yml'
       - '.github/scripts/*rfc*.py'
 
 permissions:
@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   test:
-    name: RFC checker tests
+    name: Public behavior check tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

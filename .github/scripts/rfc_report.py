@@ -15,6 +15,7 @@
 
 from html import escape
 import os
+from pathlib import Path
 import sys
 
 
@@ -23,8 +24,26 @@ def _one_line(text):
     return line[:999] + "…" if len(line) > 1000 else line
 
 
+def report_title(passed):
+    return "Public behavior check passed" if passed else "Public behavior check failed"
+
+
+def rules_reference():
+    project = "https://github.com/apache/ignite"
+    scope = f"{project}/blob/master/rfcs/IGNITE-29219-public-api-and-compatibility.md"
+    process_doc = Path("rfcs/IGNITE-29220-rfc-development-process.md")
+    if os.environ.get("GITHUB_REPOSITORY") == "apache/ignite" and process_doc.is_file():
+        process = f"{project}/blob/master/{process_doc.as_posix()}"
+    else:
+        process = f"{project}/pull/13760/files#diff-964c536dd887c02e46887244405c46d2d8b5e15dc7a4480eb3a33fb64844b15a"
+    return (
+        f"This check covers changes to [Ignite's public contracts]({scope}). "
+        f"The [RFC process]({process}) explains how to approve those changes."
+    )
+
+
 def report(passed, reason, author, reviewer, paths=()):
-    title = "RFC check passed" if passed else "RFC check failed"
+    title = report_title(passed)
     reason, author, reviewer = map(_one_line, (reason, author, reviewer))
     log = [f"{title}: {reason}", f"For the author: {author}", f"For the reviewer: {reviewer}"]
     summary = [
@@ -43,6 +62,10 @@ def report(passed, reason, author, reviewer, paths=()):
             more = f"See {len(paths) - len(shown)} more in the PR diff."
             log.append(more)
             summary.append(more)
+
+    rules = rules_reference()
+    summary.append(rules)
+    log.append(rules)
 
     # GitHub also accepts the older ##[command] syntax inside log lines.
     print("\n".join(log).replace("##[", r"##\["), file=sys.stdout if passed else sys.stderr)

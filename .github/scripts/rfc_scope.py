@@ -30,6 +30,7 @@ PUBLIC_API = "Check that existing applications still compile and that the same c
 COMMAND = "Run existing commands with their current flags and check their output and exit codes."
 PROTOCOL = "Check request, response and error handling between supported client and server versions."
 CONFIG = "Check that existing configuration names, accepted values and defaults still work."
+METRICS = "Check that monitoring tools can still read the documented metric names, types and values."
 SQL = "Run existing queries and compare their results and error codes."
 STORAGE = "Test recovery on a supported upgrade using data written by the previous version."
 BINARY = "Check that supported clients can still decode values written in the previous binary format."
@@ -44,13 +45,16 @@ INTERNAL_PATHS = {
     PROTOCOL: ("processors/rest/GridRestCommand.java", "processors/rest/GridRestResponse.java",
                "processors/rest/request/*.java", "processors/odbc/*.java", "processors/platform/client/*.java",
                "client/thin/ClientOperation.java", "client/thin/Protocol*.java"),
-    CONFIG: ("processors/configuration/distributed/*.java", "*/Distributed*Configuration.java"),
+    CONFIG: ("jdbc/thin/ConnectionPropertiesImpl.java", "processors/configuration/distributed/*.java",
+             "*/Distributed*Configuration.java"),
+    METRICS: ("processors/metric/GridMetricManager.java",),
     SQL: ("sql/*.java", "processors/query/calcite/sql/*.java", "processors/query/calcite/exec/exp/IgniteSqlFunctions.java",
           "processors/cache/query/IgniteQueryErrorCode.java"),
     BINARY: ("binary/BinaryMetadata.java", "binary/GridBinaryMarshaller.java",
              "binary/BinaryReaderExImpl.java", "binary/BinaryWriterExImpl.java"),
     STORAGE: ("pagemem/wal/record/*.java", "processors/cache/persistence/wal/serializer/*.java",
-              "processors/cache/persistence/tree/io/*.java", "processors/cache/persistence/snapshot/*SnapshotMetadata.java"),
+              "processors/cache/persistence/tree/io/*.java", "processors/cache/persistence/metastorage/*IO.java",
+              "processors/cache/persistence/snapshot/*SnapshotMetadata.java"),
 }
 
 OTHER_PATHS = {

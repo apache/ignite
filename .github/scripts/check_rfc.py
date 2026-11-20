@@ -110,7 +110,8 @@ def review_lines(pr):
     """A decision belongs to one head commit and to a reviewer with write access."""
     route = f"repos/{pr['base']['repo']['full_name']}"
     reviews = api(f"{route}/pulls/{pr['number']}/reviews?per_page=100", pages=True)
-    latest = {r["user"]["login"]: r for r in reviews if r["state"] in {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}}
+    latest = {r["user"]["login"]: r for r in reviews
+              if r["user"] and r["state"] in {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}}
     retargeted = None
     for review in latest.values():
         if review["commit_id"] != pr["head"]["sha"] or review["state"] != "APPROVED":
@@ -191,37 +192,41 @@ def check_evidence(pr, files, signals, marked, template):
             docs[path] = f["status"]
     if not (docs or signals or marked):
         return CheckResult(
-            "No RFC files or configured public-contract paths changed.",
+            "The changed files include no RFC or known public-contract path.",
             "Continue with the usual PR review.",
-            "Check for user-visible behavior changes outside the configured paths. Apply rfc-required if an RFC is needed.",
+            "Public behavior can change in other files. Add the rfc-required label if this PR changes a public contract.",
         )
 
     # Fetch decisions lazily. Most PRs with RFCs pass using the dev-list result alone.
     decisions = None
-    def reviewed(pattern):
+    def review_matches(pattern):
         nonlocal decisions
         if decisions is None:
             decisions = list(review_lines(pr))
-        return next((m for line in decisions if (m := re.fullmatch(pattern, line))), None)
+        for line in decisions:
+            match = re.fullmatch(pattern, line)
+            if match:
+                yield match
 
     if not docs:
-        covered = reviewed(r"RFC-covered:\s*(" + RFC_PATH + r")")
-        if covered and Path(covered[1]).is_file():
-            return CheckResult(
-                f"Reviewer confirmed coverage by {covered[1]}.",
-                "Keep the approved RFC linked in the PR. Request a fresh decision if you push another commit.",
-                "Compare the implementation and its compatibility tests with the plan in the linked RFC.",
-            )
-        exempt = None if marked else reviewed(r"RFC-exempt:\s*(\S.*)")
+        covered_paths = [m[1] for m in review_matches(r"RFC-covered:\s*(" + RFC_PATH + r")")]
+        for path in covered_paths:
+            if Path(path).is_file():
+                return CheckResult(
+                    f"Reviewer confirmed coverage by {path}.",
+                    "Keep the approved RFC linked in the PR. Request a fresh decision if you push another commit.",
+                    "Compare the implementation and its compatibility tests with the plan in the linked RFC.",
+                )
+        exempt = None if marked else next(review_matches(r"RFC-exempt:\s*(\S.*)"), None)
         if exempt:
             return CheckResult(
                 f"Reviewer confirmed the RFC exception for this revision. {exempt[1]}",
                 "Request a fresh decision if you push another commit.",
                 "Check the stated exception against the public behavior and compatibility tests in this revision.",
             )
-        if covered:
+        if covered_paths:
             raise CheckError(
-                f"The approving review names {covered[1]}, which is missing from the base commit.",
+                f"The base commit has no RFC at the paths named in approving reviews: {', '.join(covered_paths)}.",
                 "Link the approved RFC at its current path on the base branch.",
                 "If you have write access, compare the implementation with that RFC and approve this commit "
                 "with RFC-covered: <RFC path>.",
@@ -250,6 +255,12 @@ def check_evidence(pr, files, signals, marked, template):
             "Start the PR title with its Jira ticket, for example IGNITE-12345.",
             "Check that this ticket describes the proposal or amendment under review.",
         )
+    if any(status == "modified" and path.startswith(f"rfcs/{pr_ticket[1]}-") for path, status in docs.items()):
+        raise CheckError(
+            "The PR reuses the Jira ticket of the RFC it amends.",
+            "Use a new Jira ticket for the amendment and edit the existing RFC at its original path.",
+            "Check the revised behavior and migration plan against the original approval.",
+        )
     head_repo = pr["head"].get("repo")
     if not head_repo:
         raise CheckError(
@@ -272,20 +283,13 @@ def check_evidence(pr, files, signals, marked, template):
                     ) from exc
             validate_new(path, text, pr["title"], template)
     if not marked and all(s == "modified" for s in docs.values()):
-        exempt = reviewed(r"RFC-exempt:\s*(\S.*)")
+        exempt = next(review_matches(r"RFC-exempt:\s*(\S.*)"), None)
         if exempt:
             return CheckResult(
                 f"Reviewer confirmed that the RFC changes only clarify wording. {exempt[1]}",
                 "Request a fresh decision if you change this revision.",
                 "Compare the wording with the approved text. A change to the agreed behavior or migration plan needs a new vote.",
             )
-
-    if any(status == "modified" and path.startswith(f"rfcs/{pr_ticket[1]}-") for path, status in docs.items()):
-        raise CheckError(
-            "The PR reuses the Jira ticket of the RFC it amends.",
-            "Use a new Jira ticket for the amendment and edit the existing RFC at its original path.",
-            "Check the revised behavior and migration plan against the original approval.",
-        )
 
     result = result_link(pr)
     try:
@@ -297,7 +301,7 @@ def check_evidence(pr, files, signals, marked, template):
             if voted_blob != blob:
                 raise ManualReviewRequired(f"{path} differs from the voted version. Check whether the agreed plan changed.")
     except ManualReviewRequired as error:
-        verified = reviewed(r"RFC-verified:\s*" + re.escape(result) + r"\s+(\S.*)")
+        verified = next(review_matches(r"RFC-verified:\s*" + re.escape(result) + r"\s+(\S.*)"), None)
         if verified:
             return CheckResult(
                 f"Reviewer verified the result and the RFC at this revision. {verified[1]}",
@@ -307,8 +311,9 @@ def check_evidence(pr, files, signals, marked, template):
         raise CheckError(
             str(error),
             "Identify the relevant messages or voted file revision in the PR so the reviewer can resolve this question.",
-            "Read the linked vote and compare it with this revision. If the evidence resolves the question above, "
-            f"a reviewer with write access can approve this commit with RFC-verified: {result} <what you checked>.",
+            "Check the voted RFC and the result on dev@. Confirm three committer votes or an announced seven-day vote "
+            "with only compatible additions and no objections. Skipping deprecation needs explicit approval. "
+            f"Record the evidence in an approving review on this commit: RFC-verified: {result} <what you checked>.",
         ) from error
     except EvidenceUnavailable as error:
         raise CheckError(

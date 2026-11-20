@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import chdir, redirect_stderr, redirect_stdout
 from io import StringIO
 import os
 from pathlib import Path
@@ -21,7 +21,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
-from rfc_report import report
+from rfc_report import report, rules_reference
 
 
 class RFCReportTest(unittest.TestCase):
@@ -34,7 +34,8 @@ class RFCReportTest(unittest.TestCase):
                 report(False, "Missing vote.", "Link the result.", "Check the voted API.", paths)
             rendered = summary.read_text()
 
-        self.assertIn("## RFC check failed", rendered)
+        self.assertIn("## Public behavior check failed", rendered)
+        self.assertIn(rules_reference(), rendered)
         self.assertIn("### For the author\n\n<p>Link the result.</p>", rendered)
         self.assertIn("### For the reviewer\n\n<p>Check the voted API.</p>", rendered)
         self.assertIn("<code>a&lt;/code&gt;\\n##[warning]</code>", rendered)
@@ -47,6 +48,20 @@ class RFCReportTest(unittest.TestCase):
         with patch.dict(os.environ, GITHUB_STEP_SUMMARY=""), redirect_stdout(StringIO()) as log:
             report(True, "Vote verified.", "No RFC changes needed.", "Check the implementation.")
 
-        self.assertIn("RFC check passed: Vote verified.", log.getvalue())
+        self.assertIn("Public behavior check passed: Vote verified.", log.getvalue())
+        self.assertIn(rules_reference(), log.getvalue())
         self.assertIn("For the author: No RFC changes needed.", log.getvalue())
         self.assertIn("For the reviewer: Check the implementation.", log.getvalue())
+
+    def test_links_to_the_process_document_available_on_apache(self):
+        """Use the PR until the process has landed in the trusted Ignite checkout."""
+        with TemporaryDirectory() as directory, chdir(directory), patch.dict(os.environ, GITHUB_REPOSITORY="apache/ignite"):
+            self.assertIn("github.com/apache/ignite/pull/13760/files#diff-", rules_reference())
+            path = Path("rfcs/IGNITE-29220-rfc-development-process.md")
+            path.parent.mkdir()
+            path.touch()
+            links = rules_reference()
+            self.assertIn("github.com/apache/ignite/blob/master/rfcs/IGNITE-29219-public-api-and-compatibility.md", links)
+            self.assertIn("github.com/apache/ignite/blob/master/rfcs/IGNITE-29220-rfc-development-process.md", links)
+            with patch.dict(os.environ, GITHUB_REPOSITORY="contributor/validation"):
+                self.assertIn("github.com/apache/ignite/pull/13760/files#diff-", rules_reference())
