@@ -53,13 +53,17 @@ jobs:
 
             // Reproduce `git diff --no-renames --diff-filter=ADM`: a rename is a delete(old)+add(new) pair.
             // A protected class carries the @Order annotation; an added file is defined by the head revision,
-            // a deleted/modified one by the base.
+            // a deleted one by the base, and a modified one must be checked in both revisions.
             const revisions = [];
             for (const f of files) {
               if (f.status === 'added' || f.status === 'copied')
                 revisions.push([f.filename, headSha]);
-              else if (f.status === 'removed' || f.status === 'modified' || f.status === 'changed')
+              else if (f.status === 'removed')
                 revisions.push([f.filename, baseSha]);
+              else if (f.status === 'modified' || f.status === 'changed') {
+                revisions.push([f.filename, baseSha]);
+                revisions.push([f.filename, headSha]);
+              }
               else if (f.status === 'renamed') {
                 revisions.push([f.previous_filename, baseSha]);
                 revisions.push([f.filename, headSha]);
@@ -86,19 +90,38 @@ jobs:
                 && (lines.includes(ORDER_IMPORT) || lines.includes(ORDER_PKG));
             };
 
-            const hits = [];
+            const hits = new Set();
             for (const [path, ref] of revisions) {
               if (path.endsWith('.java')
                 && !path.startsWith('modules/core/src/test/resources/codegen/')
-                && await isProtected(path, ref)) hits.push(path);
+                && await isProtected(path, ref)) hits.add(path);
             }
 
-            if (hits.length === 0) return;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number: pr.number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(MARKER));
+
+            if (hits.size === 0) {
+              if (existing) {
+                await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+              }
+
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: pr.number, name: 'compatibility',
+                });
+              } catch (e) {
+                if (e.status !== 404) throw e;
+              }
+
+              return;
+            }
 
             // File names come from the fork; render them as inert inline code so they cannot inject
             // markdown (backticks, @mentions, links) into content posted under the bot's write token.
             const safe = f => '`' + String(f).replace(/[`\r\n]/g, '') + '`';
-            const list = hits.map(f => '- ' + safe(f)).join('\n');
+            const list = [...hits].sort().map(f => '- ' + safe(f)).join('\n');
             const summary = [
               'This PR modifies protected classes (with **Order** annotation).',
               'Changes to these classes can break rolling upgrade compatibility.',
@@ -108,14 +131,12 @@ jobs:
             ].join('\n');
             const body = MARKER + '\n## Possible compatibility issues. Please, check rolling upgrade cases\n\n' + summary + '\n';
 
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner, repo, issue_number: pr.number,
-            });
-            const existing = comments.find(c => c.body.includes(MARKER));
             if (existing) {
-              await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
             }
-            await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body });
+            else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: pr.number, body });
+            }
 
             await github.rest.issues.addLabels({
               owner, repo, issue_number: pr.number, labels: ['compatibility'],
