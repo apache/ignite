@@ -13,9 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import chdir
-from pathlib import Path
-from tempfile import TemporaryDirectory
 import unittest
 
 import check_pull_request as ci
@@ -42,9 +39,17 @@ class CheckPullRequestTest(unittest.TestCase):
         with self.assertRaises(ci.CheckError) as caught:
             ci.check([file(API)], changes)
         result = caught.exception.result
-        self.assertIn("need an RFC", result.reason)
+        self.assertIn("require an RFC file in this PR", result.reason)
         self.assertIn("rfcs/TEMPLATE.md", result.author)
         self.assertEqual(result.changes, changes)
+
+    def test_removing_an_rfc_does_not_cover_a_public_change(self):
+        """Removing or moving a plan out of rfcs leaves the PR without an RFC file."""
+        changes = {API: ["Added API method cacheTimeout"]}
+        for edit in (file(DOC, "removed"), file("docs/archive.md", "renamed", previous_filename=DOC)):
+            with self.subTest(edit=edit), self.assertRaises(ci.CheckError) as caught:
+                ci.check([file(API), edit], changes)
+            self.assertIn("require an RFC file in this PR", caught.exception.result.reason)
 
     def test_public_change_with_rfc_goes_to_review(self):
         changes = {API: ["Added API method cacheTimeout"]}
@@ -70,47 +75,3 @@ class CheckPullRequestTest(unittest.TestCase):
                 self.assertIn("rfcs/IGNITE-12345-cache-timeout.md", result.author)
                 self.assertEqual(result.paths, (name, API))
                 self.assertEqual(result.changes, changes)
-
-class LinkedRfcsTest(unittest.TestCase):
-    def setUp(self):
-        self.enterContext(chdir(self.enterContext(TemporaryDirectory())))
-        Path("rfcs").mkdir()
-        Path(DOC).touch()
-
-    def test_implementation_can_follow_an_existing_plan(self):
-        changes = {API: ["Added API method cacheTimeout"]}
-        result = ci.check([file(API)], changes, f"See {DOC}")
-        self.assertTrue(result.advisory)
-        self.assertEqual(result.paths, (DOC, API))
-        self.assertIn("no new vote", result.reviewer)
-
-    def test_deleted_or_moved_plan_cannot_cover_implementation(self):
-        changes = {API: ["Added API method cacheTimeout"]}
-        for edit in (file(DOC, "removed"), file("docs/archive.md", "renamed", previous_filename=DOC)):
-            with self.subTest(edit=edit), self.assertRaises(ci.CheckError):
-                ci.check([file(API), edit], changes, f"See {DOC}")
-
-    def test_existing_plan_is_found_in_the_base_checkout(self):
-        """A later PR can reference its plan by path or by a link to its file in GitHub."""
-        for reference in (
-            f"The plan is `{DOC}`.",
-            f"See [SQL plan](./{DOC}).",
-            f"https://github.com/apache/ignite/blob/master/{DOC}",
-            f"[Implementation plan](https://github.com/fixture/ignite/blob/master/{DOC})",
-            f"[Approved change](https://github.com/apache/ignite/blob/master/{DOC}#proposed-change)",
-        ):
-            with self.subTest(reference=reference):
-                self.assertEqual(ci.linked_rfcs(reference, "fixture/ignite"), [DOC])
-
-    def test_reference_must_identify_an_existing_plan_in_the_project(self):
-        """Only links to existing files in the project can identify a plan."""
-        for reference in (
-            f"[{DOC}](https://example.com/design)",
-            f"https://example.com/blob/master/{DOC}",
-            f"https://github.com/another/project/blob/master/{DOC}",
-            f"https://github.com/apache/ignite/issues/42?file={DOC}",
-            f"https://github.com/apache/ignite/issues/42#{DOC}",
-            "rfcs/IGNITE-123-missing.md",
-        ):
-            with self.subTest(reference=reference):
-                self.assertEqual(ci.linked_rfcs(reference, "fixture/ignite"), [])

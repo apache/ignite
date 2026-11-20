@@ -27,7 +27,7 @@ PUBLIC_API = "modules/core/src/main/java/org/apache/ignite/IgniteCache.java"
 HEAD = "a" * 40
 
 
-def run_checker(file_pages, *, sources=None, changed_files=None, title=""):
+def run_checker(file_pages, *, sources=None, changed_files=None, title="", linked_rfc=None):
     """Run the workflow command with a fork PR event and GitHub responses for its list of files."""
     repo = "apache/ignite"
     pull = f"repos/{repo}/pulls/42"
@@ -51,6 +51,11 @@ def run_checker(file_pages, *, sources=None, changed_files=None, title=""):
         responses[f"api -H Accept: application/vnd.github.raw+json repos/{repo}/contents/{path}?ref={rev}"] = source
     with TemporaryDirectory() as directory:
         work = Path(directory)
+        if linked_rfc:
+            plan = work / linked_rfc
+            plan.parent.mkdir()
+            plan.write_text("# Accepted plan\n")
+            pr["body"] = f"See https://github.com/{repo}/blob/master/{linked_rfc}"
         event = work / "event.json"
         event.write_text(json.dumps({"pull_request": pr}))
         (work / "responses.json").write_text(json.dumps(responses))
@@ -81,8 +86,9 @@ class CheckCommandTest(unittest.TestCase):
         original = "package org.apache.ignite; public interface IgniteCache {}"
         sources = {("before", PUBLIC_API): original,
                    ("after", PUBLIC_API): original.replace("{}", "{ int cacheTimeout(); }")}
-        result, summary = run_checker(pages, sources=sources)
+        result, summary = run_checker(pages, sources=sources, linked_rfc="rfcs/IGNITE-123-timeout.md")
         self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("require an RFC file in this PR", summary)
         self.assertIn(PUBLIC_API, summary)
         self.assertIn("cacheTimeout", summary)
         self.assertIn("rfcs/TEMPLATE.md", summary)

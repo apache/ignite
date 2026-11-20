@@ -220,7 +220,7 @@ class PostPrCommentTest(unittest.TestCase):
         context = self.prepare()
         self.publish(context, "success", "RFC filename checked.", original="failure")
         self.assertEqual(self.writes, ["POST"])
-        self.assertIn("Edit the PR description or push a commit to start a fresh check.", self.comments[-1]["body"])
+        self.assertIn("Re-run the failed job or ask a maintainer", self.comments[-1]["body"])
         self.assertIn(CHECKS_LINK, self.comments[-1]["body"])
         self.assertEqual(self.comments[-1]["body"].count(rc.rules_reference()), 1)
         self.assertNotIn(rc.RESOLVED, self.comments[-1]["body"])
@@ -275,12 +275,13 @@ class PostPrCommentTest(unittest.TestCase):
         self.publish(context, "failure", "Use the required RFC filename.")
         self.assertEqual(self.writes, ["POST"])
 
-    def test_rfc_link_added_while_reporting_discards_the_outdated_result(self):
-        """A missing-RFC warning is stale if the author adds the plan to the PR description."""
+    def test_rfc_link_added_while_reporting_keeps_the_missing_rfc_error(self):
+        """A link added to the description leaves the missing RFC file error in effect."""
         context = self.prepare()
         self.pr["body"] = "See `rfcs/IGNITE-123-cache-timeout.md`."
         self.publish(context, "failure", "Add an RFC for this change.")
-        self.assertEqual(self.writes, [])
+        self.assertEqual(self.writes, ["POST"])
+        self.assertIn("Add an RFC for this change.", self.comments[-1]["body"])
 
     def test_retry_keeps_the_new_comment_when_deletion_failed(self):
         """Given a failed cleanup, retry by deleting the old comment without reposting the new one."""

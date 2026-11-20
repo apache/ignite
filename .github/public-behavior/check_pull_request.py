@@ -79,30 +79,20 @@ def is_rfc_candidate(path):
             and re.match(r"IGNITE-[0-9]+\b", filename.name) is not None)
 
 
-def linked_rfcs(body, repository):
-    """Find implementation plans named in the PR that exist in the trusted base checkout."""
-    # Use Markdown link destinations so that a link's display text cannot identify a different RFC.
-    destinations = re.sub(r"\[[^\]\n]*\]\(\s*<?([^\s)>]+)>?(?:\s+[^)\n]*)?\)", r" \1 ", body or "")
-    plans = set()
-    for word in destinations.split():
-        target = word.lstrip("(<`").rstrip(".,;)>`")
-        target = target.partition("#")[0].partition("?")[0]
-        blob = re.fullmatch(r"https://github\.com/([^/?#]+/[^/?#]+)/blob/[^/?#]+/(.+)", target, re.I)
-        if blob and blob[1].lower() in {"apache/ignite", repository.lower()}:
-            path = blob[2]
-        else:
-            path = target.removeprefix("./")
-        if RFC_PATH.fullmatch(path) and Path(path).is_file():
-            plans.add(path)
-    return sorted(plans)
-
-
-def check(files, changes, description="", repository="apache/ignite"):
+def check(files, changes):
     if not changes:
         return CheckResult("No change was found by the static contract checks.", "", "")
 
     docs = sorted(f["filename"] for f in files if f["status"] != "removed" and is_rfc_candidate(f["filename"]))
     paths = (*docs, *changes)
+    if not docs:
+        raise CheckError(
+            "Public API and other public contract changes require an RFC file in this PR.",
+            "Add a new RFC from rfcs/TEMPLATE.md or update an existing RFC file in this PR. "
+            "Name a new file rfcs/IGNITE-<ticket>-<short-title>.md.",
+            "Check the detected changes and their effect on existing users.", paths, changes,
+        )
+
     for path in docs:
         if not RFC_PATH.fullmatch(path):
             raise CheckError(
@@ -111,26 +101,10 @@ def check(files, changes, description="", repository="apache/ignite"):
                 "Check that the filename contains the proposal's Jira ticket number.", paths, changes,
             )
 
-    if docs:
-        reason = "This PR changes a public contract and adds or updates an RFC."
-    else:
-        removed = {f["filename"] for f in files if f["status"] == "removed"}
-        removed.update(f["previous_filename"] for f in files if f["status"] == "renamed")
-        linked = [p for p in linked_rfcs(description, repository) if p not in removed]
-        if not linked:
-            raise CheckError(
-                "The public contract changes listed below need an RFC.",
-                "Copy rfcs/TEMPLATE.md to rfcs/IGNITE-<ticket>-<short-title>.md and describe the change. "
-                "If an existing RFC already covers it, link that file in the PR description.",
-                "Check the detected changes and their effect on existing users.", paths, changes,
-            )
-        paths = (*linked, *changes)
-        reason = "The PR description links an existing RFC for the flagged changes."
-
     review = ("Compare the changes below and their compatibility tests with the RFC. "
-              "For a new or revised plan, check its vote on dev@ and any unresolved objections. "
-              "Work covered by an approved plan needs no new vote.")
-    return CheckResult(reason, "", review, paths, advisory=True, changes=changes)
+              "For a new or revised plan, check its vote on dev@ and any unresolved objections.")
+    return CheckResult("This PR changes a public contract and adds or updates an RFC.", "", review,
+                       paths, advisory=True, changes=changes)
 
 
 def main():
@@ -152,7 +126,7 @@ def main():
         )
     repository = os.environ["GITHUB_REPOSITORY"]
     changes = changed_contracts(files, repository, pr["base"]["sha"], pr["head"]["sha"], api)
-    return check(files, changes, pr.get("body") or "", repository)
+    return check(files, changes)
 
 
 if __name__ == "__main__":

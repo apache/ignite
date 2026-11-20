@@ -36,7 +36,7 @@ RESOLVED = f"## {report_title(True)}\n\nThe check passed. There is nothing left 
 RERUN = (
     "## Public behavior changes need a fresh check\n\n"
     "GitHub still shows a failed job. The current PR passed when the reporter checked again.\n\n"
-    "### For the author\n\nEdit the PR description or push a commit to start a fresh check.\n\n"
+    "### For the author\n\nRe-run the failed job or ask a maintainer to re-run it.\n\n"
     "### For the reviewer\n\nWait for **Public behavior changes** to pass on this commit."
 )
 TIMEOUT = (
@@ -67,10 +67,6 @@ def matches(pr, run, repo):
         and head["ref"] == run["head_branch"] and head["sha"] == run["head_sha"]
         and (not run["pull_requests"] or any(link["number"] == pr["number"] for link in run["pull_requests"]))
     )
-
-
-def description_digest(pr):
-    return hashlib.sha256((pr.get("body") or "").encode()).hexdigest()
 
 
 def recorded_job(root, run):
@@ -115,7 +111,7 @@ def prepare(repo, run, destination):
     if not matches(pr, run, repo):
         return
     event = {"number": pr["number"], "head": {"sha": pr["head"]["sha"]}, "base": {"sha": pr["base"]["sha"]}}
-    context = {"pull_request": event, "source_conclusion": conclusion, "description_digest": description_digest(pr)}
+    context = {"pull_request": event, "source_conclusion": conclusion}
     destination.write_text(json.dumps(context), encoding="utf-8")
     with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
         print(f"pr_number={int(pr['number'])}", f"base_sha={pr['base']['sha']}", f"conclusion={conclusion}", sep="\n", file=out)
@@ -186,8 +182,6 @@ def publish(repo, run, context, summary_file, outcome):
 
     current = api(route)
     if not matches(current, run, repo) or current["base"]["sha"] != context["pull_request"]["base"]["sha"]:
-        return
-    if description_digest(current) != context["description_digest"]:
         return
     if newer_run(repo, run, current):
         return
