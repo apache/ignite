@@ -15,18 +15,18 @@
 * limitations under the License.
 */
 
-package org.apache.ignite.internal.processors.cache.persistence.evict;
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,29 +44,26 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     /** Maximum sample search spin count */
     private static final int SAMPLE_SPIN_LIMIT = SAMPLE_SIZE * 1000;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** Tracking array ptr. */
     private long trackingArrPtr;
 
     /**
      * @param pageMem Page memory.
      * @param plcCfg Policy config.
+     * @param memMetrics Data region metrics.
      * @param sharedCtx Shared context.
      */
     public RandomLruPageEvictionTracker(
         PageMemory pageMem,
         DataRegionConfiguration plcCfg,
+        DataRegionMetricsImpl memMetrics,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
-        super((PageMemoryNoStoreImpl)pageMem, sharedCtx);
+        super((PageMemoryNoStoreImpl)pageMem, plcCfg, memMetrics, sharedCtx);
 
         DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 
         assert plcCfg.getMaxSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
-
-        log = sharedCtx.logger(getClass());
     }
 
     /** {@inheritDoc} */

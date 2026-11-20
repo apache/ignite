@@ -3550,7 +3550,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * block on other entries' locks.
      *
      * @param val Value of the row, or {@code null} for a removal: no row is inserted, so nothing is reserved.
-     * @param bestEffort {@code True} if the insert can not be safely refused (see {@code FreeList#reserve}).
+     * @param bestEffort {@code True} if the insert can not be safely refused (see {@code PageEvictionTracker#reserve}).
      * @return Number of reserved pages, or {@code 0} if nothing is reserved.
      * @throws IgniteCheckedException If failed.
      */
