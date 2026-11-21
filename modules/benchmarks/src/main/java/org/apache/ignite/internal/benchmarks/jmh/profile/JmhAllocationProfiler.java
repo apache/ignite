@@ -79,10 +79,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
     /** Counter results reported in an iteration of this run. */
     private final Set<String> reported = new HashSet<>();
 
-    /**
-     * @param initLine Empty, or {@code dir=<path>} to write the JDK and OS of the run to {@code <path>/run.properties}.
-     * @throws ProfilerException If the options are wrong.
-     */
+    /** @param initLine Empty, or {@code dir=<path>} to write the run's JDK and OS to {@code <path>/run.properties}. */
     public JmhAllocationProfiler(String initLine) throws ProfilerException {
         if (initLine.startsWith("dir="))
             writeRunDescription(Paths.get(initLine.substring("dir=".length())));
@@ -137,7 +134,6 @@ public class JmhAllocationProfiler implements InternalProfiler {
             if (e.getKey() == self)
                 continue;
 
-            // A thread started during the iteration allocated all its bytes in it.
             long startBytes = start.bytes.getOrDefault(e.getKey(), 0L);
 
             grps.merge(group(end.names.get(e.getKey()), end.clients), e.getValue() - startBytes, Long::sum);
@@ -241,7 +237,6 @@ public class JmhAllocationProfiler implements InternalProfiler {
             s.readThreads();
 
             for (Ignite ignite : Ignition.allGrids()) {
-                // An unnamed node can't be told apart in labels, so the snapshot leaves it out.
                 if (ignite.name() != null)
                     s.readNode((IgniteEx)ignite);
             }

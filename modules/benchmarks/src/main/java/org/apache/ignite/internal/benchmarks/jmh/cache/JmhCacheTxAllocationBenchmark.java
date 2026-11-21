@@ -93,7 +93,6 @@ public class JmhCacheTxAllocationBenchmark extends JmhCacheAllocationAbstractBen
      * Runs the benchmark with both profilers; writes {@code <class name>.json} and the tables to {@code <class name>/}.
      *
      * @param args Arguments.
-     * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
         String name = JmhCacheTxAllocationBenchmark.class.getSimpleName();

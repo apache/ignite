@@ -82,9 +82,7 @@ public class JmhContinuousQueryAllocationBenchmark extends JmhCacheAllocationAbs
     /** Continuous query whose local listener accepts every update, started before the benchmark method runs. */
     @State(Scope.Benchmark)
     public static class ListenerQuery {
-        /**
-         * @param b Benchmark.
-         */
+        /** @param b Benchmark. */
         @Setup
         public void setup(JmhContinuousQueryAllocationBenchmark b) {
             b.cache.query(new ContinuousQuery<>().setLocalListener(evts -> evts.forEach(e -> { })));
@@ -94,9 +92,7 @@ public class JmhContinuousQueryAllocationBenchmark extends JmhCacheAllocationAbs
     /** Continuous query whose remote filter drops every update, started before the benchmark method runs. */
     @State(Scope.Benchmark)
     public static class FilterQuery {
-        /**
-         * @param b Benchmark.
-         */
+        /** @param b Benchmark. */
         @Setup
         public void setup(JmhContinuousQueryAllocationBenchmark b) {
             b.cache.query(new ContinuousQuery<>()

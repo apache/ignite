@@ -160,10 +160,7 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
         compute.broadcast(runJob);
     }
 
-    /**
-     * @return Result of the same task as {@link #execute}, started through the thin client.
-     * @throws InterruptedException If interrupted.
-     */
+    /** @return Result of the same task as {@link #execute}, started through the thin client. */
     @Benchmark
     public byte[] thinExecute() throws InterruptedException {
         return thinCompute.execute(EchoTask.class.getName(), arg);

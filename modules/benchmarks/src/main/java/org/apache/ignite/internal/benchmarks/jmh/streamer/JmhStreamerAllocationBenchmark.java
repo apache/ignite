@@ -90,11 +90,7 @@ public class JmhStreamerAllocationBenchmark extends JmhCacheAllocationAbstractBe
             newKeys[i] = CNT + i;
     }
 
-    /**
-     * Waits for the client's streamer threads and the backups, which finish a batch after the flush returns.
-     *
-     * @throws InterruptedException If interrupted.
-     */
+    /** Waits for the client's streamer threads and the backups, which finish a batch after the flush returns. */
     @TearDown(Level.Iteration)
     public void awaitTail() throws InterruptedException {
         Thread.sleep(TAIL_WAIT_MS);

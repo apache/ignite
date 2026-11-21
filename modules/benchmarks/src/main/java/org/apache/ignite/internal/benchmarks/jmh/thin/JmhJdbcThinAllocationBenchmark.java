@@ -80,12 +80,7 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return conn;
     }
 
-    /**
-     * Selects the row of a key.
-     *
-     * @return Number of rows read: one.
-     * @throws SQLException If failed.
-     */
+    /** @return Number of rows a select by key reads: one. */
     @Benchmark
     public int selectByKey() throws SQLException {
         select.setObject(1, keys[ThreadLocalRandom.current().nextInt(CNT)]);
@@ -93,12 +88,7 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return read(select);
     }
 
-    /**
-     * Selects {@link #RANGE} rows by a range of the indexed field.
-     *
-     * @return Number of rows read.
-     * @throws SQLException If failed.
-     */
+    /** @return Number of rows a select by a range of the indexed field reads: {@link #RANGE}. */
     @Benchmark
     public int selectRange() throws SQLException {
         int first = ThreadLocalRandom.current().nextInt(CNT - RANGE + 1);
@@ -113,7 +103,6 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
      * Sets the indexed field of a key to the value it has.
      *
      * @return Number of rows updated: one.
-     * @throws SQLException If failed.
      */
     @Benchmark
     public int update() throws SQLException {
@@ -125,11 +114,7 @@ public class JmhJdbcThinAllocationBenchmark extends JmhThinClientAllocationAbstr
         return update.executeUpdate();
     }
 
-    /**
-     * Inserts a row of a key the setup didn't write and deletes it, so the table keeps its size.
-     *
-     * @throws SQLException If failed.
-     */
+    /** Inserts a row of a key the setup didn't write and deletes it, so the table keeps its size. */
     @Benchmark
     public void insertDelete() throws SQLException {
         Object[] args = insertArgs[newKeyIdx++ % CNT];

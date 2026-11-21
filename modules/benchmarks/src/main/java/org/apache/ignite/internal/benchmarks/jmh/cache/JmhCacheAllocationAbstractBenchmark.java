@@ -127,18 +127,11 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
         }
     }
 
-    /**
-     * Writes the keys, then checkpoints them with persistence and reads each into the near cache if there is one.
-     *
-     * @param keys Keys.
-     * @param vals Values.
-     * @throws Exception If failed.
-     */
+    /** Writes the keys, then checkpoints them with persistence and reads each into the near cache if there is one. */
     @Override protected void populate(Object[] keys, Object[] vals) throws Exception {
         super.populate(keys, vals);
 
         if (storage == Storage.PERSISTENT) {
-            // Otherwise the checkpoint of the written keys falls into the measurement.
             for (Ignite ignite : Ignition.allGrids()) {
                 if (!ignite.cluster().localNode().isClient())
                     ((IgniteEx)ignite).context().cache().context().database().waitForCheckpoint("populate");

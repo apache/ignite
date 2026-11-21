@@ -124,7 +124,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
         return cache.replace(keys[i], vals[i]);
     }
 
-    /** Inserts a new key and removes it; keys go in order, since an atomic cache keeps removed entries for a while. */
+    /** Inserts a new key and removes it; new keys go in turn, as an atomic cache keeps a removed entry for a while. */
     @Benchmark
     public void putRemove() {
         int i = newKeyIdx++ % CNT;
@@ -157,7 +157,6 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
      * Runs put and get, atomic and transactional, with the allocation profiler; writes {@code <class name>.json}.
      *
      * @param args Arguments.
-     * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
         Options opts = JmhIdeBenchmarkRunner.create()

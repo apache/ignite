@@ -94,7 +94,6 @@ public class JmhMessagingAllocationBenchmark extends JmhCacheAbstractBenchmark {
         long deadline = System.nanoTime() + DELIVERY_TIMEOUT_NS;
 
         while (RCVD.get() < sent) {
-            // A spin isn't interrupted by JMH's timeout, so a lost message fails the run instead of hanging it.
             if (System.nanoTime() > deadline)
                 throw new IllegalStateException("The server's listener didn't get message " + sent);
 

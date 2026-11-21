@@ -99,10 +99,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     /** Measurement iterations so far. */
     private int measurements;
 
-    /**
-     * @param initLine {@code dir=<path>} for the per-class table, then optionally {@code ;site=<frames>} for stacks.
-     * @throws ProfilerException If the options are wrong.
-     */
+    /** @param initLine {@code dir=<path>} for the per-class tables, optionally with {@code ;site=<frames>}. */
     public JmhAllocationHistogramProfiler(String initLine) throws ProfilerException {
         Path dir = null;
         int frameCnt = 0;
@@ -236,7 +233,6 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     private Map<String, Map<String, long[]>> histogram() {
         Map<String, Map<String, long[]>> hist = new TreeMap<>();
 
-        // A group of a live thread without allocations reports zeros.
         for (String name : liveThreads)
             hist.put(group(name, clients), new TreeMap<>());
 
@@ -263,7 +259,6 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     private void writeTable(Map<String, Map<String, long[]>> hist, String iter, long ops) {
         boolean first = warmups + measurements == 1;
 
-        // The first iteration of a fork replaces a file left by an earlier run with the same process ID.
         try (Writer w = first ? Files.newBufferedWriter(file) : Files.newBufferedWriter(file, APPEND)) {
             if (first)
                 w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "") +
@@ -331,11 +326,9 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
                         "with a larger -XX:FlightRecorderOptions:memorysize.");
                 }
 
-                // The file also holds the events of other recordings running in this JVM.
                 if (!ALLOC_EVENT.equals(type))
                     continue;
 
-                // JFR sometimes records an allocation without its thread.
                 RecordedThread t = ev.getThread();
 
                 if (t != null && t.getJavaThreadId() == self)
@@ -355,7 +348,6 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
     /** @return Row of an allocation: its class, an array's size range and, with {@code site}, the top frames. */
     private String row(RecordedEvent ev, Map<RecordedStackTrace, String> stackTexts) {
-        // JFR sometimes records an allocation without its class.
         RecordedClass cls = ev.getClass("objectClass");
         String name = cls == null ? "<unknown>" : cls.getName();
 

@@ -73,12 +73,7 @@ public abstract class JmhThinClientAllocationAbstractBenchmark extends JmhCacheA
         Ignition.stopAll(true);
     }
 
-    /**
-     * Connects the client to the servers' client connectors.
-     *
-     * @return Connection.
-     * @throws Exception If failed.
-     */
+    /** @return Client connection to the servers' client connectors. */
     protected abstract AutoCloseable connect() throws Exception;
 
     /** @return Both servers' client connectors with partition awareness, otherwise the first one's, so runs agree. */

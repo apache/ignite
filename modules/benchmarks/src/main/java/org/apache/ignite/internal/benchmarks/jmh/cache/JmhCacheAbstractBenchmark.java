@@ -119,7 +119,6 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
 
-        // A cluster with persistence starts inactive.
         node.cluster().state(ClusterState.ACTIVE);
 
         if (clientMode()) {
@@ -147,11 +146,8 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     }
 
     /**
-     * Writes the keys until every partition with a key has had more than 127 updates, past the {@code Long} cache.
-     *
-     * @param keys Keys.
-     * @param vals Values.
-     * @throws Exception If failed.
+     * Writes the keys until each partition with a key has had more than 127 updates: from then on, boxing its update
+     * counter allocates, as in a cluster that has run for a while.
      */
     protected void populate(Object[] keys, Object[] vals) throws Exception {
         int passes = passes(keys);
@@ -177,7 +173,6 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         int min = Arrays.stream(keysPerPart).filter(n -> n > 0).min().orElse(1);
 
-        // ceil(128 / min): the partition with the fewest keys gets min updates per pass.
         return (128 + min - 1) / min;
     }
 
