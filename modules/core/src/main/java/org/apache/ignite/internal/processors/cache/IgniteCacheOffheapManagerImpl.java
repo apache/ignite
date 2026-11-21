@@ -43,6 +43,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.cache.query.index.sorted.IndexRowCache;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
@@ -1079,6 +1080,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             if (store.destroyed())
                 return;
+
+            // The store is destroyed in bulk, without per-row row-cache callbacks, so the group
+            // row cache must not keep entries of the destroyed partition (see IndexRowCache#
+            // clearForPartition for why such entries must not survive).
+            IndexRowCache rowCache = ctx.kernalContext().indexProcessor().rowCacheCleaner(grp.groupId());
+
+            if (rowCache != null)
+                rowCache.clearForPartition(p);
 
             destroyCacheDataStore0(store);
         }
