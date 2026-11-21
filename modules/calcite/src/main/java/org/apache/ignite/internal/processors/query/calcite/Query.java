@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -71,7 +70,7 @@ public class Query<RowT> {
     protected final AtomicInteger finishedFragmentsCnt = new AtomicInteger();
 
     /** */
-    protected final Set<Long> initNodeStartedExchanges = new HashSet<>();
+    protected final Set<Long> initNodeStartedExchanges = ConcurrentHashMap.newKeySet();
 
     /** Logger. */
     protected final IgniteLogger log;
