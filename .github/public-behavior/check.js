@@ -342,8 +342,8 @@ function failedStep(outcomes) {
 
 /**
  * Adds to each removed deprecated declaration when its deprecation was last changed: the commit and the first release that
- * contains it. Fetches the full history when the checkout is shallow. A repository without release tags, such as a fork,
- * gives no release. A hint that cannot be computed is left out.
+ * contains it. A shallow checkout fetches the full history and the release tags of apache/ignite, because a fork may have
+ * old tags only. A repository without release tags gives no release. A hint that cannot be computed is left out.
  */
 function addDeprecationHints(findings, repo, core) {
     const removed = findings.filter(f => f.kind === 'deprecated-removal' && /:\d+$/.test(f.location));
@@ -355,8 +355,10 @@ function addDeprecationHints(findings, repo, core) {
     const releaseTags = tags => tags.split('\n').filter(t => /^\d+\.\d+\.\d+$/.test(t));
 
     try {
-        if (git('rev-parse', '--is-shallow-repository') === 'true')
-            git('fetch', '--quiet', '--unshallow', '--tags', 'origin');
+        if (git('rev-parse', '--is-shallow-repository') === 'true') {
+            git('fetch', '--quiet', '--unshallow', 'origin');
+            git('fetch', '--quiet', '--force', '--tags', 'https://github.com/apache/ignite.git');
+        }
 
         const released = releaseTags(git('tag', '-l')).length > 0;
 
