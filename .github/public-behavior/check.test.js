@@ -345,23 +345,41 @@ test('report: a PR merge that does not build fails as a check that could not fin
     assert.ok(out.summary.includes('If the PR does not compile, fix it.'), out.summary);
 });
 
-test('report: a removed deprecated declaration shows when it was deprecated', async () => {
+/**
+ * Runs report() for a PR that removes a declaration deprecated in the last target commit.
+ *
+ * @param tag Release tag of that commit, or null.
+ * @return Deprecation hint and the deprecating commit.
+ */
+async function deprecationHint(tag) {
     const ws = workspace();
     const base = path.join(ws, 'base');
 
     fs.writeFileSync(path.join(base, 'Old.java'), 'class Old {\n    @Deprecated\n    void run() {}\n}\n');
     git(base, 'add', '.');
     git(base, 'commit', '-q', '-m', 'deprecate');
-    git(base, 'tag', '2.9.0');
 
-    const sha = git(base, 'rev-parse', 'HEAD').toString().trim();
-    const removed = line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated', 'Old.java:2');
+    if (tag)
+        git(base, 'tag', tag);
 
-    fs.writeFileSync(path.join(ws, 'base.txt'), removed);
+    fs.writeFileSync(path.join(ws, 'base.txt'), line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated', 'Old.java:2'));
     fs.writeFileSync(path.join(ws, 'merge.txt'), '');
 
     const out = await report(ws);
 
     assert.strictEqual(out.result.outcome, 'review');
-    assert.match(out.result.findings[0].hint, new RegExp(`^deprecated in ${sha.slice(0, 10)} on \\d{4}-\\d\\d-\\d\\d, first release 2\\.9\\.0$`));
+
+    return { hint: out.result.findings[0].hint, sha: git(base, 'rev-parse', '--short=10', 'HEAD').toString().trim() };
+}
+
+test('report: a removed deprecated declaration shows when it was deprecated and the first release', async () => {
+    const { hint, sha } = await deprecationHint('2.9.0');
+
+    assert.match(hint, new RegExp(`^deprecated in ${sha} on \\d{4}-\\d\\d-\\d\\d, first release 2\\.9\\.0$`));
+});
+
+test('report: without release tags, as in a fork, the hint names no release', async () => {
+    const { hint, sha } = await deprecationHint(null);
+
+    assert.match(hint, new RegExp(`^deprecated in ${sha} on \\d{4}-\\d\\d-\\d\\d$`));
 });

@@ -342,7 +342,8 @@ function failedStep(outcomes) {
 
 /**
  * Adds to each removed deprecated declaration when its deprecation was last changed: the commit and the first release that
- * contains it. Fetches the full history when the checkout is shallow. A hint that cannot be computed is left out.
+ * contains it. Fetches the full history when the checkout is shallow. A repository without release tags, such as a fork,
+ * gives no release. A hint that cannot be computed is left out.
  */
 function addDeprecationHints(findings, repo, core) {
     const removed = findings.filter(f => f.kind === 'deprecated-removal' && /:\d+$/.test(f.location));
@@ -351,18 +352,22 @@ function addDeprecationHints(findings, repo, core) {
         return;
 
     const git = (...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 64 << 20 }).trim();
+    const releaseTags = tags => tags.split('\n').filter(t => /^\d+\.\d+\.\d+$/.test(t));
 
     try {
         if (git('rev-parse', '--is-shallow-repository') === 'true')
             git('fetch', '--quiet', '--unshallow', '--tags', 'origin');
 
+        const released = releaseTags(git('tag', '-l')).length > 0;
+
         for (const f of removed) {
             const [file, line] = [f.location.replace(/:\d+$/, ''), f.location.match(/(\d+)$/)[1]];
             const sha = git('blame', '--porcelain', '-L', `${line},${line}`, 'HEAD', '--', file).split(' ')[0];
             const date = git('log', '-1', '--format=%as', sha);
-            const release = git('tag', '--contains', sha, '--sort=creatordate').split('\n').find(t => /^\d+\.\d+\.\d+$/.test(t));
+            const release = releaseTags(git('tag', '--contains', sha, '--sort=creatordate'))[0];
 
-            f.hint = `deprecated in ${sha.slice(0, 10)} on ${date}, ` + (release ? `first release ${release}` : 'not released yet');
+            f.hint = `deprecated in ${sha.slice(0, 10)} on ${date}`
+                + (release ? `, first release ${release}` : released ? ', not released yet' : '');
         }
     }
     catch (e) {
