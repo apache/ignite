@@ -76,7 +76,7 @@ public abstract class JmhThinClientAllocationAbstractBenchmark extends JmhCacheA
     /** @return Client connection to the servers' client connectors. */
     protected abstract AutoCloseable connect() throws Exception;
 
-    /** @return Both servers' client connectors with partition awareness, otherwise the first one's, so runs agree. */
+    /** @return Both servers' connectors with partition awareness, otherwise the first one's, the same in every run. */
     protected String[] addresses() {
         return partitionAwareness
             ? new String[] {"127.0.0.1:10800", "127.0.0.1:10801"}

@@ -76,7 +76,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
     /** Snapshot taken before the benchmark stopped its nodes, if it did in this iteration. */
     private Snapshot beforeStop;
 
-    /** Counter results reported in an iteration of this run. */
+    /** Labels of the counter results reported so far. */
     private final Set<String> reported = new HashSet<>();
 
     /** @param initLine Empty, or {@code dir=<path>} to write the run's JDK and OS to {@code <path>/run.properties}. */
@@ -106,7 +106,7 @@ public class JmhAllocationProfiler implements InternalProfiler {
         if (!start.clients.isEmpty() && end.clients.isEmpty())
             throw new IllegalStateException(JmhNodeStopHook.NOT_CALLED);
 
-        // Bytes are counted from before to after the iteration: all its operations, not only the measured ones.
+        // The snapshots cover the whole iteration, so divide by all its operations, not only the measured ones.
         long ops = res.getMetadata().getAllOps();
 
         if (ops == 0)
@@ -155,19 +155,20 @@ public class JmhAllocationProfiler implements InternalProfiler {
         for (Counter c : Counter.values()) {
             Map<String, Long> startVals = start.counters.get(c);
 
-            end.counters.get(c).forEach((lbl, val) -> {
+            for (Map.Entry<String, Long> e : end.counters.get(c).entrySet()) {
+                String lbl = e.getKey();
                 Long startVal = startVals.get(lbl);
 
                 if (startVal == null)
-                    return;
+                    continue;
 
-                if (c.sparse && val.equals(startVal) && !reported.contains(lbl))
-                    return;
+                if (c.sparse && e.getValue().equals(startVal) && !reported.contains(lbl))
+                    continue;
 
                 reported.add(lbl);
 
-                out.add(result(lbl, val - startVal, ops, c.unit));
-            });
+                out.add(result(lbl, e.getValue() - startVal, ops, c.unit));
+            }
         }
 
         return out;

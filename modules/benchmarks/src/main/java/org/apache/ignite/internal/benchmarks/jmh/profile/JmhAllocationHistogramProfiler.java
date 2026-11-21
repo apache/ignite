@@ -66,8 +66,8 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
     private static final String DATA_LOSS_EVENT = "jdk.DataLoss";
 
     /** Primitive array element types by their descriptor code. */
-    private static final Map<Character, String> PRIMITIVES = Map.of('Z', "boolean", 'B', "byte", 'C', "char", 'S',
-        "short", 'I', "int", 'J', "long", 'F', "float", 'D', "double");
+    private static final Map<Character, String> PRIMITIVES = Map.of('Z', "boolean", 'B', "byte", 'C', "char",
+        'S', "short", 'I', "int", 'J', "long", 'F', "float", 'D', "double");
 
     /** Output directory. */
     private final Path dir;
@@ -154,7 +154,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
             return List.of();
 
         String iter = iterParams.getType() == IterationType.WARMUP
-            ? "warmup-" + ++warmups
+            ? "warmup-" + (++warmups)
             : String.valueOf(++measurements);
 
         writeTable(hist, iter, ops);
@@ -167,7 +167,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         return "Objects and bytes allocated per operation for each class, by node and thread pool. Needs -XX:-UseTLAB.";
     }
 
-    /** Checks that TLABs are off and names the file; not in the constructor, which JMH also runs in its own JVM. */
+    /** Checks that TLABs are off and starts the file; not in the constructor, which JMH also runs in its own JVM. */
     private void init(BenchmarkParams benchParams) {
         HotSpotDiagnosticMXBean hotspot = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class);
 
@@ -177,6 +177,14 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
         }
 
         file = dir.resolve(fileName(benchParams));
+
+        try {
+            Files.writeString(file, "group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "") +
+                "iteration\tobjects/op\tbytes/op\n");
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /** @return Names of the live threads other than the current one. */
@@ -257,13 +265,7 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
 
     /** Appends the rows of an iteration to the per-class file. */
     private void writeTable(Map<String, Map<String, long[]>> hist, String iter, long ops) {
-        boolean first = warmups + measurements == 1;
-
-        try (Writer w = first ? Files.newBufferedWriter(file) : Files.newBufferedWriter(file, APPEND)) {
-            if (first)
-                w.write("group\tclass\tsize\t" + (frameCnt > 0 ? "frames\t" : "") +
-                    "iteration\tobjects/op\tbytes/op\n");
-
+        try (Writer w = Files.newBufferedWriter(file, APPEND)) {
             for (Map.Entry<String, Map<String, long[]>> grp : hist.entrySet()) {
                 for (Map.Entry<String, long[]> row : grp.getValue().entrySet()) {
                     long[] cnt = row.getValue();

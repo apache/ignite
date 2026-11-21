@@ -44,7 +44,7 @@ import org.openjdk.jmh.annotations.Param;
 /** Cache put, get, getAll and invoke by key type, value type and value size; every key holds one value from setup. */
 @SuppressWarnings("unchecked")
 public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
-    /** At most this many keys times {@link #valSize}: large values get fewer keys, whatever the value type. */
+    /** Upper bound of the key count times {@link #valSize}: large values get fewer keys, whatever the value type. */
     private static final int DATA_SIZE = 10_000_000;
 
     /** Keys per {@link #getAll()}. */
@@ -77,6 +77,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
                     return "key-" + i;
 
                 case UUID:
+                    // UUID.hashCode() XORs the two halves, so equal halves hash to 0: the index goes in one half only.
                     return new UUID(0, i);
 
                 case AFFINITY_POJO:
@@ -175,7 +176,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         /** {@link #POJO8} as a binary object, through the cache with {@code keepBinary}. */
         BINARY_OBJECT;
 
-        /** @return Value of this type; {@code size} is the length of strings, arrays and collections. */
+        /** @return Value of this type. */
         Object value(int size) {
             switch (this) {
                 case BYTE:
@@ -326,7 +327,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
             cache = cache.withKeepBinary();
         }
 
-        keys = new Object[Math.min(CNT, DATA_SIZE / Math.max(valSize, 100))];
+        keys = new Object[Math.min(CNT, DATA_SIZE / valSize)];
 
         Object[] vals = new Object[keys.length];
 

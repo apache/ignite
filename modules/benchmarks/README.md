@@ -126,10 +126,10 @@ appears from the first iteration, warmup included, in which the node sent such a
 pool completed a task, and stays in every iteration after it. JMH counts the measurement iterations
 before that as 0 in the result, and leaves them out of `rawData` in the JSON. The registry names a
 pool as Ignite's metrics do (`threadPools.<registry>`), not as its threads: `StripedExecutor` runs
-the `sys-stripe` threads, `GridSystemExecutor` the `sys`
-threads, `GridExecutionExecutor` `pub`, `GridServicesExecutor` `svc`, `GridQueryExecutor` `query`
-and `GridThinClientExecutor` `client-connector`. With `dir=<path>`, the profiler also writes
-the JDK and OS of the run to `<path>/run.properties`.
+the `sys-stripe` threads, `GridSystemExecutor` the `sys` threads, `GridExecutionExecutor` `pub`,
+`GridServicesExecutor` `svc`, `GridQueryExecutor` `query` and `GridThinClientExecutor`
+`client-connector`. With `dir=<path>`, the profiler also writes the JDK and OS of the run to
+`<path>/run.properties`.
 
 Both allocation profilers work with the benchmarks that extend `JmhCacheAbstractBenchmark`,
 `JmhSqlAbstractBenchmark` or `JmhThinClientAbstractBenchmark` and keep their teardown. To use them
@@ -263,9 +263,9 @@ some allocations. Before fixing one, check it with escape analysis on:
 These benchmarks in `jmh.cache`, `jmh.streamer`, `jmh.sql`, `jmh.thin`, `jmh.compute` and
 `jmh.sequence` are made for the allocation profilers. Each starts two server nodes and calls Ignite
 from a client node, from a server with `client=SERVER`, or, in the thin client and JDBC thin
-benchmarks and the `thin*` methods, from a client connected to the servers' client connectors. Each creates the keys, values
-and other arguments of its calls before measuring. The benchmarks of a cache write every key first,
-so their operations work on existing entries.
+benchmarks and the `thin*` methods, from a client connected to the servers' client connectors.
+Each creates the keys, values and other arguments of its calls before measuring. The benchmarks of
+a cache write every key first, so their operations work on existing entries.
 
 | Class | Methods | What it measures |
 |---|---|---|

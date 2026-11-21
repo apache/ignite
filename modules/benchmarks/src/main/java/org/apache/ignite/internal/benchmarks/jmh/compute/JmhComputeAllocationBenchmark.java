@@ -123,9 +123,9 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration configuration(String igniteInstanceName) {
+        // The thin client runs compute tasks only if the server allows it.
         ThinClientConfiguration thinCfg = new ThinClientConfiguration().setMaxActiveComputeTasksPerConnection(100);
 
-        // The thin client runs compute tasks only if the server allows it.
         return super.configuration(igniteInstanceName)
             .setClientConnectorConfiguration(new ClientConnectorConfiguration().setThinClientConfiguration(thinCfg));
     }
@@ -174,7 +174,7 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
         /** Argument. */
         private final byte[] arg;
 
-        /** @param arg Argument. */
+        /** */
         ArgRunnable(byte[] arg) {
             this.arg = arg;
         }
@@ -193,7 +193,7 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
         /** Argument. */
         private final byte[] arg;
 
-        /** @param arg Argument. */
+        /** */
         EchoCallable(byte[] arg) {
             this.arg = arg;
         }
@@ -228,7 +228,7 @@ public class JmhComputeAllocationBenchmark extends JmhCacheAbstractBenchmark {
         /** Argument. */
         private final byte[] arg;
 
-        /** @param arg Argument. */
+        /** */
         EchoJob(byte[] arg) {
             this.arg = arg;
         }

@@ -124,7 +124,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
         return cache.replace(keys[i], vals[i]);
     }
 
-    /** Inserts a new key and removes it; new keys go in turn, as an atomic cache keeps a removed entry for a while. */
+    /** Inserts a new key and removes it, a new one each time: an atomic cache keeps a removed entry for a while. */
     @Benchmark
     public void putRemove() {
         int i = newKeyIdx++ % CNT;
