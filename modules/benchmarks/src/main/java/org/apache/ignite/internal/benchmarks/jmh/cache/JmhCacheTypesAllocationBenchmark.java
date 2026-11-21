@@ -77,7 +77,7 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
                     return "key-" + i;
 
                 case UUID:
-                    return new UUID(i, i);
+                    return new UUID(0, i);
 
                 case AFFINITY_POJO:
                     return new AffinityPojoKey(i, i / 10);
