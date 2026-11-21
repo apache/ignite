@@ -157,17 +157,18 @@ public class JmhAllocationProfiler implements InternalProfiler {
 
             for (Map.Entry<String, Long> e : end.counters.get(c).entrySet()) {
                 String lbl = e.getKey();
+                long val = e.getValue();
                 Long startVal = startVals.get(lbl);
 
                 if (startVal == null)
                     continue;
 
-                if (c.sparse && e.getValue().equals(startVal) && !reported.contains(lbl))
+                if (c.sparse && val == startVal && !reported.contains(lbl))
                     continue;
 
                 reported.add(lbl);
 
-                out.add(result(lbl, e.getValue() - startVal, ops, c.unit));
+                out.add(result(lbl, val - startVal, ops, c.unit));
             }
         }
 

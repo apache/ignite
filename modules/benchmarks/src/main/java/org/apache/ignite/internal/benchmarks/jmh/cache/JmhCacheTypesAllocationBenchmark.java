@@ -44,7 +44,7 @@ import org.openjdk.jmh.annotations.Param;
 /** Cache put, get, getAll and invoke by key type, value type and value size; every key holds one value from setup. */
 @SuppressWarnings("unchecked")
 public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
-    /** Upper bound of the key count times {@link #valSize}: large values get fewer keys, whatever the value type. */
+    /** Largest product of the key count and {@link #valSize}: large values get fewer keys, whatever the value type. */
     private static final int DATA_SIZE = 10_000_000;
 
     /** Keys per {@link #getAll()}. */
@@ -325,7 +325,6 @@ public class JmhCacheTypesAllocationBenchmark extends JmhCacheAllocationAbstract
         }
 
         keys = new Object[Math.min(CNT, DATA_SIZE / valSize)];
-
         vals = new Object[keys.length];
 
         for (int i = 0; i < keys.length; i++) {

@@ -122,7 +122,7 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
         cache.remove(newKeys[i]);
     }
 
-    /** Runs an entry processor that writes the value back; like a user's call, it allocates an empty args array. */
+    /** Runs an entry processor that writes the value back; each call allocates an empty varargs array, as users' do. */
     @Benchmark
     public void invoke() {
         cache.invoke(keys[ThreadLocalRandom.current().nextInt(CNT)], SAME_VALUE);

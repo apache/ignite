@@ -134,7 +134,7 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
         }
     }
 
-    /** Writes an {@link IntValue} of each key from 0 to {@code CNT - 1}, as {@link #keys} and {@link #vals}. */
+    /** Sets {@link #keys} to 0 to {@code CNT - 1} and {@link #vals} to an {@link IntValue} of each, and writes them. */
     protected void populateIntValues() throws Exception {
         keys = new Integer[CNT];
         vals = new IntValue[CNT];
