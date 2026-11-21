@@ -17,7 +17,10 @@
 
 package org.apache.ignite.spi.encryption;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import javax.crypto.Cipher;
 import java.util.Arrays;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
@@ -33,10 +36,64 @@ import static org.apache.ignite.internal.encryption.AbstractEncryptionTest.MASTE
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 /** */
 public class KeystoreEncryptionSpiSelfTest {
+
+    /** */
+    @Test
+    public void testCipherThreadLocalsRemovedAfterUse() throws Exception {
+        KeystoreEncryptionSpi encSpi = new KeystoreEncryptionSpi();
+
+        encSpi.setKeyStorePath(KEYSTORE_PATH);
+        encSpi.setKeyStorePassword(KEYSTORE_PASSWORD.toCharArray());
+
+        GridTestUtils.invoke(encSpi, "onBeforeStart");
+
+        encSpi.spiStart("default");
+
+        KeystoreEncryptionKey k = (KeystoreEncryptionKey)encSpi.create();
+
+        byte[] plainText = "ThreadLocal cleanup test".getBytes(UTF_8);
+        byte[] cipherText = new byte[encSpi.encryptedSize(plainText.length)];
+
+        ThreadLocal<Cipher> aesWithPadding = cipherThreadLocal("aesWithPadding");
+
+        Cipher paddingCipherBeforeEncrypt = aesWithPadding.get();
+
+        encSpi.encrypt(ByteBuffer.wrap(plainText), k, ByteBuffer.wrap(cipherText));
+
+        assertNotSame(paddingCipherBeforeEncrypt, aesWithPadding.get());
+
+        Cipher paddingCipherBeforeDecrypt = aesWithPadding.get();
+
+        encSpi.decrypt(cipherText, k);
+
+        assertNotSame(paddingCipherBeforeDecrypt, aesWithPadding.get());
+
+        ThreadLocal<Cipher> aesWithoutPadding = cipherThreadLocal("aesWithoutPadding");
+
+        Cipher noPaddingCipherBeforeStop = aesWithoutPadding.get();
+
+        encSpi.spiStop();
+
+        assertNotSame(noPaddingCipherBeforeStop, aesWithoutPadding.get());
+    }
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static ThreadLocal<Cipher> cipherThreadLocal(String fldName) throws Exception {
+        Field fld = KeystoreEncryptionSpi.class.getDeclaredField(fldName);
+
+        assertTrue(Modifier.isStatic(fld.getModifiers()));
+
+        fld.setAccessible(true);
+
+        return (ThreadLocal<Cipher>)fld.get(null);
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testCantStartWithEmptyParam() throws Exception {
