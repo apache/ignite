@@ -26,6 +26,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.profile.JmhNodeStopHook;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -115,6 +116,9 @@ public abstract class JmhThinClientAbstractBenchmark extends JmhAbstractBenchmar
      */
     @TearDown
     public void tearDown() throws Exception {
+        // Profilers read the last iteration while the nodes still run.
+        JmhNodeStopHook.run();
+
         client.close();
         Ignition.stopAll(true);
     }

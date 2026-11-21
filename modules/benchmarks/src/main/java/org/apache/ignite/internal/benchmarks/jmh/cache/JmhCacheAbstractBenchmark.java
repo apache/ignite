@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.profile.JmhNodeStopHook;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -34,6 +39,8 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 
 /**
  * Base class for cache benchmarks.
@@ -85,33 +92,36 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         System.out.println("IGNITE BENCHMARK INFO: ");
 
-        System.out.println("\tclient mode:                " + booleanProperty(PROP_CLIENT_MODE));
+        System.out.println("\tclient mode:                " + clientMode());
 
-        System.out.println("\tdata nodes:                 " + intProperty(PROP_DATA_NODES, DFLT_DATA_NODES));
+        System.out.println("\tdata nodes:                 " + dataNodes());
 
-        System.out.println("\tbackups:                    " + intProperty(PROP_BACKUPS));
+        CacheConfiguration cacheCfg = cacheConfiguration();
 
-        System.out.println("\tatomicity mode:             " +
-            enumProperty(PROP_ATOMICITY_MODE, CacheAtomicityMode.class));
+        System.out.println("\tbackups:                    " + cacheCfg.getBackups());
 
-        System.out.println("\twrite synchronization mode: " +
-            enumProperty(PROP_WRITE_SYNC_MODE, CacheWriteSynchronizationMode.class));
+        System.out.println("\tatomicity mode:             " + cacheCfg.getAtomicityMode());
+
+        System.out.println("\twrite synchronization mode: " + cacheCfg.getWriteSynchronizationMode());
 
         System.out.println("--------------------");
         System.out.println();
 
-        int nodesCnt = intProperty(PROP_DATA_NODES, DFLT_DATA_NODES);
+        int nodesCnt = dataNodes();
 
         A.ensure(nodesCnt >= 1, "nodesCnt >= 1");
+
+        // The update notifier allocates megabytes at a random moment of the run.
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
 
         node = Ignition.start(configuration("node0"));
 
         for (int i = 1; i < nodesCnt; i++)
             Ignition.start(configuration("node" + i));
 
-        boolean isClient = booleanProperty(PROP_CLIENT_MODE);
+        node.cluster().state(ClusterState.ACTIVE);
 
-        if (isClient) {
+        if (clientMode()) {
             IgniteConfiguration clientCfg = configuration("client");
 
             clientCfg.setClientMode(true);
@@ -129,7 +139,51 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
+        // Profilers read the last iteration while the nodes still run.
+        JmhNodeStopHook.run();
+
         Ignition.stopAll(true);
+    }
+
+    /**
+     * Writes the keys until each partition with a key has had more than 127 updates: from then on, boxing its update
+     * counter allocates, as in a cluster that has run for a while.
+     */
+    protected void populate(Object[] keys, Object[] vals) throws Exception {
+        int passes = passes(keys);
+
+        for (int pass = 0; pass < passes; pass++) {
+            try (IgniteDataStreamer<Object, Object> streamer = node.dataStreamer(cache.getName())) {
+                streamer.allowOverwrite(pass > 0);
+
+                for (int i = 0; i < keys.length; i++)
+                    streamer.addData(keys[i], vals[i]);
+            }
+        }
+    }
+
+    /** @return Passes over the keys after which every partition that holds one has had more than 127 updates. */
+    private int passes(Object[] keys) {
+        Affinity<Object> aff = node.affinity(cache.getName());
+
+        int[] keysPerPart = new int[aff.partitions()];
+
+        for (Object key : keys)
+            keysPerPart[aff.partition(key)]++;
+
+        int min = Arrays.stream(keysPerPart).filter(n -> n > 0).min().orElse(1);
+
+        return (128 + min - 1) / min;
+    }
+
+    /** @return Number of server nodes. */
+    protected int dataNodes() {
+        return intProperty(PROP_DATA_NODES, DFLT_DATA_NODES);
+    }
+
+    /** @return Whether the benchmark calls the cache through a client node. */
+    protected boolean clientMode() {
+        return booleanProperty(PROP_CLIENT_MODE);
     }
 
     /**
