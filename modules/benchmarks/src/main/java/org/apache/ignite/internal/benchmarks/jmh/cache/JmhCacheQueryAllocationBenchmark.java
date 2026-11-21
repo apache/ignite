@@ -47,15 +47,7 @@ public class JmhCacheQueryAllocationBenchmark extends JmhCacheAllocationAbstract
     @Override public void setup() throws Exception {
         super.setup();
 
-        Integer[] keys = new Integer[CNT];
-        IntValue[] vals = new IntValue[CNT];
-
-        for (int i = 0; i < CNT; i++) {
-            keys[i] = i;
-            vals[i] = new IntValue(i);
-        }
-
-        populate(keys, vals);
+        populateIntValues();
 
         scans = new ScanQuery[node.affinity(cache.getName()).partitions()];
 

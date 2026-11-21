@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationHistogramProfiler;
 import org.apache.ignite.internal.benchmarks.jmh.profile.JmhAllocationProfiler;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
-import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -50,25 +49,11 @@ public class JmhCacheTxAllocationBenchmark extends JmhCacheAllocationAbstractBen
     @Param("2")
     private int txKeys;
 
-    /** Keys. */
-    private Integer[] keys;
-
-    /** Values. */
-    private IntValue[] vals;
-
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
 
-        keys = new Integer[CNT];
-        vals = new IntValue[CNT];
-
-        for (int i = 0; i < CNT; i++) {
-            keys[i] = i;
-            vals[i] = new IntValue(i);
-        }
-
-        populate(keys, vals);
+        populateIntValues();
     }
 
     /** {@inheritDoc} */

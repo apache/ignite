@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.openjdk.jmh.annotations.Param;
 
@@ -98,6 +99,12 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
     @Param("false")
     private boolean cdc;
 
+    /** Keys the setup writes. */
+    protected Object[] keys;
+
+    /** Values of {@link #keys}. */
+    protected Object[] vals;
+
     /** Nodes' data, WAL and CDC files: a new temporary directory per run, so a persistent run starts empty. */
     private Path storeDir;
 
@@ -125,6 +132,19 @@ public abstract class JmhCacheAllocationAbstractBenchmark extends JmhCacheAbstra
         finally {
             U.delete(storeDir);
         }
+    }
+
+    /** Writes an {@link IntValue} of each key from 0 to {@code CNT - 1}, as {@link #keys} and {@link #vals}. */
+    protected void populateIntValues() throws Exception {
+        keys = new Integer[CNT];
+        vals = new IntValue[CNT];
+
+        for (int i = 0; i < CNT; i++) {
+            keys[i] = i;
+            vals[i] = new IntValue(i);
+        }
+
+        populate(keys, vals);
     }
 
     /** Writes the keys, then checkpoints them with persistence and reads each into the near cache if there is one. */

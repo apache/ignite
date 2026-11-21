@@ -44,33 +44,22 @@ public class JmhCacheAllocationBenchmark extends JmhCacheAllocationAbstractBench
     @Param("false")
     private boolean sqlIdx;
 
-    /** Keys the setup writes. */
-    private Integer[] keys;
-
     /** Keys the setup doesn't write. */
     private Integer[] newKeys;
 
     /** Index of the next key in {@link #newKeys}. */
     private int newKeyIdx;
 
-    /** Values. */
-    private IntValue[] vals;
-
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
 
-        keys = new Integer[CNT];
+        populateIntValues();
+
         newKeys = new Integer[CNT];
-        vals = new IntValue[CNT];
 
-        for (int i = 0; i < CNT; i++) {
-            keys[i] = i;
+        for (int i = 0; i < CNT; i++)
             newKeys[i] = CNT + i;
-            vals[i] = new IntValue(i);
-        }
-
-        populate(keys, vals);
     }
 
     /** {@inheritDoc} */

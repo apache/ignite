@@ -85,8 +85,8 @@ public class JmhSqlAllocationBenchmark extends JmhCacheAllocationAbstractBenchma
         String rangeSql = "SELECT * FROM " + table + " WHERE id BETWEEN ? AND ?";
         String insertSql = valType.insertSql();
 
-        Integer[] keys = new Integer[CNT];
-        Object[] vals = new Object[CNT];
+        keys = new Integer[CNT];
+        vals = new Object[CNT];
 
         selects = new SqlFieldsQuery[CNT];
         updates = new SqlFieldsQuery[CNT];

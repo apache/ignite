@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Param;
 
@@ -39,21 +37,13 @@ public class JmhCacheBatchAllocationBenchmark extends JmhCacheAllocationAbstract
     private int batch;
 
     /** Batches of consecutive keys and their values, sorted as a transactional {@code putAll} expects. */
-    private Map<Integer, IntValue>[] batches;
+    private Map<Object, Object>[] batches;
 
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
 
-        Integer[] keys = new Integer[CNT];
-        IntValue[] vals = new IntValue[CNT];
-
-        for (int i = 0; i < CNT; i++) {
-            keys[i] = i;
-            vals[i] = new IntValue(i);
-        }
-
-        populate(keys, vals);
+        populateIntValues();
 
         batches = new Map[CNT / batch];
 
@@ -82,9 +72,7 @@ public class JmhCacheBatchAllocationBenchmark extends JmhCacheAllocationAbstract
 
     /** @return Values of a batch. */
     @Benchmark
-    public Map<Integer, IntValue> getAll() {
-        Set<Integer> keys = batches[ThreadLocalRandom.current().nextInt(batches.length)].keySet();
-
-        return cache.getAll(keys);
+    public Map<Object, Object> getAll() {
+        return cache.getAll(batches[ThreadLocalRandom.current().nextInt(batches.length)].keySet());
     }
 }

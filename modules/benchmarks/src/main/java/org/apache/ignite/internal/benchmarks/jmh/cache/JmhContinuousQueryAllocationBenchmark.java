@@ -22,7 +22,6 @@ import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
-import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -31,25 +30,11 @@ import org.openjdk.jmh.annotations.State;
 /** Puts to a cache with a continuous query of the calling node: with a local listener, or a remote filter. */
 @SuppressWarnings("unchecked")
 public class JmhContinuousQueryAllocationBenchmark extends JmhCacheAllocationAbstractBenchmark {
-    /** Keys the setup writes. */
-    private Integer[] keys;
-
-    /** Values. */
-    private IntValue[] vals;
-
     /** {@inheritDoc} */
     @Override public void setup() throws Exception {
         super.setup();
 
-        keys = new Integer[CNT];
-        vals = new IntValue[CNT];
-
-        for (int i = 0; i < CNT; i++) {
-            keys[i] = i;
-            vals[i] = new IntValue(i);
-        }
-
-        populate(keys, vals);
+        populateIntValues();
     }
 
     /**

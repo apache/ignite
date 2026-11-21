@@ -59,15 +59,7 @@ public class JmhStreamerAllocationBenchmark extends JmhCacheAllocationAbstractBe
     @Override public void setup() throws Exception {
         super.setup();
 
-        Integer[] keys = new Integer[CNT];
-        IntValue[] vals = new IntValue[CNT];
-
-        for (int i = 0; i < CNT; i++) {
-            keys[i] = i;
-            vals[i] = new IntValue(i);
-        }
-
-        populate(keys, vals);
+        populateIntValues();
 
         streamer = node.dataStreamer(cache.getName());
         streamer.allowOverwrite(allowOverwrite);
