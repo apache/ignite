@@ -57,6 +57,8 @@ import org.apache.ignite.internal.processors.query.schema.management.SchemaManag
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.maintenance.MaintenanceTask;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -97,6 +99,15 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
     /** */
     private static final String TABLE_NAME_2 = "test2";
 
+    /** Listening test logger. */
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+
+    /** Listening test logger. */
+    private final LogListener listener = LogListener.matches("^-- UNREGISTERED name=indexRebuildMaintenanceTask, " +
+            "description=Corrupted index found, " +
+            "params=[372637562|RkFJTF9JRFhfMQ==|372637562|RkFJTF9JRFhfMg==|372637563|RkFJTF9JRFhfMw==], " +
+            "executedActions=[rebuild=ACTIVE->COMPLETED]").build();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -112,6 +123,10 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
             new DataRegionConfiguration().setPersistenceEnabled(true)
         ));
 
+        cfg.setMetricsLogFrequency(1000);
+
+        cfg.setGridLogger(listeningLog);
+
         return cfg;
     }
 
@@ -124,6 +139,8 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         IndexProcessor.idxRebuildCls = null;
+
+        listeningLog.registerListener(listener);
     }
 
     /** {@inheritDoc} */
@@ -133,6 +150,8 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         IndexProcessor.idxRebuildCls = null;
+
+        listeningLog.clearListeners();
 
         super.afterTest();
     }
@@ -214,6 +233,8 @@ public class IndexCorruptionRebuildTest extends GridCommonAbstractTest {
         ));
 
         checkCacheToCorruptedIndexMap(idxTasksByCache);
+
+        assertTrue(listener.check(2000));
 
         stopGrid(0);
 

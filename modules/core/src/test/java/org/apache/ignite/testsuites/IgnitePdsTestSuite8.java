@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragme
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationRandomLruEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDefragmentationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
+import org.apache.ignite.internal.processors.cache.persistence.MaintenanceDefragmentationLoggingTest;
+import org.apache.ignite.internal.processors.cache.persistence.MaintenanceLoggingTest;
 import org.apache.ignite.internal.processors.cache.persistence.MaintenancePersistenceTaskTest;
 import org.apache.ignite.internal.processors.cache.persistence.NoUnnecessaryRebalanceTest;
 import org.apache.ignite.internal.processors.cache.persistence.PagesPossibleCorruptionDiagnosticTest;
@@ -121,6 +123,10 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, SnapshotRestoreIndexPathTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CustomCacheStorageConfigurationSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SnapshotFileTreeSelfTest.class, ignoredTests);
+
+        // Maintenance logging test.
+        GridTestUtils.addTestIfNeeded(suite, MaintenanceLoggingTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MaintenanceDefragmentationLoggingTest.class, ignoredTests);
 
         return suite;
     }
