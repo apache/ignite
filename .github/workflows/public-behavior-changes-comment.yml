@@ -1,0 +1,58 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Public behavior changes comment
+
+# workflow_run runs this file from master with a token that can write to PRs. It never checks out or runs PR code:
+# the result of the "Public behavior changes" run is validated as data, and the comment is rendered here.
+on:
+  workflow_run:
+    workflows: [Public behavior changes]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  comment:
+    name: Comment on public behavior changes
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      contains(fromJSON('["success", "failure", "timed_out"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Checkout check scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/public-behavior
+          persist-credentials: false
+
+      - name: Download result
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: public-behavior-changes
+          path: result
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Update PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const check = require('./.github/public-behavior/check.js');
+            await check.publish({ github, context, core, resultFile: 'result/result.json' });

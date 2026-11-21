@@ -224,6 +224,13 @@ If you want to check a single module only:
 
     ./mvnw test
 
+Development Processes
+=====================
+Changes to the public contract follow the development processes in https://github.com/apache/ignite/tree/master/rfcs.
+
+The "Public behavior changes" GitHub Actions check reports what a pull request changes in the public contract and whether
+an RFC is required. See .github/public-behavior/README.md for what the check compares and what the reviewer checks.
+
 Apache RAT Instructions
 =======================
 To check license headers use:
