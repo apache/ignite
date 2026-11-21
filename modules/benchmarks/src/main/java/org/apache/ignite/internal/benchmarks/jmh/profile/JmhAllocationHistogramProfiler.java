@@ -37,6 +37,7 @@ import jdk.jfr.RecordingState;
 import jdk.jfr.consumer.RecordedClass;
 import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.consumer.RecordedFrame;
+import jdk.jfr.consumer.RecordedMethod;
 import jdk.jfr.consumer.RecordedStackTrace;
 import jdk.jfr.consumer.RecordedThread;
 import jdk.jfr.consumer.RecordingFile;
@@ -379,7 +380,12 @@ public class JmhAllocationHistogramProfiler implements InternalProfiler {
             if (sb.length() > 0)
                 sb.append(" < ");
 
-            sb.append(f.getMethod().getType().getName()).append('.').append(f.getMethod().getName());
+            RecordedMethod m = f.getMethod();
+
+            if (m == null)
+                sb.append("<unknown>");
+            else
+                sb.append(m.getType().getName()).append('.').append(m.getName());
 
             if (f.getLineNumber() >= 0)
                 sb.append(':').append(f.getLineNumber());
