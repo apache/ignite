@@ -135,6 +135,26 @@ public class IndexRowCache implements GridQueryRowCacheCleaner {
     }
 
     /**
+     * Clear entries belonging to the given partition of the group. A partition destroy frees
+     * the row links of the partition in bulk, without per-row row-cache callbacks, and a link
+     * is only an address: rows of the new generation of the partition, or of another cache of
+     * the group, reuse the links of the old one, so entries of the destroyed partition must
+     * not survive in the cache.
+     *
+     * @param partId Partition ID to clear entries of.
+     */
+    public void clearForPartition(int partId) {
+        Iterator<Map.Entry<Long, IndexRowImpl>> iter = rows.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry<Long, IndexRowImpl> e = iter.next();
+
+            if (PageIdUtils.partId(e.getKey()) == partId)
+                iter.remove();
+        }
+    }
+
+    /**
      * Update page
      *
      * @param link Link.

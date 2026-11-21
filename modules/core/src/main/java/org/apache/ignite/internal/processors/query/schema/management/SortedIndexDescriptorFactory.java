@@ -116,7 +116,9 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
                 cacheInfo,
                 idxFullName,
                 treeName,
-                ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()),
+                // Rows of a cache with the disabled SQL onheap row cache must not be cached in the
+                // group row cache: a cached row is resolved by index trees of any cache of the group.
+                cacheInfo.config().isSqlOnheapCacheEnabled() ? ctx.indexProcessor().rowCacheCleaner(cacheInfo.groupId()) : null,
                 isPk,
                 isAff,
                 idxCols,
