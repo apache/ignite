@@ -2164,11 +2164,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         List<GridDhtCacheEntry> filtered = new ArrayList<>(size);
 
+        // Request index of each entry in "filtered". A key that is not written leaves a gap in these indexes.
+        List<Integer> filteredIdxs = new ArrayList<>(size);
+
         GridCacheOperation op = req.operation();
 
         GridCacheReturn invokeRes = null;
-
-        int firstEntryIdx = 0;
 
         boolean intercept = ctx.config().getInterceptor() != null;
 
@@ -2195,8 +2196,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (hasNear)
                         res.addSkippedIndex(i);
-
-                    firstEntryIdx++;
 
                     continue;
                 }
@@ -2245,6 +2244,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (ctx.statisticsEnabled())
                                 ctx.cache().metrics0().onReadOnlyInvoke(old != null);
 
+                            if (hasNear)
+                                res.addSkippedIndex(i);
+
                             continue;
                         }
                         else {
@@ -2288,15 +2290,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(e);
 
-                            if (ctx.cancelRemove(interceptorRes))
+                            if (ctx.cancelRemove(interceptorRes)) {
+                                if (hasNear)
+                                    res.addSkippedIndex(i);
+
                                 continue;
+                            }
                         }
 
                         // Update previous batch.
                         if (putMap != null) {
                             updatePartialBatch(
                                 hasNear,
-                                firstEntryIdx,
+                                filteredIdxs,
                                 filtered,
                                 ver,
                                 node,
@@ -2311,12 +2317,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 expiry,
                                 sndPrevVal);
 
-                            firstEntryIdx = i;
-
                             putMap = null;
                             writeVals = null;
 
                             filtered = new ArrayList<>();
+                            filteredIdxs = new ArrayList<>();
                         }
 
                         // Start collecting new batch.
@@ -2332,8 +2337,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             Object val = ctx.config().getInterceptor().onBeforePut(e, updatedVal);
 
-                            if (val == null)
+                            if (val == null) {
+                                if (hasNear)
+                                    res.addSkippedIndex(i);
+
                                 continue;
+                            }
 
                             updated = ctx.toCacheObject(ctx.unwrapTemporary(val));
                         }
@@ -2342,7 +2351,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (rmvKeys != null) {
                             updatePartialBatch(
                                 hasNear,
-                                firstEntryIdx,
+                                filteredIdxs,
                                 filtered,
                                 ver,
                                 node,
@@ -2357,11 +2366,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 expiry,
                                 sndPrevVal);
 
-                            firstEntryIdx = i;
-
                             rmvKeys = null;
 
                             filtered = new ArrayList<>();
+                            filteredIdxs = new ArrayList<>();
                         }
 
                         if (putMap == null) {
@@ -2402,8 +2410,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 false,
                                 null));
 
-                        if (val == null)
+                        if (val == null) {
+                            if (hasNear)
+                                res.addSkippedIndex(i);
+
                             continue;
+                        }
 
                         updated = ctx.toCacheObject(ctx.unwrapTemporary(val));
                     }
@@ -2438,8 +2450,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                             .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));
 
-                        if (ctx.cancelRemove(interceptorRes))
+                        if (ctx.cancelRemove(interceptorRes)) {
+                            if (hasNear)
+                                res.addSkippedIndex(i);
+
                             continue;
+                        }
                     }
 
                     if (rmvKeys == null)
@@ -2449,6 +2465,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 }
 
                 filtered.add(entry);
+                filteredIdxs.add(i);
             }
             catch (IgniteCheckedException e) {
                 res.addFailedKey(entry.key(), e);
@@ -2459,7 +2476,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (putMap != null || rmvKeys != null) {
             updatePartialBatch(
                 hasNear,
-                firstEntryIdx,
+                filteredIdxs,
                 filtered,
                 ver,
                 node,
@@ -2748,7 +2765,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /**
      * @param hasNear {@code True} if originating node has near cache.
-     * @param firstEntryIdx Index of the first entry in the request keys collection.
+     * @param entryIdxs Request index of each entry.
      * @param entries Entries to update.
      * @param ver Version to set.
      * @param nearNode Originating node.
@@ -2765,7 +2782,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     @Nullable private void updatePartialBatch(
         final boolean hasNear,
-        final int firstEntryIdx,
+        final List<Integer> entryIdxs,
         final List<GridDhtCacheEntry> entries,
         final GridCacheVersion ver,
         final ClusterNode nearNode,
@@ -2952,7 +2969,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (hasNear) {
                         if (!ctx.affinity().partitionBelongs(nearNode, entry.partition(), topVer)) {
-                            int idx = firstEntryIdx + i;
+                            int idx = entryIdxs.get(i);
 
                             if (req.operation() == TRANSFORM) {
                                 res.addNearValue(idx,
@@ -2974,7 +2991,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             entry.removeReader(nearNode.id(), req.messageId());
                         }
                         else
-                            res.addSkippedIndex(firstEntryIdx + i);
+                            res.addSkippedIndex(entryIdxs.get(i));
                     }
                 }
                 catch (GridCacheEntryRemovedException e) {
@@ -2983,7 +3000,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     e.printStackTrace();
                 }
 
-                dhtUpdRes.processedEntriesCount(firstEntryIdx + i + 1);
+                dhtUpdRes.processedEntriesCount(entryIdxs.get(i) + 1);
             }
 
             if (failedToUnwrapKeys != null) {
