@@ -644,8 +644,8 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private static Object unwrap(Object val, GridCacheContext<?, ?> cctx, boolean keepBinary) {
-        // Fast path: simple values have nothing to unwrap.
-        if (val == null || QueryUtils.isSqlType(val.getClass()))
+        // Fast path: simple values have nothing to unwrap. Numbers and strings skip the lookup among SQL types.
+        if (val == null || val instanceof Number || val instanceof String || QueryUtils.isSqlType(val.getClass()))
             return val;
 
         return cctx.unwrapBinaryIfNeeded(val, keepBinary, null);
