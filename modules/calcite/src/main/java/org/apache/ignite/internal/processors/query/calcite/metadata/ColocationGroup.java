@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -270,34 +271,34 @@ public class ColocationGroup extends AbstractMessage {
 
     /** */
     public ColocationGroup filterByPartitions(int[] parts) {
-        if (!F.isEmpty(assignments)) {
-            List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
-            Set<UUID> nodes = new HashSet<>();
+        List<List<UUID>> assignments = this.assignments;
 
-            if (parts == null)
-                return this;
+        if (F.isEmpty(assignments) || parts == null)
+            return this;
 
-            for (int i = 0; i < this.assignments.size(); ++i)
-                assignments.add(Collections.emptyList());
+        Set<UUID> nodes = new HashSet<>();
 
-            for (int part : parts) {
-                UUID first = part < assignments.size() ? F.first(this.assignments.get(part)) : null;
+        for (int part : parts) {
+            UUID first = part < assignments.size() ? F.first(assignments.get(part)) : null;
 
-                if (first != null) {
-                    nodes.add(first);
-
-                    assignments.set(part, this.assignments.get(part));
-                }
-            }
-
-            ColocationGroup res = new ColocationGroup(srcIds, new ArrayList<>(nodes), assignments);
-
-            res.partsFilter = parts;
-
-            return res;
+            if (first != null)
+                nodes.add(first);
         }
 
-        return this;
+        // Avoids a pass over all partitions on every query execution.
+        ColocationGroup res = new ColocationGroup(srcIds, new ArrayList<>(nodes), new AbstractList<>() {
+            @Override public List<UUID> get(int part) {
+                return Arrays.binarySearch(parts, part) >= 0 ? assignments.get(part) : Collections.emptyList();
+            }
+
+            @Override public int size() {
+                return assignments.size();
+            }
+        });
+
+        res.partsFilter = parts;
+
+        return res;
     }
 
     /** */
