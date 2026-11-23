@@ -18,10 +18,6 @@
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
@@ -29,7 +25,12 @@ import java.security.cert.Certificate;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -61,7 +62,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * TLS reload of the HTTP REST connector configured in Jetty XML. The standard Jetty factory reads its key store from a file
- * ({@code jetty/https.xml}). The custom factory ({@code jetty/https-source.xml}) takes its key stores from {@link SourceSslContextFactory}.
+ * and requires an SNI host name ({@code jetty/https.xml}). The custom factory ({@code jetty/https-source.xml}) takes its
+ * key stores from {@link SourceSslContextFactory}.
  */
 @WithSystemProperty(key = IGNITE_JETTY_PORT, value = DFLT_JETTY_PORT)
 public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
@@ -121,11 +123,12 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: HTTPS serves certificate A from a key store file of the standard Jetty factory.
+     * Given: HTTPS serves certificate A from a key store file of the standard Jetty factory, which selects certificates
+     *     by SNI host name.
      * When: the file becomes unreadable and the operator runs the reload command, then the file gets certificate B and
      *     the operator runs the command again.
-     * Then: the first command reports the node and the cause, and a new client still sees A. After the second command,
-     *     a new client sees B.
+     * Then: the first command reports the node and the cause, and a new client that sends the host name still sees A.
+     *     After the second command, a new client sees B.
      */
     @Test
     @WithSystemProperty(key = KEY_STORE_PATH, value = "")
@@ -228,7 +231,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a reload that Ignite did not start, such as one by Jetty's {@code KeyStoreScanner}, has failed and left
      *     the custom Jetty factory without keys.
      * When: the source supplies certificate B, and Ignite reloads the factory.
-     * Then: the factory has keys again and serves B.
+     * Then: until the reload, the hot reload date of the last keys stays. After it, the factory has keys again and serves B.
      */
     @Test
     public void testReloadRestoresFactoryLeftWithoutKeys() throws Exception {
@@ -242,9 +245,11 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
         try {
             ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+            long hotReloadTime = factory.hotReloadTime();
 
             assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
             assertThrows(log, () -> jettyFactory.getSslContext(), IllegalStateException.class, null);
+            assertEquals(hotReloadTime, factory.hotReloadTime());
 
             SourceSslContextFactory.supply(b);
             factory.reload();
@@ -255,6 +260,105 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         finally {
             jettyFactory.stop();
         }
+    }
+
+    /**
+     * Given: a Jetty factory serves certificate A, valid for 30 days.
+     * When: the factory replaces it without Ignite with certificate B, which was issued 20 hours ago and expires in an hour.
+     * Then: the hot reload date changes from 23 days ahead to 6 hours ago.
+     */
+    @Test
+    public void testHotReloadTimeFollowsReplacementWithoutIgnite() throws Exception {
+        KeyStore b = due();
+        SslContextFactory.Server jettyFactory = keyStoreFactory(fresh());
+
+        jettyFactory.start();
+
+        try {
+            ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+
+            assertEquals(now + DAYS.toMillis(23), factory.hotReloadTime());
+
+            jettyFactory.reload(f -> f.setKeyStore(b));
+
+            assertEquals(now - HOURS.toMillis(6), factory.hotReloadTime());
+        }
+        finally {
+            jettyFactory.stop();
+        }
+    }
+
+    /**
+     * Given: a Jetty factory reads its trust store from a file, and its source has set certificate B on it directly.
+     * When: the trust store file becomes unreadable and Ignite reloads the factory.
+     * Then: the reload fails, and the factory keeps serving B.
+     */
+    @Test
+    public void testFailedTrustStoreLoadKeepsLastWorkingKeys() throws Exception {
+        KeyStore b = fresh();
+        Path trust = tmp.newFile("trust.jks").toPath();
+        SslContextFactory.Server jettyFactory = keyStoreFactory(fresh());
+
+        save(ca.trustStore(), trust);
+        jettyFactory.setTrustStorePath(trust.toString());
+        jettyFactory.setTrustStoreType("JKS");
+        jettyFactory.setTrustStorePassword(new String(PASSWORD));
+        jettyFactory.start();
+
+        try {
+            ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+
+            jettyFactory.reload(f -> f.setKeyStore(b));
+            Files.writeString(trust, "not a trust store");
+
+            assertThrows(log, factory::reload, IgniteException.class, null);
+            assertEquals(b.getCertificate(HOST), jettyFactory.getKeyStore().getCertificate(HOST));
+        }
+        finally {
+            jettyFactory.stop();
+        }
+    }
+
+    /**
+     * Given: a custom Jetty factory that would ask its source for keys each time its reload method runs.
+     * When: Ignite reloads the factory successfully.
+     * Then: the reload method runs once.
+     */
+    @Test
+    public void testReloadCallsFactoryReloadOnce() throws Exception {
+        AtomicInteger reloads = new AtomicInteger();
+
+        SslContextFactory.Server jettyFactory = new SslContextFactory.Server() {
+            /** {@inheritDoc} */
+            @Override public void reload(Consumer<SslContextFactory> consumer) throws Exception {
+                reloads.incrementAndGet();
+
+                super.reload(consumer);
+            }
+        };
+
+        jettyFactory.setKeyStore(fresh());
+        jettyFactory.setKeyStorePassword(new String(PASSWORD));
+        jettyFactory.start();
+
+        try {
+            new ReloadableJettySslFactory(jettyFactory).reload();
+
+            assertEquals(1, reloads.get());
+        }
+        finally {
+            jettyFactory.stop();
+        }
+    }
+
+    /** @return Standard Jetty factory with a key store set on it directly, as a source that delivers keys does. */
+    private static SslContextFactory.Server keyStoreFactory(KeyStore keys) {
+        SslContextFactory.Server factory = new SslContextFactory.Server();
+
+        factory.setKeyStore(keys);
+        factory.setKeyStorePassword(new String(PASSWORD));
+
+        return factory;
     }
 
     /** @return Key store with a server certificate valid for 30 days, which is not due for hot reload. */
@@ -287,7 +391,10 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         return new CommandInvoker<>(new SslReloadCommand(), new NoArg(), node).invoke(line -> { });
     }
 
-    /** Returns the certificate that the REST endpoint presents to a new client that trusts the test CA. */
+    /**
+     * Returns the certificate that the REST endpoint presents to a new client that trusts the test CA and sends
+     * the host name. The JDK sends no SNI host name for {@code localhost} by itself, so the client sets it.
+     */
     private Certificate serverCertificate(IgniteEx node) throws Exception {
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 
@@ -298,12 +405,16 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         client.init(null, tmf.getTrustManagers(), null);
 
         int port = node.localNode().attribute(ATTR_REST_JETTY_PORT);
-        HttpRequest req = HttpRequest.newBuilder(URI.create("https://" + HOST + ':' + port + "/ignite?cmd=version")).build();
-        HttpResponse<Void> res = HttpClient.newBuilder().sslContext(client).build().send(req, HttpResponse.BodyHandlers.discarding());
 
-        assertEquals(200, res.statusCode());
+        try (SSLSocket sock = (SSLSocket)client.getSocketFactory().createSocket(HOST, port)) {
+            SSLParameters params = sock.getSSLParameters();
 
-        return res.sslSession().orElseThrow().getPeerCertificates()[0];
+            params.setServerNames(List.of(new SNIHostName(HOST)));
+            sock.setSSLParameters(params);
+            sock.startHandshake();
+
+            return sock.getSession().getPeerCertificates()[0];
+        }
     }
 
     /**

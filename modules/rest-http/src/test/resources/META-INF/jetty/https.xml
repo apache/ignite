@@ -29,6 +29,7 @@
                         <Set name="keyStorePath"><SystemProperty name="ignite.test.JettyRestHttpsReloadTest.keyStorePath"/></Set>
                         <Set name="keyStoreType">JKS</Set>
                         <Set name="keyStorePassword">123456</Set>
+                        <Set name="sniRequired">true</Set>
                     </New>
                 </Arg>
             </New>

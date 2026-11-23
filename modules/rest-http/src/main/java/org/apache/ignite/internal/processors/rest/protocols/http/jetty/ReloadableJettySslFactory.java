@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import javax.net.ssl.SSLContext;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.HotReloadTime;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
@@ -29,62 +29,69 @@ import org.jetbrains.annotations.Nullable;
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
  * <p>
- * Jetty clears the TLS state of its factory before it loads the replacement, and new connections take that state under
- * the factory's lock. Jetty lets callers hold this lock only inside {@link SslContextFactory#reload}. So the whole reload
- * runs inside an outer {@code reload()} call, and new connections wait for it to finish: they get either the replacement
- * or the previous context, never a factory without keys.
+ * Before Jetty loads the replacement, it clears the TLS state of its factory, including the certificates that it selects
+ * by SNI host name. New connections take that state under the factory's lock. Jetty lets callers hold this lock only
+ * inside {@link SslContextFactory#unload(Consumer)} and {@link SslContextFactory#reload(Consumer)}, so the reload runs
+ * inside {@code unload(...)}. If loading fails, the factory loads its previous key and trust stores from memory before
+ * the lock is released. New connections wait and then get either the replacement or the previous keys. The next reload
+ * reads the factory's sources again, so stores that were set on the factory directly are not kept.
  */
 class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** */
     private final SslContextFactory factory;
 
-    /** */
+    /** Hot reload time of the last keys that the factory had. */
     private volatile long hotReloadTime;
 
-    /**
-     * @param factory Started TLS factory of the HTTPS connector.
-     * @throws GeneralSecurityException If the loaded key store cannot be read.
-     */
-    ReloadableJettySslFactory(SslContextFactory factory) throws GeneralSecurityException {
+    /** @param factory Started TLS factory of the HTTPS connector. */
+    ReloadableJettySslFactory(SslContextFactory factory) {
         this.factory = factory;
-
-        hotReloadTime = hotReloadTime(factory);
     }
 
     /** {@inheritDoc} */
     @Override public void reload() {
         try {
-            factory.reload(this::reloadLocked);
+            factory.unload(this::reloadLocked);
         }
         catch (ReloadDone done) {
             if (done.err != null)
                 throw new IgniteException(done.err);
         }
-        catch (Exception e) {
-            throw new IgniteException(e);
-        }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Reads the date from the keys that new connections use, including keys that the factory loaded without Ignite,
+     * such as by Jetty's {@code KeyStoreScanner}.
+     */
     @Override public long hotReloadTime() {
+        try {
+            KeyStore store = factory.getKeyStore();
+
+            hotReloadTime = store == null ? 0 : HotReloadTime.of(store);
+        }
+        catch (IllegalStateException ignored) {
+            // A failed reload without Ignite has left the factory without keys, so the date of its last keys stays.
+        }
+        catch (GeneralSecurityException e) {
+            throw new IgniteException(e);
+        }
+
         return hotReloadTime;
     }
 
     /**
-     * Reloads the factory while the outer reload holds its lock. If loading fails, gives the factory its previous context
-     * back. Always throws {@link ReloadDone}, so that the outer reload does not unload and load the factory again.
+     * Reloads the factory while {@code unload(...)} holds its lock. If loading fails, the factory loads its previous stores.
+     * Always throws {@link ReloadDone}, so that {@code unload(...)} does not unload the factory.
      */
     private void reloadLocked(SslContextFactory f) {
-        SSLContext prev = activeContext(f);
+        Stores prev = Stores.of(f);
 
         try {
             f.reload(ignored -> {});
-
-            hotReloadTime = hotReloadTime(f);
         }
         catch (Exception e) {
             if (prev != null)
-                restore(f, prev, e);
+                prev.restore(f, e);
 
             throw new ReloadDone(e);
         }
@@ -92,42 +99,49 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         throw new ReloadDone(null);
     }
 
-    /**
-     * @return Context that new connections get, or {@code null} if a failed reload outside Ignite, such as one by Jetty's
-     *     {@code KeyStoreScanner}, has left the factory without one.
-     */
-    @Nullable private static SSLContext activeContext(SslContextFactory f) {
-        try {
-            return f.getSslContext();
+    /** Key and trust stores that a factory has loaded. */
+    private static class Stores {
+        /** */
+        private final KeyStore keyStore;
+
+        /** */
+        private final KeyStore trustStore;
+
+        /** */
+        private Stores(KeyStore keyStore, KeyStore trustStore) {
+            this.keyStore = keyStore;
+            this.trustStore = trustStore;
         }
-        catch (IllegalStateException ignored) {
-            return null;
+
+        /** @return Stores of the factory, or {@code null} if a failed reload without Ignite has left it without keys. */
+        @Nullable private static Stores of(SslContextFactory f) {
+            try {
+                return new Stores(f.getKeyStore(), f.getTrustStore());
+            }
+            catch (IllegalStateException ignored) {
+                return null;
+            }
+        }
+
+        /** Makes the factory load these stores instead of reading its sources. Its next reload reads its sources again. */
+        private void restore(SslContextFactory f, Exception err) {
+            f.setKeyStore(keyStore);
+            f.setTrustStore(trustStore);
+
+            try {
+                f.reload(ignored -> {});
+            }
+            catch (Exception e) {
+                err.addSuppressed(e);
+            }
+            finally {
+                f.setKeyStore(null);
+                f.setTrustStore(null);
+            }
         }
     }
 
-    /** Makes the factory install the given context. A preset context makes it skip its key and trust stores. */
-    private static void restore(SslContextFactory f, SSLContext ctx, Exception err) {
-        f.setSslContext(ctx);
-
-        try {
-            f.reload(ignored -> {});
-        }
-        catch (Exception e) {
-            err.addSuppressed(e);
-        }
-        finally {
-            f.setSslContext(null);
-        }
-    }
-
-    /** @return Hot reload time of the key store that the factory has loaded. */
-    private static long hotReloadTime(SslContextFactory f) throws GeneralSecurityException {
-        KeyStore store = f.getKeyStore();
-
-        return store == null ? 0 : HotReloadTime.of(store);
-    }
-
-    /** Ends the outer reload. */
+    /** Ends {@code unload(...)} without unloading the factory. */
     private static class ReloadDone extends RuntimeException {
         /** */
         private static final long serialVersionUID = 0L;
