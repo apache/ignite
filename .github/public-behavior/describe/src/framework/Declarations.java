@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package framework;
+
 import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -30,12 +32,12 @@ import java.util.TreeSet;
  * Public declarations of a tree, printed in the format that README.md describes: one declaration per line with its area, key,
  * value, flags, location, rename group and deprecation, separated by tabs.
  */
-class Declarations {
+public class Declarations {
     /** Flag of a deprecated declaration. */
-    static final String DEPRECATED = "deprecated";
+    private static final String DEPRECATED = "deprecated";
 
     /** Flag of an experimental declaration. */
-    static final String EXPERIMENTAL = "experimental";
+    private static final String EXPERIMENTAL = "experimental";
 
     /** Declarations by area and key. */
     private final Map<String, Declaration> decls = new TreeMap<>();
@@ -44,7 +46,7 @@ class Declarations {
     private final List<String> errors = new ArrayList<>();
 
     /** Adds a declaration whose key has no internal names. */
-    void add(String area, String key, String val, String flags, String location) {
+    public void add(String area, String key, String val, String flags, String location) {
         add(area, key, val, flags, location, null, "");
     }
 
@@ -58,7 +60,7 @@ class Declarations {
      * @param group Internal name in the key that users do not see, or an empty string. Comparison matches declarations whose
      *      group only changed its name, so the group must be a part of the key.
      */
-    void add(String area, String key, String val, String flags, String location, String deprecation, String group) {
+    public void add(String area, String key, String val, String flags, String location, String deprecation, String group) {
         String k = oneLine(key);
 
         if (!k.contains(group))
@@ -73,17 +75,17 @@ class Declarations {
     }
 
     /** Adds a problem that makes the description incomplete. */
-    void error(String problem) {
+    public void error(String problem) {
         errors.add(problem);
     }
 
     /** @return Problems that make the description incomplete. */
-    List<String> errors() {
+    public List<String> errors() {
         return errors;
     }
 
     /** Prints the declarations. */
-    void print(PrintStream out) {
+    public void print(PrintStream out) {
         for (Declaration d : decls.values()) {
             out.println(String.join("\t", d.area, d.key, String.join(" | ", d.values), String.join(",", d.flags), d.location,
                 d.group, d.deprecation == null ? "" : d.deprecation));
@@ -91,17 +93,17 @@ class Declarations {
     }
 
     /** @return Flags of a declaration. */
-    static String flags(boolean deprecated, boolean experimental) {
+    public static String flags(boolean deprecated, boolean experimental) {
         return deprecated && experimental ? DEPRECATED + ',' + EXPERIMENTAL : deprecated ? DEPRECATED : experimental ? EXPERIMENTAL : "";
     }
 
     /** */
-    static String oneLine(String s) {
+    public static String oneLine(String s) {
         return s.replaceAll("\\s+", " ").trim();
     }
 
     /** @return Value as Java source writes it. */
-    static String value(Object val) {
+    public static String value(Object val) {
         if (val instanceof String)
             return '"' + ((String)val).replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\t", "\\t") + '"';
 
@@ -127,7 +129,7 @@ class Declarations {
     }
 
     /** @return Value of a static field, which may be private. */
-    static Object staticValue(Field f) {
+    public static Object staticValue(Field f) {
         try {
             f.setAccessible(true);
 

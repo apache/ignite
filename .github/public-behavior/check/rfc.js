@@ -22,7 +22,7 @@
 const RFC_NAME = /^rfcs\/IGNITE-\d+-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const RFC_FORMAT = 'rfcs/IGNITE-<ticket>-<short-title>.md';
 const RFC_EXAMPLE = 'rfcs/IGNITE-12345-cache-timeout.md';
-const RFC_PATH = /^(.+?)\/(rfcs\/.+)$/;
+const RFC_PATH = /^.+?\/(rfcs\/.+)$/;
 const TEMPLATE = 'rfcs/TEMPLATE.md';
 
 /** RFCs of a PR that needs none. */
@@ -40,53 +40,32 @@ function rfcFiles(names) {
 }
 
 /**
- * Finds direct links to RFC files in the PR description. A link counts if its whole path is an RFC file on the target branch
- * and the link itself leads to that file. A file counts if any of its links counts. If GitHub cannot tell whether a link leads
- * to its file, the result is unknown only when no file counts: one RFC is enough.
+ * Finds direct links to RFC files in the PR description. A link counts if its whole path is an RFC file on the target branch.
+ * The branch, tag or commit in the link does not matter: the report links the file on the target branch.
  *
  * @param body PR description.
  * @param repo Target repository, such as {@code apache/ignite}.
- * @param baseRef Name of the target branch.
  * @param onTarget Checks that a file exists on the target branch.
- * @param atRef Checks that a file exists at a branch, tag or commit of the target repository. Throws when GitHub cannot tell.
  */
-async function rfcLinks(body, repo, baseRef, onTarget, atRef) {
+function rfcLinks(body, repo, onTarget) {
     const prefix = `https://github.com/${repo}/`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = new RegExp(prefix + '(?:blob|tree)/([^\\s<>"\'()\\[\\]]+)', 'g');
     const linked = [];
-    const problems = new Map();
-    let failure = null;
+    const badLinks = [];
 
     for (const [, rest] of (body || '').matchAll(pattern)) {
-        const m = RFC_PATH.exec(rest.replace(/[.,;:!]+$/, '').replace(/[?#].*$/, ''));
+        const file = RFC_PATH.exec(rest.replace(/[.,;:!]+$/, '').replace(/[?#].*$/, ''))?.[1];
 
-        if (!m || linked.includes(m[2]))
+        if (!file || linked.includes(file) || badLinks.some(l => l.path === file))
             continue;
 
-        const [, ref, file] = m;
-        let problem = !RFC_NAME.test(file) ? 'name' : !onTarget(file) ? 'missing' : null;
+        const reason = !RFC_NAME.test(file) ? 'name' : !onTarget(file) ? 'missing' : null;
 
-        if (!problem && ref !== baseRef) {
-            try {
-                problem = await atRef(ref, file) ? null : 'url';
-            }
-            catch (e) {
-                failure = failure || e;
-
-                continue;
-            }
-        }
-
-        if (!problem)
+        if (reason)
+            badLinks.push({ path: file, reason });
+        else
             linked.push(file);
-        else if (!problems.has(file))
-            problems.set(file, problem);
     }
-
-    if (failure && linked.length === 0)
-        throw failure;
-
-    const badLinks = [...problems].filter(([file]) => !linked.includes(file)).map(([file, reason]) => ({ path: file, reason }));
 
     return { linked, badLinks };
 }

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package collectors;
+
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -25,6 +27,9 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
+import framework.BuiltTree;
+import framework.Collector;
+import framework.Declarations;
 
 /**
  * Describes the keywords of the parser and the operators and functions that the Calcite engine uses. The kind and the allowed
@@ -32,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
  * still share a key are counted, so removing one of them is a change. An operator registered twice is one form: the parser uses
  * the same object.
  */
-class Sql implements Collector {
+public class Sql implements Collector {
     /** {@inheritDoc} */
     @Override public void describe(BuiltTree tree, Declarations out) {
         FrameworkConfig cfg = CalciteQueryProcessor.FRAMEWORK_CONFIG;

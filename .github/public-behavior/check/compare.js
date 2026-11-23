@@ -38,7 +38,7 @@ function parse(text) {
 /**
  * @return Keys of the declarations whose rename group only changed its name: the group left the target branch, another group
  *      came in the PR, and their declarations are the same apart from the group name. A group is identified by its name and
- *      the part of the key before the name, such as the class of a constant: two enums may have constants with the same name.
+ *      the part of the key before the name, such as the group of a code: two groups may have codes with the same name.
  */
 function renamedKeys(base, merge) {
     const groupId = d => d.area + '\t' + d.key.slice(0, d.key.indexOf(d.group)) + '\t' + d.group;

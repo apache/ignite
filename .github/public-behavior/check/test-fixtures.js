@@ -23,8 +23,8 @@
 const line = (area, key, value, flags = '', location = 'A.java:1', group = '', deprecation = '') =>
     [area, key, value, flags, location, group, deprecation].join('\t');
 
-/** @return Line of an internal constant {@code Class.NAME}, whose name is a rename group. */
-const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key.split('.').pop());
+/** @return Line of a code {@code group NAME}, whose name is a rename group. */
+const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key.split(' ').pop());
 
 /** @return Line of a system view column, whose row class is a rename group. */
 const column = (view, name, value) => line('Monitoring', `system view ${view} column ${name}`, value, '', 'A.java:1', view);

@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
+package collectors;
+
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerGenerator;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
+import framework.BuiltTree;
+import framework.Collector;
+import framework.Declarations;
 
 /**
  * Describes system view columns in the order that the walkers generated during the build give them to clients. The class of the
  * view row is a rename group: the SQL name of the view is registered at runtime, and renaming the class changes nothing.
  */
-class SystemViews implements Collector {
+public class SystemViews implements Collector {
     /** {@inheritDoc} */
     @Override public void describe(BuiltTree tree, Declarations out) throws Exception {
         int walkers = 0;

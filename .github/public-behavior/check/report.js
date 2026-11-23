@@ -89,7 +89,7 @@ function changesOnlyCheck(git) {
  * Looks for an RFC only when the PR changes the public contract: first among the files of the PR, then among the links in
  * its description. Each RFC gets the blob of its file, so the comment changes when the RFC text changes.
  */
-async function findRfc(findings, { github, pr, git, workspace }) {
+function findRfc(findings, { pr, git, workspace }) {
     if (!findings.some(f => f.kind === 'contract'))
         return NO_RFC;
 
@@ -97,21 +97,8 @@ async function findRfc(findings, { github, pr, git, workspace }) {
 
     if (rfcs.files.length === 0) {
         const onTarget = f => fs.statSync(path.join(workspace, 'base', f), { throwIfNoEntry: false })?.isFile() === true;
-        const atRef = async (ref, file) => {
-            try {
-                await github.rest.repos.getContent({ owner: pr.base.repo.owner.login, repo: pr.base.repo.name, path: file, ref });
 
-                return true;
-            }
-            catch (e) {
-                if (e.status === 404)
-                    return false;
-
-                throw Object.assign(new Error(`Could not check ${file} at ${ref}: ${e.message}`), { step: 'links' });
-            }
-        };
-
-        Object.assign(rfcs, await rfcLinks(pr.body, pr.base.repo.full_name, pr.base.ref, onTarget, atRef));
+        Object.assign(rfcs, rfcLinks(pr.body, pr.base.repo.full_name, onTarget));
     }
 
     rfcs.blobs = new Map([...rfcs.files.map(f => [f, git('merge', 'rev-parse', `HEAD:${f}`).trim()]),
@@ -126,7 +113,7 @@ async function findRfc(findings, { github, pr, git, workspace }) {
  * @param steps Outcomes of the workflow steps, in their order.
  * @param workspace Directory with the merge and base checkouts and their descriptions.
  */
-async function report({ github, core, context, steps, workspace = '.' }) {
+async function report({ core, context, steps, workspace = '.' }) {
     const pr = context.payload.pull_request;
     const read = f => fs.existsSync(path.join(workspace, f)) ? fs.readFileSync(path.join(workspace, f), 'utf8') : '';
     const git = (dir, ...args) => execFileSync('git', ['-C', path.join(workspace, dir), ...args], { encoding: 'utf8' });
@@ -140,7 +127,7 @@ async function report({ github, core, context, steps, workspace = '.' }) {
 
             addDeprecationHints(findings, path.join(workspace, 'base'), core);
 
-            const rfcs = checkOnly ? NO_RFC : await findRfc(findings, { github, pr, git, workspace });
+            const rfcs = checkOnly ? NO_RFC : findRfc(findings, { pr, git, workspace });
             const decided = decide(findings, rfcs, checkOnly);
 
             decided.rfcs = (decided.rfcs || []).map(r => ({ ...r, blob: rfcs.blobs.get(r.path) }));

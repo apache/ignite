@@ -38,6 +38,6 @@ read -ra opts <<< "$(getJavaSpecificOpts 17 "")"
 classes=$(mktemp -d)
 trap 'rm -rf "$classes"' EXIT
 
-javac -proc:none -nowarn -d "$classes" -cp "$cp" "$here"/*.java >&2
+javac -proc:none -nowarn -d "$classes" -cp "$cp" "$here"/src/*.java "$here"/src/framework/*.java "$here"/src/collectors/*.java >&2
 
 java "${opts[@]}" -cp "$classes:$cp" PublicDeclarations .

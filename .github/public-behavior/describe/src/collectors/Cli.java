@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package collectors;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,9 +35,12 @@ import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.lang.IgniteExperimental;
+import framework.BuiltTree;
+import framework.Collector;
+import framework.Declarations;
 
 /** Describes {@code control.sh} commands, their parameters and the common options. */
-class Cli implements Collector {
+public class Cli implements Collector {
     /** */
     private static final String AREA = "CLI";
 
@@ -58,7 +63,8 @@ class Cli implements Collector {
 
         for (CLIArgument<?> arg : (List<CLIArgument<?>>)common.get(new ArgumentParser(null, registry, null))) {
             out.add(AREA, "control.sh " + arg.name(), "common option, " + (arg.optional() ? "optional" : "required") + ", "
-                + arg.type().getTypeName() + (arg.isSensitive() ? ", sensitive" : ""), "", tree.where(ArgumentParser.class, null, -1, false));
+                + arg.type().getTypeName() + (arg.isSensitive() ? ", sensitive" : ""), "",
+                tree.where(ArgumentParser.class, null, -1, false));
         }
     }
 

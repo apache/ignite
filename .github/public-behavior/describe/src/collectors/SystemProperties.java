@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
+package collectors;
+
 import java.lang.reflect.Field;
 import java.util.Collection;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.startup.cmdline.CommandLineStartup;
+import framework.BuiltTree;
+import framework.Collector;
+import framework.Declarations;
 
 /** Describes the system properties that {@code ignite.sh -systemProps} prints, without their descriptions. */
-class SystemProperties implements Collector {
+public class SystemProperties implements Collector {
     /** Field of {@link CommandLineStartup} that lists the classes declaring the system properties. */
     private static final String PROPS_CLS = "PROPS_CLS";
 

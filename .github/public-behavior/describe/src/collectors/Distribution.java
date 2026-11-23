@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
+package collectors;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.w3c.dom.Element;
+import framework.BuiltTree;
+import framework.Collector;
+import framework.Declarations;
 
 /**
  * Describes the artifacts of {@code ignite-bom}, the Java release that the build targets, the minimum Java version of the launch
  * scripts and the NuGet packages with their target frameworks.
  */
-class Distribution implements Collector {
+public class Distribution implements Collector {
     /** */
     private static final String AREA = "Distribution";
 

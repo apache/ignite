@@ -76,12 +76,9 @@ const WITH_CONTRACT_CHANGE = BASE + '\n' + line('CLI', 'control.sh --cache list 
  * Runs report() in the workspace.
  *
  * @param body PR description.
- * @param getContent Stub of the GitHub API call that reads a file at a ref.
  * @param repo Target repository of the PR.
  */
-async function report(ws, {
-    steps = BUILT, body = '', getContent = async () => { throw new Error('unexpected'); }, repo = APACHE,
-} = {}) {
+async function report(ws, { steps = BUILT, body = '', repo = APACHE } = {}) {
     const out = { summary: '', annotations: [] };
     const core = {
         summary: { addRaw(s) { out.summary = s; return this; }, async write() {} },
@@ -97,7 +94,7 @@ async function report(ws, {
         },
     };
 
-    await check.report({ github: { rest: { repos: { getContent } } }, core, context, steps, workspace: ws });
+    await check.report({ core, context, steps, workspace: ws });
 
     return { ...out, result: JSON.parse(fs.readFileSync(path.join(ws, 'result.json'), 'utf8')) };
 }
@@ -143,35 +140,16 @@ test('report: an RFC file whose name git would quote fails with the filename err
     assert.deepStrictEqual([out.result.outcome, out.result.invalidNames], ['rfc-name', ['rfcs/обзор.md']]);
 });
 
-test('report: a link with a mistyped branch does not replace a missing RFC, and GitHub is asked about the target repository', async () => {
-    const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE });
+test('report: a link counts only to the target repository and only if its file is on the target branch', async () => {
     const stand = { owner: { login: 'owner' }, name: 'stand', full_name: 'owner/stand', html_url: 'https://github.com/owner/stand' };
-    const asked = [];
-    const getContent = async args => {
-        asked.push(args);
+    const onTarget = { 'rfcs/IGNITE-7-y.md': 'rfc' };
+    const missing = await report(workspace({ onTarget, merge: WITH_CONTRACT_CHANGE }), { repo: stand,
+        body: 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md https://github.com/owner/stand/blob/mastr/rfcs/IGNITE-8-z.md' });
+    const found = await report(workspace({ onTarget, merge: WITH_CONTRACT_CHANGE }), { repo: stand,
+        body: 'https://github.com/owner/stand/blob/mastr/rfcs/IGNITE-7-y.md' });
 
-        throw Object.assign(new Error('Not Found'), { status: 404 });
-    };
-    const out = await report(ws, { body: 'https://github.com/owner/stand/blob/mastr/rfcs/IGNITE-7-y.md', getContent, repo: stand });
-
-    assert.deepStrictEqual([out.result.outcome, out.result.badLinks], ['rfc-missing', [{ path: 'rfcs/IGNITE-7-y.md', reason: 'url' }]]);
-    assert.deepStrictEqual(asked, [{ owner: 'owner', repo: 'stand', path: 'rfcs/IGNITE-7-y.md', ref: 'mastr' }]);
-});
-
-test('report: a link that GitHub cannot confirm fails as a check that could not finish', async () => {
-    const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE });
-    const getContent = async () => { throw Object.assign(new Error('Server Error'), { status: 502 }); };
-    const out = await report(ws, { body: 'https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-7-y.md', getContent });
-
-    assert.deepStrictEqual(out.result, { outcome: 'error', step: 'links' });
-});
-
-test('report: links are not checked when the PR needs no RFC', async () => {
-    const merge = BASE.replace(line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated') + '\n', '');
-    const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge });
-    const out = await report(ws, { body: 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md' });
-
-    assert.strictEqual(out.result.outcome, 'review');
+    assert.deepStrictEqual([missing.result.outcome, missing.result.badLinks], ['rfc-missing', [{ path: 'rfcs/IGNITE-8-z.md', reason: 'missing' }]]);
+    assert.deepStrictEqual([found.result.outcome, found.result.rfcs.map(r => [r.path, r.source])], ['rfc-found', [['rfcs/IGNITE-7-y.md', 'link']]]);
 });
 
 test('report: a PR that changes only the check shows what the check describes differently and needs no RFC', async () => {

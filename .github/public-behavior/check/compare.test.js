@@ -42,15 +42,16 @@ test('added, removed and changed declarations are found', () => {
 });
 
 test('renaming an internal constant or a view row class is not a change', () => {
-    const base = [constant('REST', 'GridRestCommand.CACHE_GET', 'get'), BASE].join('\n');
-    const merge = [constant('REST', 'GridRestCommand.CACHE_GET_VALUE', 'get'), BASE.replace(/CacheView/g, 'CachesView')].join('\n');
+    const base = [constant('REST', 'command CACHE_GET', 'get'), BASE].join('\n');
+    const merge = [constant('REST', 'command CACHE_GET_VALUE', 'get'), BASE.replace(/CacheView/g, 'CachesView')].join('\n');
 
     assert.deepStrictEqual(compare(base, merge), []);
 });
 
 test('two operations that swap their codes are reported, and so is a renamed view with a moved column', () => {
-    const base = [constant('Thin client protocol', 'Parser.OP_GET', '1000'), constant('Thin client protocol', 'Parser.OP_PUT', '1001'), BASE].join('\n');
-    const merge = [constant('Thin client protocol', 'Parser.OP_GET', '1001'), constant('Thin client protocol', 'Parser.OP_PUT', '1000'),
+    const base = [constant('Thin client protocol', 'operation OP_GET', '1000'), constant('Thin client protocol', 'operation OP_PUT', '1001'),
+        BASE].join('\n');
+    const merge = [constant('Thin client protocol', 'operation OP_GET', '1001'), constant('Thin client protocol', 'operation OP_PUT', '1000'),
         BASE.replace(/CacheView/g, 'CachesView').replace('position 2, int', 'position 3, int')].join('\n');
 
     assert.deepStrictEqual(compare(base, merge).map(f => [f.key, f.before, f.after]), [
@@ -58,25 +59,25 @@ test('two operations that swap their codes are reported, and so is a renamed vie
         ['system view CachesView column cacheName', null, 'position 1, java.lang.String'],
         ['system view CacheView column cacheId', 'position 2, int', null],
         ['system view CacheView column cacheName', 'position 1, java.lang.String', null],
-        ['Parser.OP_GET', '1000', '1001'],
-        ['Parser.OP_PUT', '1001', '1000'],
+        ['operation OP_GET', '1000', '1001'],
+        ['operation OP_PUT', '1001', '1000'],
     ]);
 });
 
 test('a removed operation and a new error code with the same value are both reported', () => {
-    const base = constant('Thin client protocol', 'ClientMessageParser.OP_CACHE_GET_ALL', '1003');
-    const merge = constant('Thin client protocol', 'ClientStatus.CACHE_LOCKED', '1003');
+    const base = constant('Thin client protocol', 'operation OP_CACHE_GET_ALL', '1003');
+    const merge = constant('Thin client protocol', 'status CACHE_LOCKED', '1003');
 
     assert.deepStrictEqual(compare(base, merge).map(f => [f.key, f.before, f.after]), [
-        ['ClientMessageParser.OP_CACHE_GET_ALL', '1003', null],
-        ['ClientStatus.CACHE_LOCKED', null, '1003'],
+        ['operation OP_CACHE_GET_ALL', '1003', null],
+        ['status CACHE_LOCKED', null, '1003'],
     ]);
 });
 
-test('a constant renamed in one enum is a rename when another enum has a constant with the old name', () => {
-    const server = constant('Thin client protocol', 'ClientBitmaskFeature.EXECUTE_TASK_BY_NAME', '1');
-    const client = constant('Thin client protocol', 'ProtocolBitmaskFeature.EXECUTE_TASK_BY_NAME', '1');
-    const renamed = constant('Thin client protocol', 'ClientBitmaskFeature.EXECUTE_TASK', '1');
+test('a code renamed in one group is a rename when another group has a code with the old name', () => {
+    const server = constant('Thin client protocol', 'server feature EXECUTE_TASK_BY_NAME', '1');
+    const client = constant('Thin client protocol', 'Java client feature EXECUTE_TASK_BY_NAME', '1');
+    const renamed = constant('Thin client protocol', 'server feature EXECUTE_TASK', '1');
 
     assert.deepStrictEqual(compare([server, client].join('\n'), [renamed, client].join('\n')), []);
 });

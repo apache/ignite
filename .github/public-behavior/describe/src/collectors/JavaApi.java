@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package collectors;
+
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
@@ -41,13 +43,16 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.apache.ignite.lang.IgniteExperimental;
+import framework.BuiltTree;
+import framework.Collector;
+import framework.Declarations;
 
 /**
  * Describes the public and protected declarations of the packages published in javadoc, in the modules of {@code ignite-bom}.
  * Types generated during the build have no source file and are skipped: they serialize node-to-node messages, which are
  * outside the public contract.
  */
-class JavaApi implements Collector {
+public class JavaApi implements Collector {
     /** */
     private static final String AREA = "Java API";
 
@@ -201,8 +206,8 @@ class JavaApi implements Collector {
             boolean own = m.elem.isAnnotationPresent(Deprecated.class);
             boolean exp = experimental || marked(m.elem, m.owner, IgniteExperimental.class);
 
-            out.add(AREA, name + '#' + key, m.text, Declarations.flags(deprecated || own, exp), tree.where(m.owner, m.name, m.params, false),
-                own ? tree.where(m.owner, m.name, m.params, true) : typeDeprecation, "");
+            out.add(AREA, name + '#' + key, m.text, Declarations.flags(deprecated || own, exp),
+                tree.where(m.owner, m.name, m.params, false), own ? tree.where(m.owner, m.name, m.params, true) : typeDeprecation, "");
         });
     }
 
@@ -314,8 +319,8 @@ class JavaApi implements Collector {
             if (!c.isSynthetic() && accessible(c.getModifiers(), api)) {
                 Map<TypeVariable<?>, String> v = typeVars(c, vars);
 
-                res.putIfAbsent("<init>" + params(c), new Member(c, src, api.getSimpleName(), c.getParameterCount(),
-                    markers(c) + modifiers(c.getModifiers()) + typeParams(c.getTypeParameters(), v) + api.getSimpleName() + signature(c, v)));
+                res.putIfAbsent("<init>" + params(c), new Member(c, src, api.getSimpleName(), c.getParameterCount(), markers(c)
+                    + modifiers(c.getModifiers()) + typeParams(c.getTypeParameters(), v) + api.getSimpleName() + signature(c, v)));
             }
         }
 

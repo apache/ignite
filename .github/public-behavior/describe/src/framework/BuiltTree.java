@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+package framework;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,12 +39,12 @@ import org.xml.sax.SAXException;
  * Ignite source tree built by describe.sh: the artifacts of {@code ignite-bom}, the classes and sources of the modules it
  * publishes, and the packages that the javadoc build publishes.
  */
-class BuiltTree {
+public class BuiltTree {
     /** POM of the BOM. */
-    static final String BOM = "modules/bom/pom.xml";
+    public static final String BOM = "modules/bom/pom.xml";
 
     /** POM that sets the build properties. */
-    static final String PARENT = "parent/pom.xml";
+    public static final String PARENT = "parent/pom.xml";
 
     /** Tree root. */
     private final Path root;
@@ -60,7 +62,7 @@ class BuiltTree {
     private final SourceIndex sources;
 
     /** @param root Tree root. */
-    BuiltTree(Path root) throws IOException {
+    public BuiltTree(Path root) throws IOException {
         this.root = root.toAbsolutePath().normalize();
 
         List<Path> modules = publishedModules();
@@ -79,9 +81,9 @@ class BuiltTree {
      *
      * @param classifier Classifier, or {@code null}.
      */
-    record Artifact(String group, String name, String type, String classifier) {
+    public record Artifact(String group, String name, String type, String classifier) {
         /** @return Coordinates as Maven writes them: the type only when it is not {@code jar} or there is a classifier. */
-        String coordinates() {
+        public String coordinates() {
             return group + ':' + name + (classifier != null ? ':' + type + ':' + classifier : "jar".equals(type) ? "" : ':' + type);
         }
     }
@@ -130,22 +132,22 @@ class BuiltTree {
     }
 
     /** @return Artifacts that the BOM declares, in its order. */
-    List<Artifact> bom() {
+    public List<Artifact> bom() {
         return bom;
     }
 
     /** @return Path relative to the tree root. */
-    String relative(Path p) {
+    public String relative(Path p) {
         return root.relativize(p).toString();
     }
 
     /** @return Path of a file of the tree. */
-    Path resolve(String rel) {
+    public Path resolve(String rel) {
         return root.resolve(rel);
     }
 
     /** @return {@code True} if the javadoc build publishes the package. */
-    boolean publicPackage(String pkg) {
+    public boolean publicPackage(String pkg) {
         for (String p : excludedPkgs) {
             if (p.endsWith(".*") ? pkg.startsWith(p.substring(0, p.length() - 1)) : pkg.equals(p))
                 return false;
@@ -160,7 +162,7 @@ class BuiltTree {
      * @return Classes of the package in the published modules, loaded without initialization. A class that cannot be loaded is
      *      an error of {@code out}.
      */
-    List<Class<?>> classes(String pkg, boolean publicOnly, Declarations out) throws IOException {
+    public List<Class<?>> classes(String pkg, boolean publicOnly, Declarations out) throws IOException {
         List<Class<?>> res = new ArrayList<>();
 
         for (Path dir : classDirs) {
@@ -192,27 +194,27 @@ class BuiltTree {
     }
 
     /** @return Class directories of the published modules. */
-    List<Path> classDirs() {
+    public List<Path> classDirs() {
         return classDirs;
     }
 
     /** @see SourceIndex#where */
-    String where(Class<?> cls, String member, int params, boolean deprecated) {
+    public String where(Class<?> cls, String member, int params, boolean deprecated) {
         return sources.where(cls, member, params, deprecated);
     }
 
     /** @return Where the {@code @Deprecated} annotation of a deprecated declaration is, or {@code null} for other declarations. */
-    String deprecationWhere(Class<?> cls, String member, int params, boolean deprecated) {
+    public String deprecationWhere(Class<?> cls, String member, int params, boolean deprecated) {
         return deprecated ? where(cls, member, params, true) : null;
     }
 
     /** @return Parsed XML file of the tree. */
-    Document xml(String rel) throws IOException {
+    public Document xml(String rel) throws IOException {
         return xml(root.resolve(rel));
     }
 
     /** @return Parsed XML file. A document type declaration is refused, because the file comes from the PR. */
-    static Document xml(Path file) throws IOException {
+    public static Document xml(Path file) throws IOException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
@@ -226,14 +228,14 @@ class BuiltTree {
     }
 
     /** @return Text of the first element with the name inside {@code scope}, or {@code null}. Comments are not text. */
-    static String text(Element scope, String name) {
+    public static String text(Element scope, String name) {
         NodeList found = scope.getElementsByTagName(name);
 
         return found.getLength() == 0 ? null : found.item(0).getTextContent().trim();
     }
 
     /** @return Text of the child element with the name, or {@code null}. */
-    static String child(Element parent, String name) {
+    public static String child(Element parent, String name) {
         for (Node n = parent.getFirstChild(); n != null; n = n.getNextSibling()) {
             if (n instanceof Element && n.getNodeName().equals(name))
                 return n.getTextContent().trim();

@@ -25,8 +25,8 @@ const KINDS = ['contract', 'deprecated-removal', 'experimental'];
 const OUTCOMES = ['clean', 'review', 'check', 'rfc-found', 'rfc-name', 'rfc-missing', 'error'];
 const FAILED = ['rfc-name', 'rfc-missing', 'error'];
 const NEEDS_RFC = ['rfc-found', 'rfc-name', 'rfc-missing'];
-const STEPS = ['checkout', 'tests', 'java', 'base', 'merge', 'links', 'report', 'result'];
-const LINK_PROBLEMS = ['name', 'missing', 'url'];
+const STEPS = ['checkout', 'tests', 'java', 'base', 'merge', 'report', 'result'];
+const LINK_PROBLEMS = ['name', 'missing'];
 const BLOB = /^[0-9a-f]{40,64}$/;
 
 /** Longest list of RFC files or links in a result. A longer list is cut after the outcome is decided. */

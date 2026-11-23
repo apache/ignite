@@ -116,7 +116,6 @@ function failure(step) {
         'merge': 'The check could not build the PR merged into the target branch or describe its public declarations. ' +
             'If the PR does not compile, fix it. If the check log points to `.github/public-behavior/describe`, the PR changes ' +
             `code that the check reads: [update the check](${CHANGING_URL}) in this PR. Otherwise rerun the check.`,
-        'links': 'GitHub could not confirm the RFC links in the PR description. Rerun the check.',
     }[step] || 'The check failed for a technical reason. Rerun the check.';
 }
 
@@ -182,7 +181,6 @@ function render(res, links, limit) {
             out.push('', ...res.badLinks.map(l => `- ${code(l.path)} ` + {
                 name: `does not match ${code(RFC_FORMAT)}.`,
                 missing: 'is not on the target branch.',
-                url: 'is on the target branch, but the link does not lead to it.',
             }[l.reason]), ...notShownLine);
         }
     }

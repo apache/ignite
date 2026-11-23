@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+package framework;
+
 /**
  * Describes one kind of public declarations of a built tree. A collector names the Ignite classes and files it reads at its
  * start, so a PR that changes them shows where to update the check.
  */
-interface Collector {
+public interface Collector {
     /** Adds the declarations of the tree to {@code out}. */
     void describe(BuiltTree tree, Declarations out) throws Exception;
 }

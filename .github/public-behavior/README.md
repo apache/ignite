@@ -25,9 +25,10 @@ The check builds the target branch and the PR merged into it. For each build it 
 call, pass or read, and then compares the two lists. A change is reported only when a declaration is added, removed or
 has a different shape. Help texts, descriptions and examples are not compared, and moving a declaration within the
 sources is not a change. Renaming an internal constant or the class of a system view row is not a change either, because
-users see only its value or the view columns. If two codes swap values under the same names, the check reports it.
-A rename is matched only within the same class, so a removed operation code is not taken for a new status code with
-the same value.
+users see only its value or the view columns. A code is identified by its group, such as thin client operations, and its
+name, not by the class that declares it, so moving codes to another class is not a change. If two codes swap values under
+the same names, the check reports it. A rename is matched only within the same group, so a removed operation code is not
+taken for a new status code with the same value.
 
 ## Results
 
@@ -42,8 +43,8 @@ the same value.
   warning that links to the RFC.
 - **RFC linked from the PR description.** Without an RFC in the PR, the check looks for a direct link to an RFC file on the
   target branch, such as `https://github.com/apache/ignite/blob/master/rfcs/IGNITE-12345-cache-timeout.md`. A plain URL or a
-  Markdown link works. A link to another PR does not. The link must lead to the file: a link to another branch, tag or
-  commit is checked through GitHub. With such a link, the check passes with a review warning.
+  Markdown link works. A link to another PR does not. The branch, tag or commit in the link does not matter: the comment
+  links the file on the target branch. With such a link, the check passes with a review warning.
 - **RFC needed.** Without an RFC in the PR or a valid link, the check fails and lists the changes.
 - **Changes to the check only.** The check passes with a review warning and lists what the new version of the check
   describes differently. See [Changing the check](#changing-the-check).
@@ -69,18 +70,19 @@ covers the changes, reviews compatibility and verifies any required vote on the 
 | Errors | SQLSTATE values, query error codes and the SQLSTATE of each code, thin client status codes and `control.sh` exit codes. | The conditions that cause each error. |
 | Results, effects and operations | Public modes and defaults of transactions, retries and cancellation through the Java API. | Returned values, side effects, ordering and timeouts. |
 
-Protocol, storage and error codes come from a list of internal classes in `describe/Codes.java`. A new class with such
-codes needs an entry in that list.
+Protocol, storage and error codes come from a list of internal classes and the groups of their codes in
+`describe/src/collectors/Codes.java`. A new class with such codes needs an entry in that list.
 
 ## How the check works
 
 The check has two parts, connected by the description format below.
 
-- `describe/` finds the public declarations of a built source tree. `describe.sh` builds the tree and runs
-  `PublicDeclarations.java`. It runs one collector for each kind of declarations: `JavaApi`, `SystemProperties`,
-  `SystemViews`, `Cli`, `Codes`, `Sql` and `Distribution`. `BuiltTree` gives the collectors the published modules, their
-  classes and the packages that javadoc publishes. `SourceIndex` finds where a declaration is in the sources.
-  `Declarations` merges declarations with the same key and prints them.
+- `describe/` finds the public declarations of a built source tree. `describe.sh` builds the tree, compiles the sources in
+  `src/` and runs `PublicDeclarations.java`. It runs one collector for each kind of declarations from the package
+  `collectors`: `JavaApi`, `SystemProperties`, `SystemViews`, `Cli`, `Codes`, `Sql` and `Distribution`. The collectors use
+  the package `framework` only through its public API. There, `BuiltTree` gives them the published modules, their classes,
+  the packages that javadoc publishes and the source location of a declaration. `Declarations` merges declarations with
+  the same key and prints them. `Collector` is the contract of a collector.
 - `check/` decides what the descriptions mean for the PR. `compare.js` finds what the PR adds, removes or changes.
   `rfc.js` applies the RFC rules to the files of the PR and to the links in its description. `outcome.js` picks the result
   and checks `result.json`, which the PR job passes to the comment job. `render.js` writes the report. `report.js` runs in
@@ -111,8 +113,11 @@ the missing ones were empty.
 
 ## Changing the check
 
+The PR job runs the check from the PR, so a PR could change the verdict about itself. The reviewer of any PR that changes
+the check reviews that change.
+
 - **A PR changes Ignite code that the check reads.** The description of the PR merge fails, and the check log names the file
-  in `describe/`. Each collector names the Ignite classes and files it reads at its start. Update the collector in the same
+  in `describe/src/`. Each collector names the Ignite classes and files it reads at its start. Update the collector in the same
   PR. The target branch is still described by its own version, so a PR that changes nothing public shows no changes.
 - **An RFC changes what the check compares.** Add or change a collector and its row in the table above. Declarations that
   the check starts to compare are reported as added, and the ones it stops comparing as removed. The reviewer checks them

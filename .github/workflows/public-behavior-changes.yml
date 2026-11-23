@@ -103,7 +103,7 @@ jobs:
             const { report } = require('./merge/.github/public-behavior/check/report.js');
             const { PREPARE, TESTS, JAVA, BASE, MERGE } = process.env;
             const steps = { checkout: PREPARE, tests: TESTS, java: JAVA, base: BASE, merge: MERGE };
-            await report({ github, core, context, steps });
+            await report({ core, context, steps });
 
       - name: Upload result
         if: always()

@@ -21,74 +21,43 @@ const assert = require('assert');
 const { test } = require('node:test');
 const { rfcLinks } = require('./rfc.js');
 
-test('a link counts only if its file is on the target branch and the link leads to it', async () => {
+test('a link counts if its path is an RFC file on the target branch, whatever branch, tag or commit it names', () => {
     const body = 'Covered by https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-existing.md. ' +
         'See [RFC](https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-9-typo.md#compatibility), ' +
         'https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-10-permalink.md, ' +
         'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-absent.md, ' +
         'https://github.com/apache/ignite/blob/master/rfcs/Bad_Name.md and https://github.com/apache/ignite/pull/13760.';
     const onTarget = f => ['rfcs/IGNITE-7-existing.md', 'rfcs/IGNITE-9-typo.md', 'rfcs/IGNITE-10-permalink.md'].includes(f);
-    const checked = [];
-    const atRef = async (ref, f) => checked.push(`${ref}:${f}`) && ref === '1a2b3c';
 
-    assert.deepStrictEqual(await rfcLinks(body, 'apache/ignite', 'master', onTarget, atRef), {
-        linked: ['rfcs/IGNITE-7-existing.md', 'rfcs/IGNITE-10-permalink.md'],
-        badLinks: [
-            { path: 'rfcs/IGNITE-9-typo.md', reason: 'url' },
-            { path: 'rfcs/IGNITE-8-absent.md', reason: 'missing' },
-            { path: 'rfcs/Bad_Name.md', reason: 'name' },
-        ],
+    assert.deepStrictEqual(rfcLinks(body, 'apache/ignite', onTarget), {
+        linked: ['rfcs/IGNITE-7-existing.md', 'rfcs/IGNITE-9-typo.md', 'rfcs/IGNITE-10-permalink.md'],
+        badLinks: [{ path: 'rfcs/IGNITE-8-absent.md', reason: 'missing' }, { path: 'rfcs/Bad_Name.md', reason: 'name' }],
     });
-    assert.deepStrictEqual(checked, ['mastr:rfcs/IGNITE-9-typo.md', '1a2b3c:rfcs/IGNITE-10-permalink.md']);
 });
 
-test('a broken link does not hide a working link to the same file, and a path past the file is not a link to it', async () => {
-    const body = 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md and then ' +
-        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md, again ' +
+test('each file is reported once, and a path past the file is not a link to it', () => {
+    const body = 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md, again ' +
         'https://github.com/apache/ignite/tree/master/rfcs/IGNITE-7-y.md, also ' +
+        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-z.md/extra and ' +
         'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-z.md/extra';
     const onTarget = f => ['rfcs/IGNITE-7-y.md', 'rfcs/IGNITE-8-z.md'].includes(f);
 
-    assert.deepStrictEqual(await rfcLinks(body, 'apache/ignite', 'master', onTarget, async () => false), {
+    assert.deepStrictEqual(rfcLinks(body, 'apache/ignite', onTarget), {
         linked: ['rfcs/IGNITE-7-y.md'],
         badLinks: [{ path: 'rfcs/IGNITE-8-z.md/extra', reason: 'name' }],
     });
 });
 
-test('only links to the target repository count', async () => {
+test('only links to the target repository count', () => {
     const body = 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md ' +
         'https://github.com/owner/standXrepo/blob/master/rfcs/IGNITE-8-z.md ' +
         'https://github.com/owner/stand.repo/blob/master/rfcs/IGNITE-9-w.md';
 
-    assert.deepStrictEqual(await rfcLinks(body, 'owner/stand.repo', 'master', () => true, async () => false),
-        { linked: ['rfcs/IGNITE-9-w.md'], badLinks: [] });
+    assert.deepStrictEqual(rfcLinks(body, 'owner/stand.repo', () => true), { linked: ['rfcs/IGNITE-9-w.md'], badLinks: [] });
 });
 
-test('a branch name may contain slashes', async () => {
+test('a branch name may contain slashes', () => {
     const body = 'https://github.com/apache/ignite/blob/release/docs/rfcs/IGNITE-7-y.md';
-    const checked = [];
-    const atRef = async (ref, f) => checked.push(`${ref}:${f}`) > 0;
 
-    assert.deepStrictEqual(await rfcLinks(body, 'apache/ignite', 'master', () => true, atRef),
-        { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] });
-    assert.deepStrictEqual(checked, ['release/docs:rfcs/IGNITE-7-y.md']);
-});
-
-test('one confirmed RFC is enough when GitHub cannot check another link, in either order of the links', async () => {
-    const onTarget = () => true;
-    const atRef = async () => { throw Object.assign(new Error('Server Error'), { status: 502 }); };
-    const local = 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md';
-
-    for (const other of ['rfcs/IGNITE-7-y.md', 'rfcs/IGNITE-8-z.md']) {
-        const remote = `https://github.com/apache/ignite/blob/1a2b3c/${other}`;
-
-        for (const body of [`${local} ${remote}`, `${remote} ${local}`]) {
-            assert.deepStrictEqual(await rfcLinks(body, 'apache/ignite', 'master', onTarget, atRef),
-                { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] }, body);
-        }
-    }
-
-    const unchecked = 'https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-8-z.md';
-
-    await assert.rejects(rfcLinks(unchecked, 'apache/ignite', 'master', onTarget, atRef), /Server Error/);
+    assert.deepStrictEqual(rfcLinks(body, 'apache/ignite', () => true), { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] });
 });
