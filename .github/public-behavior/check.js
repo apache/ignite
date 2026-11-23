@@ -29,7 +29,7 @@ const { execFileSync } = require('child_process');
 const MARKER = '<!-- ignite-public-behavior-changes';
 const RFC_NAME = /^rfcs\/IGNITE-\d+-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const LINK = /https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/[^\s<>"'()\[\]]+/g;
-const RFC_LINK = /^https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/([^/]+)\/(rfcs\/.+)$/;
+const RFC_LINK = /^https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/(.+?)\/(rfcs\/.+)$/;
 const BLOB = /^[0-9a-f]{40,64}$/;
 const TEMPLATE = 'rfcs/TEMPLATE.md';
 const RFC_EXAMPLE = 'rfcs/IGNITE-12345-cache-timeout.md';
@@ -53,9 +53,9 @@ function parse(text) {
         if (!line)
             continue;
 
-        const [area, key, value = '', flags = '', location = '', group = ''] = line.split('\t');
+        const [area, key, value = '', flags = '', location = '', group = '', deprecation = ''] = line.split('\t');
 
-        res.set(area + '\t' + key, { area, key, value, flags: flags.split(',').filter(Boolean), location, group });
+        res.set(area + '\t' + key, { area, key, value, flags: flags.split(',').filter(Boolean), location, group, deprecation });
     }
 
     return res;
@@ -106,7 +106,9 @@ function renamedKeys(base, merge) {
 
 /**
  * @return Declarations added, removed or changed by the PR. A removed deprecated declaration and any change to an experimental
- *      declaration have their own kinds: the reviewer decides whether they need an RFC.
+ *      declaration have their own kinds: the reviewer decides whether they need an RFC. A removed deprecated declaration points
+ *      at the annotation that deprecates it, which can be on its type or parent command; any other finding points at the
+ *      declaration.
  */
 function compare(baseText, mergeText) {
     const base = parse(baseText);
@@ -124,7 +126,7 @@ function compare(baseText, mergeText) {
             before: b ? b.value : null,
             after: m ? m.value : null,
             kind,
-            location: m ? m.location : b.location,
+            location: kind === 'deprecated-removal' ? b.deprecation : (m || b).location,
         });
     };
 
@@ -164,7 +166,8 @@ function rfcFiles(nameStatus) {
 
 /**
  * Finds direct links to RFC files in the PR description. A link counts if its whole path is an RFC file on the target branch
- * and the link itself leads to that file. A file counts if any of its links counts.
+ * and the link itself leads to that file. A file counts if any of its links counts. If GitHub cannot tell whether a link leads
+ * to its file, the result is unknown only when no file counts: one RFC is enough.
  *
  * @param body PR description.
  * @param baseRef Name of the target branch.
@@ -174,22 +177,36 @@ function rfcFiles(nameStatus) {
 async function rfcLinks(body, baseRef, onTarget, atRef) {
     const linked = [];
     const problems = new Map();
+    let failure = null;
 
     for (const [url] of (body || '').matchAll(LINK)) {
         const m = RFC_LINK.exec(url.replace(/[.,;:!]+$/, '').replace(/[?#].*$/, ''));
 
-        if (!m)
+        if (!m || linked.includes(m[2]))
             continue;
 
         const [, ref, file] = m;
-        const problem = !RFC_NAME.test(file) ? 'name' : !onTarget(file) ? 'missing'
-            : ref !== baseRef && !(await atRef(ref, file)) ? 'url' : null;
+        let problem = !RFC_NAME.test(file) ? 'name' : !onTarget(file) ? 'missing' : null;
 
-        if (!problem && !linked.includes(file))
+        if (!problem && ref !== baseRef) {
+            try {
+                problem = await atRef(ref, file) ? null : 'url';
+            }
+            catch (e) {
+                failure = failure || e;
+
+                continue;
+            }
+        }
+
+        if (!problem)
             linked.push(file);
-        else if (problem && !problems.has(file))
+        else if (!problems.has(file))
             problems.set(file, problem);
     }
+
+    if (failure && linked.length === 0)
+        throw failure;
 
     const badLinks = [...problems].filter(([file]) => !linked.includes(file)).map(([file, reason]) => ({ path: file, reason }));
 
@@ -527,16 +544,13 @@ async function report({ github, core, context, steps, workspace = '.' }) {
         core.warning(`${title(res)}. See the job summary for the detected changes.`, { title: title(res) });
 }
 
-/** Finds the open PR whose head is the commit that the run checked. */
-async function findPr(github, owner, repo, run) {
-    if (run.pull_requests?.length > 0) {
-        const { data } = await github.rest.pulls.get({ owner, repo, pull_number: run.pull_requests[0].number });
-
-        return data.head.sha === run.head_sha ? data : null;
-    }
-
+/**
+ * Finds the open PR into the target branch whose head is the commit that the run checked. The same branch may have another PR
+ * into another branch, which the check does not run for.
+ */
+async function findPr(github, owner, repo, run, target) {
     const prs = await github.paginate(github.rest.pulls.list, {
-        owner, repo, state: 'open', head: `${run.head_repository.owner.login}:${run.head_branch}`, per_page: 100,
+        owner, repo, state: 'open', head: `${run.head_repository.owner.login}:${run.head_branch}`, base: target, per_page: 100,
     });
 
     return prs.find(p => p.head.sha === run.head_sha) || null;
@@ -546,14 +560,16 @@ async function findPr(github, owner, repo, run) {
  * Runs in the workflow_run job: replaces the bot comment when the result changes. A newer run for the same commit of the same
  * PR branch, started for example by an edit of the PR description, publishes instead of this one. A run of another PR with the
  * same commit does not count.
+ *
+ * @param target Branch whose PRs the check runs for.
  */
-async function publish({ github, context, core, resultFile }) {
+async function publish({ github, context, core, resultFile, target }) {
     const { owner, repo } = context.repo;
     const run = context.payload.workflow_run;
-    const pr = await findPr(github, owner, repo, run);
+    const pr = await findPr(github, owner, repo, run, target);
 
     if (!pr) {
-        core.info(`No open PR has head ${run.head_sha}; the result is outdated.`);
+        core.info(`No open PR into ${target} has head ${run.head_sha}; the result is outdated.`);
 
         return;
     }

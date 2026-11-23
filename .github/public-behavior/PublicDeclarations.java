@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -157,7 +158,7 @@ public class PublicDeclarations {
 
         for (Declaration d : decls.values()) {
             System.out.println(String.join("\t", d.area, d.key, String.join(" | ", d.values), String.join(",", d.flags), d.location,
-                d.group));
+                d.group, d.deprecation == null ? "" : d.deprecation));
         }
 
         if (!errors.isEmpty()) {
@@ -169,15 +170,20 @@ public class PublicDeclarations {
 
     /** Adds a declaration whose key has no internal names. */
     private static void add(String area, String key, String val, String flags, String location) {
-        add(area, key, val, flags, location, "");
+        add(area, key, val, flags, location, null, "");
     }
 
     /**
      * Adds a declaration. Declarations with the same key, such as a system property that two constants declare, are merged:
      * their values are listed together, so a change to any of them is a change of the merged declaration.
+     *
+     * @param location Where the declaration is.
+     * @param deprecation Where the annotation that deprecates the declaration is: its own, or that of its type or parent
+     *      command. {@code null} if the declaration is not deprecated. The deprecation hint of a removed declaration uses it.
      */
-    private static void add(String area, String key, String val, String flags, String location, String group) {
-        Declaration d = decls.computeIfAbsent(area + '\t' + oneLine(key), k -> new Declaration(area, oneLine(key), location, group));
+    private static void add(String area, String key, String val, String flags, String location, String deprecation, String group) {
+        Declaration d = decls.computeIfAbsent(area + '\t' + oneLine(key),
+            k -> new Declaration(area, oneLine(key), location, deprecation, group));
 
         d.values.add(oneLine(val));
 
@@ -197,6 +203,9 @@ public class PublicDeclarations {
         final String location;
 
         /** */
+        final String deprecation;
+
+        /** */
         final String group;
 
         /** */
@@ -206,10 +215,11 @@ public class PublicDeclarations {
         final Set<String> flags = new TreeSet<>();
 
         /** */
-        Declaration(String area, String key, String location, String group) {
+        Declaration(String area, String key, String location, String deprecation, String group) {
             this.area = area;
             this.key = key;
             this.location = location;
+            this.deprecation = deprecation;
             this.group = group;
         }
     }
@@ -305,7 +315,7 @@ public class PublicDeclarations {
      * @param params Number of parameters of a method or constructor, or -1 for a field or the class.
      * @param deprecated Whether to point at the {@code @Deprecated} annotation of the declaration.
      * @return Source file and line of the declaration, or the file alone if the line is not certain, or an empty string if
-     *      the class has no source file. For a deprecated declaration the line is that of its {@code @Deprecated}.
+     *      the class has no source file. If {@code deprecated}, the line is that of its {@code @Deprecated}.
      */
     private static String where(Class<?> cls, String member, int params, boolean deprecated) {
         Class<?> top = cls;
@@ -360,7 +370,15 @@ public class PublicDeclarations {
         return file + ':' + (line + 1);
     }
 
-    /** @return Lines from {@code from} that declare the member, not just use it. */
+    /** @return Where the {@code @Deprecated} annotation of a deprecated declaration is, or {@code null} for other declarations. */
+    private static String deprecationWhere(Class<?> cls, String member, int params, boolean deprecated) {
+        return deprecated ? where(cls, member, params, true) : null;
+    }
+
+    /**
+     * @return Lines from {@code from} that declare the member, not just use it. A field may have a getter of the same name:
+     *      a type and a parameter list around the name declare a method, not the field.
+     */
     private static List<Integer> declarations(List<String> text, int from, String name, int params) {
         Pattern decl = Pattern.compile("^\\s*(?:([^=(;]*[\\w>\\]])\\s+)?" + Pattern.quote(name) + "\\s*([(=;,{]|$)");
         List<Integer> res = new ArrayList<>();
@@ -378,7 +396,7 @@ public class PublicDeclarations {
                 continue;
 
             boolean declares = params < 0
-                ? prefix != null || !"=".equals(m.group(2))
+                ? prefix != null ? !"(".equals(m.group(2)) : !"=".equals(m.group(2))
                 : "(".equals(m.group(2)) && prefix != null && paramCount(text, i, m.end()) == params;
 
             if (declares)
@@ -588,11 +606,11 @@ public class PublicDeclarations {
         String kind = cls.isAnnotation() ? "@interface" : cls.isInterface() ? "interface" : cls.isEnum() ? "enum" : "class";
         int mask = Modifier.PUBLIC | Modifier.PROTECTED | Modifier.STATIC
             | (cls.isInterface() || cls.isEnum() ? 0 : Modifier.FINAL | Modifier.ABSTRACT);
-        String typeWhere = where(cls, null, -1, deprecated);
+        String typeDeprecation = deprecationWhere(cls, null, -1, deprecated);
 
         add("Java API", name, markers(cls) + modifiers(cls.getModifiers() & mask) + kind + ' ' + cls.getSimpleName()
             + typeParams(cls.getTypeParameters(), vars) + (supers.isEmpty() ? "" : " : " + String.join(", ", supers))
-            + annotationUse(cls), flags(deprecated, experimental), typeWhere);
+            + annotationUse(cls), flags(deprecated, experimental), where(cls, null, -1, false), typeDeprecation, "");
 
         Map<String, Member> members = new HashMap<>();
 
@@ -607,9 +625,9 @@ public class PublicDeclarations {
         members.forEach((key, m) -> {
             boolean own = m.elem.isAnnotationPresent(Deprecated.class);
             boolean exp = experimental || marked(m.elem, m.owner, IgniteExperimental.class);
-            String location = own ? where(m.owner, m.name, m.params, true) : deprecated ? typeWhere : where(m.owner, m.name, m.params, false);
 
-            add("Java API", name + '#' + key, m.text, flags(deprecated || own, exp), location);
+            add("Java API", name + '#' + key, m.text, flags(deprecated || own, exp), where(m.owner, m.name, m.params, false),
+                own ? where(m.owner, m.name, m.params, true) : typeDeprecation, "");
         });
     }
 
@@ -867,7 +885,8 @@ public class PublicDeclarations {
 
                 add("Configuration", "system property " + f.get(null), prop.type().getSimpleName()
                     + (dflt.isEmpty() ? "" : ", default " + dflt) + (deprecated ? ", deprecated" : ""),
-                    flags(deprecated, false), where(cls, f.getName(), -1, deprecated));
+                    flags(deprecated, false), where(cls, f.getName(), -1, false),
+                    deprecationWhere(cls, f.getName(), -1, deprecated), "");
             }
         }
     }
@@ -893,7 +912,7 @@ public class PublicDeclarations {
                 new SystemViewRowAttributeWalker.AttributeVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> type) {
                         add("Monitoring", "system view " + row.getSimpleName() + " column " + name,
-                            "position " + (idx + 1) + ", " + type.getTypeName(), "", where(row, name, 0, false), row.getSimpleName());
+                            "position " + (idx + 1) + ", " + type.getTypeName(), "", where(row, name, 0, false), null, row.getSimpleName());
                     }
                 });
         }
@@ -944,7 +963,7 @@ public class PublicDeclarations {
 
         if (CommandUtils.executable(cmd)) {
             add("CLI", path, "command" + (experimental ? ", experimental" : "") + (deprecatedBy != null ? ", deprecated" : ""),
-                flags, deprecation != null ? deprecation : where(cmd.getClass(), null, -1, false));
+                flags, where(cmd.getClass(), null, -1, false), deprecation, "");
 
             int[] pos = {0};
 
@@ -969,8 +988,7 @@ public class PublicDeclarations {
                     positional.addAll(named);
 
                     add("CLI", path + ' ' + String.join("|", positional), "group, " + (grp.optional() ? "optional" : "required")
-                        + (grp.onlyOneOf() ? ", only one of" : ""), flags,
-                        deprecation != null ? deprecation : where(cmd.argClass(), null, -1, false));
+                        + (grp.onlyOneOf() ? ", only one of" : ""), flags, where(cmd.argClass(), null, -1, false), deprecation, "");
                 });
         }
 
@@ -1015,7 +1033,7 @@ public class PublicDeclarations {
 
         add("CLI", path + ' ' + (pos > 0 ? "<arg " + pos + '>' : CommandUtils.toFormattedFieldName(fld)),
             required + fld.getType().getTypeName() + values + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags,
-            deprecation != null ? deprecation : where(fld.getDeclaringClass(), fld.getName(), -1, false));
+            where(fld.getDeclaringClass(), fld.getName(), -1, false), deprecation, "");
     }
 
     /**
@@ -1040,7 +1058,8 @@ public class PublicDeclarations {
                 String key = cls.getSimpleName() + '.' + f.getName();
                 Object val = staticValue(f);
 
-                add(c[0], key, valueText(val), flags(deprecated, false), where(cls, f.getName(), -1, deprecated), f.getName());
+                add(c[0], key, valueText(val), flags(deprecated, false), where(cls, f.getName(), -1, false),
+                    deprecationWhere(cls, f.getName(), -1, deprecated), f.getName());
 
                 if (cls == IgniteQueryErrorCode.class && type == int.class) {
                     add(c[0], "SQLSTATE of query error code " + val, IgniteQueryErrorCode.codeToSqlState((Integer)val), "",
@@ -1063,7 +1082,8 @@ public class PublicDeclarations {
                 boolean deprecated = cls.getField(name).isAnnotationPresent(Deprecated.class);
                 String key = cls.getSimpleName() + '.' + name;
 
-                add(c[0], key, String.valueOf(code.invoke(e)), flags(deprecated, false), where(cls, name, -1, deprecated), name);
+                add(c[0], key, String.valueOf(code.invoke(e)), flags(deprecated, false), where(cls, name, -1, false),
+                    deprecationWhere(cls, name, -1, deprecated), name);
             }
         }
     }
@@ -1071,7 +1091,8 @@ public class PublicDeclarations {
     /**
      * Describes the keywords of the Calcite SQL parser and the operators and functions of the Calcite engine. The kind and the
      * allowed signatures of an operator are part of the key, so the forms of an overloaded function are compared separately.
-     * Forms that still share a key are counted, so removing one of them is a change.
+     * Operators that still share a key are counted, so removing one of them is a change. An operator registered twice is one
+     * form: the parser uses the same object.
      */
     private static void sql() {
         SqlAbstractParserImpl parser = IgniteSqlParserImpl.FACTORY.getParser(new StringReader(""));
@@ -1081,7 +1102,7 @@ public class PublicDeclarations {
                 where(IgniteSqlParserImpl.class, null, -1, false));
         }
 
-        Map<String, Integer> forms = new TreeMap<>();
+        Map<String, Set<SqlOperator>> forms = new TreeMap<>();
         Map<String, String> locations = new HashMap<>();
 
         for (ReflectiveSqlOperatorTable t : List.of(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance())) {
@@ -1100,12 +1121,12 @@ public class PublicDeclarations {
 
                 String key = oneLine(op.getName() + ' ' + op.getSyntax() + ' ' + op.getKind() + ' ' + signatures);
 
-                forms.merge(key, 1, Integer::sum);
+                forms.computeIfAbsent(key, k -> Collections.newSetFromMap(new IdentityHashMap<>())).add(op);
                 locations.putIfAbsent(key, where(t.getClass(), null, -1, false));
             }
         }
 
-        forms.forEach((key, n) -> add("SQL functions", key, n > 1 ? n + " registrations" : "", "", locations.get(key)));
+        forms.forEach((key, ops) -> add("SQL functions", key, ops.size() > 1 ? ops.size() + " operators" : "", "", locations.get(key)));
     }
 
     /** Describes runtime requirements and packages declared in build and launch files. */

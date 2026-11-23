@@ -60,4 +60,4 @@ jobs:
         with:
           script: |
             const check = require('./.github/public-behavior/check.js');
-            await check.publish({ github, context, core, resultFile: 'result/result.json' });
+            await check.publish({ github, context, core, resultFile: 'result/result.json', target: 'master' });

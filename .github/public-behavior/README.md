@@ -35,7 +35,8 @@ the same value.
 - **Removed deprecated or changed experimental API only.** The check passes with a review warning. The RFC process lets
   authors remove APIs deprecated before it without an RFC, and experimental APIs may change in any release. The reviewer
   decides whether such a change needs an RFC. For a removed deprecated declaration the report shows the commit and the first
-  release where its deprecation was last changed, if the check finds the annotation of that declaration in the sources.
+  release where its deprecation was last changed, if the check finds the annotation that deprecates it in the sources: its
+  own, or that of its type or parent command.
 - **RFC in the PR.** Every Markdown file in `rfcs/` that the PR adds or updates, except `rfcs/TEMPLATE.md`, must be named
   `rfcs/IGNITE-<ticket>-<short-title>.md`. Any other name fails the check. With valid names, the check passes with a review
   warning that links to the RFC.

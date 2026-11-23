@@ -28,7 +28,8 @@ const { test } = require('node:test');
 const check = require('./check.js');
 
 /** @return Declaration line in the format of PublicDeclarations.java. */
-const line = (area, key, value, flags = '', location = 'A.java:1', group = '') => [area, key, value, flags, location, group].join('\t');
+const line = (area, key, value, flags = '', location = 'A.java:1', group = '', deprecation = '') =>
+    [area, key, value, flags, location, group, deprecation].join('\t');
 
 /** @return Line of an internal constant {@code Class.NAME}, whose name is a rename group. */
 const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key.split('.').pop());
@@ -132,6 +133,15 @@ test('deprecating a declaration, changing a deprecated one or marking stable API
     assert.strictEqual(check.compare(base, experimental)[0].kind, 'contract');
 });
 
+test('a changed deprecated parameter points at its declaration, a removed one at the deprecation of its command', () => {
+    const decl = value => line('CLI', 'control.sh --deactivate --force', value, 'deprecated', 'DeactivateCommandArg.java:33', '',
+        'DeactivateCommand.java:33');
+    const location = merge => check.compare(decl('optional, boolean'), merge).map(f => [f.kind, f.location]);
+
+    assert.deepStrictEqual(location(decl('required, boolean')), [['contract', 'DeactivateCommandArg.java:33']]);
+    assert.deepStrictEqual(location(''), [['deprecated-removal', 'DeactivateCommand.java:33']]);
+});
+
 test('RFC files of the PR are read from the NUL-separated git output, including names git would quote', () => {
     const nameStatus = [
         'A', 'rfcs/IGNITE-1-new-feature.md',
@@ -174,7 +184,8 @@ test('a link counts only if its file is on the target branch and the link leads 
 
 test('a broken link does not hide a working link to the same file, and a path past the file is not a link to it', async () => {
     const body = 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md and then ' +
-        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md, also ' +
+        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md, again ' +
+        'https://github.com/apache/ignite/tree/master/rfcs/IGNITE-7-y.md, also ' +
         'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-z.md/extra';
     const onTarget = f => ['rfcs/IGNITE-7-y.md', 'rfcs/IGNITE-8-z.md'].includes(f);
 
@@ -182,6 +193,33 @@ test('a broken link does not hide a working link to the same file, and a path pa
         linked: ['rfcs/IGNITE-7-y.md'],
         badLinks: [{ path: 'rfcs/IGNITE-8-z.md/extra', reason: 'name' }],
     });
+});
+
+test('a branch name may contain slashes', async () => {
+    const body = 'https://github.com/apache/ignite/blob/release/docs/rfcs/IGNITE-7-y.md';
+    const checked = [];
+    const atRef = async (ref, f) => checked.push(`${ref}:${f}`) > 0;
+
+    assert.deepStrictEqual(await check.rfcLinks(body, 'master', () => true, atRef), { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] });
+    assert.deepStrictEqual(checked, ['release/docs:rfcs/IGNITE-7-y.md']);
+});
+
+test('one confirmed RFC is enough when GitHub cannot check another link, in either order of the links', async () => {
+    const onTarget = () => true;
+    const atRef = async () => { throw Object.assign(new Error('Server Error'), { status: 502 }); };
+    const local = 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md';
+
+    for (const other of ['rfcs/IGNITE-7-y.md', 'rfcs/IGNITE-8-z.md']) {
+        const remote = `https://github.com/apache/ignite/blob/1a2b3c/${other}`;
+
+        for (const body of [`${local} ${remote}`, `${remote} ${local}`]) {
+            assert.deepStrictEqual(await check.rfcLinks(body, 'master', onTarget, atRef),
+                { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] }, body);
+        }
+    }
+
+    await assert.rejects(check.rfcLinks('https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-8-z.md', 'master', onTarget, atRef),
+        /Server Error/);
 });
 
 test('a PR without contract changes passes before the RFC check', () => {
@@ -255,13 +293,17 @@ test('long reports are cut to stay within the GitHub comment limit', () => {
  * @param headSha Head commit of the open PR.
  * @param comments Comments that the PR already has.
  * @param runs Check runs for the head commit: number and PR branch.
+ * @param prs Open PRs from the checked branch: number and target branch.
  */
-function github({ headSha = 'abc', comments = [], runs = [{ number: 1, branch: 'ignite-1' }] } = {}) {
+function github({
+    headSha = 'abc', comments = [], runs = [{ number: 1, branch: 'ignite-1' }], prs = [{ number: 7, base: 'master' }],
+} = {}) {
     const calls = [];
+    const commented = [];
     let id = 100;
 
     const rest = {
-        pulls: { list: 'pulls.list', get: async () => ({ data: { number: 7, head: { sha: headSha }, base: { ref: 'master' } } }) },
+        pulls: { list: 'pulls.list' },
         actions: {
             listWorkflowRuns: async () => ({
                 data: {
@@ -275,16 +317,18 @@ function github({ headSha = 'abc', comments = [], runs = [{ number: 1, branch: '
                 calls.push('delete ' + comment_id);
                 comments.splice(comments.findIndex(c => c.id === comment_id), 1);
             },
-            createComment: async ({ body }) => {
+            createComment: async ({ issue_number, body }) => {
                 calls.push('create');
+                commented.push(issue_number);
                 comments.push({ id: id++, body, user: { login: 'github-actions[bot]' } });
             },
         },
     };
 
-    const paginate = async route => route === 'pulls.list' ? [{ number: 7, head: { sha: headSha }, base: { ref: 'master' } }] : comments;
+    const paginate = async (route, params) => route !== 'pulls.list' ? comments
+        : prs.filter(p => p.base === params.base).map(p => ({ number: p.number, head: { sha: headSha }, base: { ref: p.base } }));
 
-    return { rest, paginate, calls, comments };
+    return { rest, paginate, calls, comments, commented };
 }
 
 /** Publishes the result of check run 1 for a fork PR. */
@@ -305,7 +349,7 @@ async function publish(gh, res) {
         },
     };
 
-    await check.publish({ github: gh, context, core: { info() {}, warning() {} }, resultFile: file });
+    await check.publish({ github: gh, context, core: { info() {}, warning() {} }, resultFile: file, target: 'master' });
 }
 
 test('a clean PR gets no comment', async () => {
@@ -380,6 +424,14 @@ test('a newer run of another PR with the same commit does not suppress the resul
     await publish(gh, check.decide([CONTRACT], NO_RFC));
 
     assert.deepStrictEqual(gh.calls, ['create']);
+});
+
+test('the comment goes to the PR into the target branch, not to a PR of the same branch into a release branch', async () => {
+    const gh = github({ prs: [{ number: 8, base: 'ignite-2.17' }, { number: 7, base: 'master' }] });
+
+    await publish(gh, check.decide([CONTRACT], NO_RFC));
+
+    assert.deepStrictEqual(gh.commented, [7]);
 });
 
 test('a missing or forged result is reported as a check that could not finish', async () => {
@@ -519,7 +571,7 @@ test('report: a PR merge that does not build fails as a check that could not fin
 });
 
 /**
- * Runs report() for a PR that removes a declaration deprecated in the last target commit.
+ * Runs report() for a PR that removes a declaration deprecated in the last target commit. The declaration itself is older.
  *
  * @param tag Release tag of that commit, or null.
  * @return Deprecation hint and the deprecating commit.
@@ -528,14 +580,17 @@ async function deprecationHint(tag) {
     const ws = workspace();
     const base = path.join(ws, 'base');
 
-    fs.writeFileSync(path.join(base, 'Old.java'), 'class Old {\n    @Deprecated\n    void run() {}\n}\n');
+    fs.writeFileSync(path.join(base, 'Old.java'), 'class Old {\n    void run() {}\n}\n');
     git(base, 'add', '.');
-    git(base, 'commit', '-q', '-m', 'deprecate');
+    git(base, 'commit', '-q', '-m', 'add');
+    fs.writeFileSync(path.join(base, 'Old.java'), 'class Old {\n    @Deprecated\n    void run() {}\n}\n');
+    git(base, 'commit', '-q', '-am', 'deprecate');
 
     if (tag)
         git(base, 'tag', tag);
 
-    fs.writeFileSync(path.join(ws, 'base.txt'), line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated', 'Old.java:2'));
+    fs.writeFileSync(path.join(ws, 'base.txt'),
+        line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated', 'Old.java:3', '', 'Old.java:2'));
     fs.writeFileSync(path.join(ws, 'merge.txt'), line('Java API', 'org.apache.ignite.Other#run()', 'public void run()'));
 
     const out = await report(ws);
