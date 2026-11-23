@@ -30,6 +30,9 @@ const MARKER = '<!-- ignite-public-behavior-changes';
 const RFC_NAME = /^rfcs\/IGNITE-\d+-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
 const RFC_PATH = /^(.+?)\/(rfcs\/.+)$/;
 const BLOB = /^[0-9a-f]{40,64}$/;
+
+/** Longest list of RFC files or links in a result. A longer list is cut after the outcome is decided. */
+const SHOWN_FILES = 20;
 const TEMPLATE = 'rfcs/TEMPLATE.md';
 const RFC_EXAMPLE = 'rfcs/IGNITE-12345-cache-timeout.md';
 const PROCESS_URL = 'https://github.com/apache/ignite/tree/master/rfcs';
@@ -145,20 +148,12 @@ function compare(baseText, mergeText) {
 }
 
 /**
- * @param nameStatus Output of `git diff --name-status -z -M` between the target branch and the PR merge for rfcs/.
+ * @param names Output of `git diff --no-renames --name-only --diff-filter=d -z` between the target branch and the PR merge for
+ *      rfcs/: the paths of the added and updated files, including the new path of a renamed one.
  * @return RFC files that the PR adds or updates and the ones with invalid names.
  */
-function rfcFiles(nameStatus) {
-    const parts = nameStatus.split('\0');
-    const files = [];
-
-    for (let i = 0; i < parts.length && parts[i];) {
-        const status = parts[i++];
-        const file = /^[RC]/.test(status) ? parts[(i += 2) - 1] : parts[i++];
-
-        if (status !== 'D' && file.endsWith('.md') && file !== TEMPLATE)
-            files.push(file);
-    }
+function rfcFiles(names) {
+    const files = names.split('\0').filter(f => f.endsWith('.md') && f !== TEMPLATE);
 
     return { ...NO_RFC, files, invalidNames: files.filter(f => !RFC_NAME.test(f)) };
 }
@@ -258,15 +253,16 @@ function validate(res) {
         fail('findings');
 
     const contract = res.findings.some(f => f.kind === 'contract');
+    const rfc = r => RFC_NAME.test(r.path) && ['pr', 'link'].includes(r.source) && (r.blob === undefined || BLOB.test(r.blob));
 
-    if (!list(res.rfcs, 20, r => RFC_NAME.test(r.path) && ['pr', 'link'].includes(r.source) && (r.blob === undefined || BLOB.test(r.blob)))
+    if (!list(res.rfcs, SHOWN_FILES, rfc)
         || (res.outcome === 'rfc-found') !== (res.rfcs.length > 0) || (res.outcome === 'review') === contract)
         fail('rfcs');
 
-    if (!list(res.invalidNames, 20, p => str(p, 300)) || (res.outcome === 'rfc-name') !== (res.invalidNames.length > 0))
+    if (!list(res.invalidNames, SHOWN_FILES, p => str(p, 300)) || (res.outcome === 'rfc-name') !== (res.invalidNames.length > 0))
         fail('invalidNames');
 
-    if (!list(res.badLinks, 20, l => str(l.path, 300) && LINK_PROBLEMS.includes(l.reason)))
+    if (!list(res.badLinks, SHOWN_FILES, l => str(l.path, 300) && LINK_PROBLEMS.includes(l.reason)))
         fail('badLinks');
 
     return {
@@ -480,7 +476,7 @@ async function findRfc(findings, { github, pr, workspace }) {
         return NO_RFC;
 
     const git = (dir, ...args) => execFileSync('git', ['-C', path.join(workspace, dir), ...args], { encoding: 'utf8' });
-    const rfcs = rfcFiles(git('merge', 'diff', '--name-status', '-z', '-M', 'HEAD^1', 'HEAD', '--', 'rfcs/'));
+    const rfcs = rfcFiles(git('merge', 'diff', '--no-renames', '--name-only', '--diff-filter=d', '-z', 'HEAD^1', 'HEAD', '--', 'rfcs/'));
 
     if (rfcs.files.length === 0) {
         const onTarget = f => fs.statSync(path.join(workspace, 'base', f), { throwIfNoEntry: false })?.isFile() === true;
@@ -524,6 +520,9 @@ async function report({ github, core, context, steps, workspace = '.' }) {
             const decided = decide(findings, rfcs);
 
             decided.rfcs = (decided.rfcs || []).map(r => ({ ...r, blob: rfcs.blobs.get(r.path) }));
+
+            for (const shown of ['rfcs', 'invalidNames', 'badLinks'])
+                decided[shown] = decided[shown]?.slice(0, SHOWN_FILES);
 
             res = validate(decided);
         }
@@ -623,4 +622,4 @@ async function publish({ github, context, core, resultFile, target }) {
     });
 }
 
-module.exports = { compare, rfcFiles, rfcLinks, decide, validate, render, report, publish };
+module.exports = { compare, rfcLinks, decide, validate, render, report, publish };

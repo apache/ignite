@@ -145,25 +145,6 @@ test('a changed deprecated parameter points at its declaration, a removed one at
     assert.deepStrictEqual(location(''), [['deprecated-removal', 'DeactivateCommand.java:33']]);
 });
 
-test('RFC files of the PR are read from the NUL-separated git output, including names git would quote', () => {
-    const nameStatus = [
-        'A', 'rfcs/IGNITE-1-new-feature.md',
-        'M', 'rfcs/IGNITE-2-updated.md',
-        'R100', 'rfcs/IGNITE-3-old.md', 'rfcs/IGNITE-4-renamed.md',
-        'A', 'rfcs/обзор.md',
-        'M', 'rfcs/TEMPLATE.md',
-        'A', 'rfcs/diagram.png',
-        'D', 'rfcs/IGNITE-5-removed.md',
-        '',
-    ].join('\0');
-
-    assert.deepStrictEqual(check.rfcFiles(nameStatus), {
-        ...NO_RFC,
-        files: ['rfcs/IGNITE-1-new-feature.md', 'rfcs/IGNITE-2-updated.md', 'rfcs/IGNITE-4-renamed.md', 'rfcs/обзор.md'],
-        invalidNames: ['rfcs/обзор.md'],
-    });
-});
-
 test('a link counts only if its file is on the target branch and the link leads to it', async () => {
     const body = 'Covered by https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-existing.md. ' +
         'See [RFC](https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-9-typo.md#compatibility), ' +
@@ -478,7 +459,7 @@ const git = (dir, ...args) => execFileSync('git', ['-C', dir, '-c', 'user.name=t
  * @param onTarget Files of the target branch, by path.
  * @param merge Description of the PR merge, or null if the builds were skipped.
  */
-function workspace({ files = {}, onTarget = {}, base = BASE, merge = null } = {}) {
+function workspace({ files = {}, removed = [], onTarget = {}, base = BASE, merge = null } = {}) {
     const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'pbc-ws-'));
     const dir = path.join(ws, 'merge');
 
@@ -494,7 +475,8 @@ function workspace({ files = {}, onTarget = {}, base = BASE, merge = null } = {}
     for (const [f, text] of Object.entries(files))
         fs.writeFileSync(path.join(dir, f), text);
 
-    git(dir, 'add', '.');
+    removed.forEach(f => fs.rmSync(path.join(dir, f)));
+    git(dir, 'add', '-A');
     git(dir, 'commit', '-q', '--allow-empty', '-m', 'merge');
     git(dir, 'worktree', 'add', '-q', '--detach', '../base', 'HEAD^1');
 
@@ -547,6 +529,30 @@ test('report: a contract change with an RFC in the PR passes with a warning and 
     assert.strictEqual(out.result.rfcs[0].blob, git(path.join(ws, 'merge'), 'rev-parse', 'HEAD:rfcs/IGNITE-1-x.md').toString().trim());
     assert.deepStrictEqual(out.annotations, ['warning: Review the RFC']);
     assert.ok(out.summary.includes('+ control.sh --cache list --seq: optional, boolean (A.java:1)'), out.summary);
+});
+
+test('report: the RFC files of the PR are the ones it adds, updates or renames to', async () => {
+    const onTarget = {
+        'rfcs/IGNITE-2-updated.md': 'v1', 'rfcs/IGNITE-3-old.md': 'old', 'rfcs/IGNITE-5-removed.md': 'gone', 'rfcs/TEMPLATE.md': 't',
+    };
+    const files = {
+        'rfcs/IGNITE-1-new-feature.md': 'new', 'rfcs/IGNITE-2-updated.md': 'v2', 'rfcs/IGNITE-4-renamed.md': 'old',
+        'rfcs/TEMPLATE.md': 't2', 'rfcs/diagram.png': 'png',
+    };
+    const ws = workspace({ onTarget, files, removed: ['rfcs/IGNITE-3-old.md', 'rfcs/IGNITE-5-removed.md'], merge: WITH_CONTRACT_CHANGE });
+    const out = await report(ws);
+
+    assert.deepStrictEqual([out.result.outcome, out.result.rfcs.map(r => r.path)],
+        ['rfc-found', ['rfcs/IGNITE-1-new-feature.md', 'rfcs/IGNITE-2-updated.md', 'rfcs/IGNITE-4-renamed.md']]);
+});
+
+test('report: all RFC names are checked, and only the shown list is cut', async () => {
+    const files = Object.fromEntries(Array.from({ length: 21 }, (_, i) => [`rfcs/IGNITE-${100 + i}-feature.md`, 'rfc']));
+    const valid = await report(workspace({ files, merge: WITH_CONTRACT_CHANGE }));
+    const lastInvalid = await report(workspace({ files: { ...files, 'rfcs/zz-proposal.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE }));
+
+    assert.deepStrictEqual([valid.result.outcome, valid.result.rfcs.length], ['rfc-found', 20]);
+    assert.deepStrictEqual([lastInvalid.result.outcome, lastInvalid.result.invalidNames], ['rfc-name', ['rfcs/zz-proposal.md']]);
 });
 
 test('report: an RFC file whose name git would quote fails with the filename error', async () => {

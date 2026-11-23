@@ -63,7 +63,7 @@ covers the changes, reviews compatibility and verifies any required vote on the 
 | Monitoring | Name, type and position of each system view column. JMX interfaces and event types through the Java API. | Metric names and units, system view names, and when events fire. Ignite registers these at runtime. |
 | Client protocols and external formats | Thin client operation codes, status codes, protocol versions and feature IDs. JDBC and ODBC request types and protocol versions. Binary format constants. | Message layout, version negotiation, and supported client/server combinations. |
 | Stored data | WAL record type indices, page IO types and the serialization version of snapshot metadata. | Record layout, reading old data, migration and recovery. |
-| Distribution and runtime | Entries of `ignite-bom`, the Java release that the build targets, the minimum Java version in the launch scripts, NuGet package IDs and their target frameworks. | Supported JDK and OS combinations and upgrade paths. |
+| Distribution and runtime | Entries of `ignite-bom` as Maven publishes it, including the ones it takes from the parent POM, the Java release that the build targets, the minimum Java version in the launch scripts, NuGet package IDs and their target frameworks. | Supported JDK and OS combinations and upgrade paths. |
 | Errors | SQLSTATE values, query error codes and the SQLSTATE of each code, thin client status codes and `control.sh` exit codes. | The conditions that cause each error. |
 | Results, effects and operations | Public modes and defaults of transactions, retries and cancellation through the Java API. | Returned values, side effects, ordering and timeouts. |
 

@@ -54,6 +54,8 @@ import java.util.stream.Stream;
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.MethodTree;
@@ -83,6 +85,11 @@ import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerGenerat
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.startup.cmdline.CommandLineStartup;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * Prints the public declarations of a built Ignite source tree, one per line: area, key, value, flags, source location and
@@ -248,7 +255,8 @@ public class PublicDeclarations {
     }
 
     /**
-     * Describes the artifacts that {@code ignite-bom} declares.
+     * Describes the artifacts that {@code ignite-bom} declares, as Maven publishes them: the build writes the BOM with
+     * resolved properties to the file that {@code maven.flatten.file.name} names.
      *
      * @return Directories of the published modules built from this tree.
      */
@@ -257,38 +265,66 @@ public class PublicDeclarations {
 
         try (Stream<Path> poms = Files.walk(root.resolve("modules"), 3)) {
             for (Path pom : (Iterable<Path>)poms.filter(p -> p.endsWith("pom.xml"))::iterator)
-                modules.put(tag(Files.readString(pom).replaceAll("(?s)<parent>.*?</parent>", ""), "artifactId"), pom.getParent());
+                modules.put(child(xml(pom).getDocumentElement(), "artifactId"), pom.getParent());
         }
 
         List<Path> res = new ArrayList<>();
         String bom = "modules/bom/pom.xml";
-        Matcher dep = Pattern.compile("(?s)<dependency>(.*?)</dependency>").matcher(Files.readString(root.resolve(bom)));
+        String flattened = text(xml(root.resolve("parent/pom.xml")).getDocumentElement(), "maven.flatten.file.name");
+        Element mgmt = (Element)xml(root.resolve(bom).resolveSibling(flattened)).getElementsByTagName("dependencyManagement").item(0);
+        NodeList deps = mgmt.getElementsByTagName("dependency");
 
-        while (dep.find()) {
-            String artifact = tag(dep.group(1), "artifactId");
-            String type = tag(dep.group(1), "type");
+        for (int i = 0; i < deps.getLength(); i++) {
+            Element dep = (Element)deps.item(i);
+            String artifact = child(dep, "artifactId");
+            String type = child(dep, "type");
+            boolean jar = type == null || "jar".equals(type);
 
-            add("Distribution", "ignite-bom: org.apache.ignite:" + artifact + (type == null ? "" : ':' + type), "", "", bom);
+            add("Distribution", "ignite-bom: " + child(dep, "groupId") + ':' + artifact + (jar ? "" : ':' + type), "", "", bom);
 
-            if (type == null && modules.containsKey(artifact))
+            if (jar && modules.containsKey(artifact))
                 res.add(modules.get(artifact));
         }
 
         return res;
     }
 
-    /** @return Content of the first tag with the given name, or {@code null}. */
-    private static String tag(String xml, String name) {
-        Matcher m = Pattern.compile("<" + name + ">\\s*(.*?)\\s*</" + name + ">", Pattern.DOTALL).matcher(xml);
+    /** @return Parsed XML file. A document type declaration is refused, because the file comes from the PR. */
+    private static Document xml(Path file) throws IOException {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
-        return m.find() ? m.group(1) : null;
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+            return factory.newDocumentBuilder().parse(file.toFile());
+        }
+        catch (ParserConfigurationException | SAXException e) {
+            throw new IOException("Cannot parse " + file, e);
+        }
+    }
+
+    /** @return Text of the first element with the name inside {@code scope}, or {@code null}. Comments are not text. */
+    private static String text(Element scope, String name) {
+        NodeList found = scope.getElementsByTagName(name);
+
+        return found.getLength() == 0 ? null : found.item(0).getTextContent().trim();
+    }
+
+    /** @return Text of the child element with the name, or {@code null}. */
+    private static String child(Element parent, String name) {
+        for (Node n = parent.getFirstChild(); n != null; n = n.getNextSibling()) {
+            if (n instanceof Element && n.getNodeName().equals(name))
+                return n.getTextContent().trim();
+        }
+
+        return null;
     }
 
     /** Reads the packages that the javadoc build leaves out of the public API. */
     private static void javadocExclusions() throws IOException {
-        String names = tag(Files.readString(root.resolve("pom.xml")), "excludePackageNames");
+        String names = text(xml(root.resolve("pom.xml")).getDocumentElement(), "excludePackageNames");
 
-        for (String p : names.replaceAll("(?s)<!--.*?-->", "").split("[:\\s]+")) {
+        for (String p : names.split("[:\\s]+")) {
             if (!p.isEmpty())
                 excludedPkgs.add(p);
         }
@@ -1028,6 +1064,7 @@ public class PublicDeclarations {
      * Describes a command parameter. Positional parameters are identified by position, named ones by name. The parser treats
      * a named parameter of a group as optional and checks the group instead, so such a parameter is described as part of
      * its group. The group lists its named parameters in alphabetical order, because their order does not matter to the parser.
+     * An enum parameter is described by the names it accepts: the enum class and the order of its constants are internal.
      *
      * @param deprecation Location of the deprecation of the command, or {@code null}.
      */
@@ -1036,12 +1073,14 @@ public class PublicDeclarations {
         Class<?> type = fld.getType().isArray() ? fld.getType().getComponentType() : fld.getType();
 
         String values = type.isEnum()
-            ? Arrays.stream(type.getEnumConstants()).map(c -> ((Enum<?>)c).name()).collect(Collectors.joining("|", ", values ", ""))
+            ? Arrays.stream(type.getEnumConstants()).map(c -> ((Enum<?>)c).name()).sorted()
+                .collect(Collectors.joining("|", ", values ", ""))
             : "";
+        String typeName = type.isEnum() ? "enum" + (fld.getType().isArray() ? "[]" : "") : fld.getType().getTypeName();
         String required = pos == 0 && grouped ? "in a group, " : arg != null && arg.optional() ? "optional, " : "required, ";
 
         add("CLI", path + ' ' + (pos > 0 ? "<arg " + pos + '>' : CommandUtils.toFormattedFieldName(fld)),
-            required + fld.getType().getTypeName() + values + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags,
+            required + typeName + values + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags,
             where(fld.getDeclaringClass(), fld.getName(), -1, false), deprecation, "");
     }
 
@@ -1141,7 +1180,8 @@ public class PublicDeclarations {
     private static void distribution() throws IOException {
         String parent = "parent/pom.xml";
 
-        add("Distribution", "maven.compiler.release", tag(Files.readString(root.resolve(parent)), "maven.compiler.release"), "", parent);
+        add("Distribution", "maven.compiler.release", text(xml(root.resolve(parent)).getDocumentElement(), "maven.compiler.release"), "",
+            parent);
 
         String launcher = "bin/include/functions.sh";
         Matcher minJava = Pattern.compile("\\$version -lt (\\d+)").matcher(Files.readString(root.resolve(launcher)));
@@ -1153,15 +1193,15 @@ public class PublicDeclarations {
 
         try (Stream<Path> files = Files.walk(root.resolve("modules/platforms/dotnet"))) {
             for (Path f : (Iterable<Path>)files.filter(p -> p.toString().endsWith(".csproj"))::iterator) {
-                String xml = Files.readString(f);
-                String id = tag(xml, "PackageId");
+                Element project = xml(f).getDocumentElement();
+                String id = text(project, "PackageId");
 
                 if (id == null)
                     continue;
 
-                String frameworks = tag(xml, "TargetFrameworks");
+                String frameworks = text(project, "TargetFrameworks");
 
-                add("Distribution", "NuGet package " + id, frameworks != null ? frameworks : tag(xml, "TargetFramework"), "",
+                add("Distribution", "NuGet package " + id, frameworks != null ? frameworks : text(project, "TargetFramework"), "",
                     root.relativize(f).toString());
             }
         }
