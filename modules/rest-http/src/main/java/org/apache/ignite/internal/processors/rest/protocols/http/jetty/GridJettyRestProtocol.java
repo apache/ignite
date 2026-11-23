@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.security.GeneralSecurityException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -173,11 +174,21 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             connector.setPort(port);
 
             if (startJetty()) {
+                SslConnectionFactory tls = connector.getConnectionFactory(SslConnectionFactory.class);
+
+                if (tls != null) {
+                    try {
+                        ctx.ssl().register("HTTP REST", new ReloadableJettySslFactory(tls.getSslContextFactory()));
+                    }
+                    catch (GeneralSecurityException e) {
+                        throw new IgniteCheckedException("Failed to read the key store of the HTTPS connector.", e);
+                    }
+                }
+
                 if (log.isInfoEnabled()) {
                     log.info(startInfo());
 
-                    boolean isSsl = connector.getConnectionFactory(SslConnectionFactory.class) != null;
-                    String proto = isSsl ? "https" : "http";
+                    String proto = tls == null ? "http" : "https";
 
                     log.info("HTTP REST protocol address: " + proto + "://" + host + ":" + port + "/");
                 }

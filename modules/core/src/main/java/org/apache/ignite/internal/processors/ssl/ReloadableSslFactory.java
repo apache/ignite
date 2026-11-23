@@ -1,0 +1,34 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.ssl;
+
+/** TLS factory of a transport that does not use an Ignite SSL context factory, such as HTTP REST with Jetty. */
+public interface ReloadableSslFactory {
+    /**
+     * Loads the keys and trust settings again for new connections. If loading fails, new connections keep the previous ones.
+     *
+     * @throws org.apache.ignite.IgniteException If loading fails.
+     */
+    public void reload();
+
+    /**
+     * @return Time when the certificates of the last successful load are due for hot reload, as calculated by
+     *     {@link HotReloadTime#of}, or {@code 0} if they give none.
+     */
+    public long hotReloadTime();
+}

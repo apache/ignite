@@ -66,8 +66,6 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
             SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
 
-            serverFactory.setHotReloadEnabled(true);
-
             SSLContext initCtx = serverFactory.create();
 
             assertTrue("Hot reload must be due at startup", serverFactory.getHotReloadTime() < now);
@@ -97,7 +95,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a node with hot reload enabled starts with expired certificates, so hot reload stays due.
+     * Given: a node starts with expired certificates, so hot reload stays due.
      * When: the automatic attempt reloads the same certificates.
      * Then: the node counts the failure and logs the transport and the reason.
      */
@@ -121,8 +119,6 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
             SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
 
-            serverFactory.setHotReloadEnabled(true);
-
             IgniteEx node = startGrid(0, cfg -> {
                 cfg.setGridLogger(nodeLog).setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
@@ -139,7 +135,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a node with hot reload enabled runs its hot reload thread.
+     * Given: a node with a TLS transport runs its hot reload thread.
      * When: the node stops.
      * Then: the hot reload thread ends.
      */
@@ -156,8 +152,6 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
             save(ca.trustStore(), trust);
 
             SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
-
-            serverFactory.setHotReloadEnabled(true);
 
             IgniteEx node = startGrid(0, cfg -> {
                 cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));

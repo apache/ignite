@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.function.OperationContextAwareRunnable;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -63,7 +62,17 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /** */
-    public synchronized void register(String transport, Factory<SSLContext> factory) {
+    public void register(String transport, Factory<SSLContext> factory) {
+        add(transport, factory);
+    }
+
+    /** */
+    public void register(String transport, ReloadableSslFactory factory) {
+        add(transport, factory);
+    }
+
+    /** */
+    private synchronized void add(String transport, Object factory) {
         for (int i = 0; i < factories.size(); i++) {
             RegisteredFactory registered = factories.get(i);
 
@@ -78,8 +87,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /** @return Registered factories in registration order, each with its transports joined by commas. */
-    public List<Entry<Factory<SSLContext>, String>> factories() {
-        List<Entry<Factory<SSLContext>, String>> res = new ArrayList<>(factories.size());
+    public List<Entry<Object, String>> factories() {
+        List<Entry<Object, String>> res = new ArrayList<>(factories.size());
 
         for (RegisteredFactory registered : factories)
             res.add(Map.entry(registered.factory, registered.transports));
@@ -100,10 +109,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         boolean hotReload = false;
 
         for (RegisteredFactory registered : factories) {
-            AbstractSslContextFactory sslFactory = registered.hotReloadFactory();
-
-            if (sslFactory != null) {
-                registered.logHotReloadTime(sslFactory.getHotReloadTime());
+            if (supportsReload(registered.factory)) {
+                registered.logHotReloadTime(registered.hotReloadTime());
 
                 hotReload = true;
             }
@@ -128,13 +135,13 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         return sum;
     }
 
-    /** Runs the hourly check of the factories with hot reload enabled. */
+    /** Runs the hourly check of the factories that support reload. */
     private void checkFactories() {
         if (log.isDebugEnabled())
             log.debug("TLS hot reload check started");
 
         for (RegisteredFactory registered : factories) {
-            if (registered.hotReloadFactory() != null)
+            if (supportsReload(registered.factory))
                 registered.check();
         }
     }
@@ -146,22 +153,29 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /**
-     * Reloads a registered factory. For a factory with hot reload enabled, waits for its running check and resets its failure
-     * count.
+     * Reloads a registered factory. Waits for its running check and resets its failure count.
      *
-     * @param factory Registered factory to reload.
+     * @param factory Registered factory that supports reload.
      */
-    public void reload(AbstractSslContextFactory factory) {
+    public void reload(Object factory) {
         for (RegisteredFactory registered : factories) {
             if (registered.factory == factory)
                 registered.reload();
         }
     }
 
+    /**
+     * @param factory Registered factory.
+     * @return Whether the registry can reload the factory.
+     */
+    public static boolean supportsReload(Object factory) {
+        return factory instanceof AbstractSslContextFactory || factory instanceof ReloadableSslFactory;
+    }
+
     /** Registered factory with its transports and hot reload state. The hourly check and manual reload hold its monitor. */
     private class RegisteredFactory {
         /** */
-        private final Factory<SSLContext> factory;
+        private final Object factory;
 
         /** */
         private final String transports;
@@ -170,14 +184,24 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         private final AtomicInteger failures = new AtomicInteger();
 
         /** */
-        private RegisteredFactory(Factory<SSLContext> factory, String transports) {
+        private RegisteredFactory(Object factory, String transports) {
             this.factory = factory;
             this.transports = transports;
         }
 
-        /** @return The factory if hot reload is enabled for it, {@code null} otherwise. */
-        @Nullable private AbstractSslContextFactory hotReloadFactory() {
-            return factory instanceof AbstractSslContextFactory sslFactory && sslFactory.isHotReloadEnabled() ? sslFactory : null;
+        /** Loads the factory again. If loading fails, it keeps its previous context. */
+        private void load() {
+            if (factory instanceof ReloadableSslFactory reloadable)
+                reloadable.reload();
+            else
+                ((AbstractSslContextFactory)factory).init();
+        }
+
+        /** @return Hot reload time of the certificates that the factory loaded last. */
+        private long hotReloadTime() {
+            return factory instanceof ReloadableSslFactory reloadable
+                ? reloadable.hotReloadTime()
+                : ((AbstractSslContextFactory)factory).getHotReloadTime();
         }
 
         /**
@@ -210,9 +234,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private void reloadIfDue() {
-            AbstractSslContextFactory sslFactory = (AbstractSslContextFactory)factory;
-
-            if (!due(sslFactory.getHotReloadTime())) {
+            if (!due(hotReloadTime())) {
                 failures.set(0);
 
                 return;
@@ -223,9 +245,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             if (log.isInfoEnabled())
                 log.info("TLS hot reload started [transports=" + transports + ']');
 
-            sslFactory.init();
+            load();
 
-            long hotReloadTime = sslFactory.getHotReloadTime();
+            long hotReloadTime = hotReloadTime();
 
             if (due(hotReloadTime)) {
                 throw new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
@@ -249,15 +271,11 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         private synchronized void reload() {
             manualReloadAttempts.incrementAndGet();
 
-            ((AbstractSslContextFactory)factory).init();
+            load();
 
-            AbstractSslContextFactory sslFactory = hotReloadFactory();
+            failures.set(0);
 
-            if (sslFactory != null) {
-                failures.set(0);
-
-                logHotReloadTime(sslFactory.getHotReloadTime());
-            }
+            logHotReloadTime(hotReloadTime());
         }
 
         /** */
