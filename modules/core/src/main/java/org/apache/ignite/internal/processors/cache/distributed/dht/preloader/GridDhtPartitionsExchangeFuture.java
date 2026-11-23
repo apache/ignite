@@ -2405,7 +2405,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 .collect(Collectors.toList()) + ']');
                     }
 
-                    cctx.exchange().refreshPartitions(locChangedGrps);
+                    // This future isn't done yet, so the exchange manager would take the initial version.
+                    cctx.exchange().refreshPartitions(locChangedGrps, res);
                 }
 
                 if (changedAffinity())
