@@ -886,7 +886,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param viewer Server or client whose partition map is checked. A client that hasn't started the cache keeps the
+     * @param viewer Server or client whose partition map is checked. A node that hasn't started the cache keeps the
      *      map in a client topology.
      * @param cacheName Cache name.
      * @return Partitions whose state in the viewer's map differs from the state on the server that holds them.
@@ -903,12 +903,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         List<String> res = new ArrayList<>();
 
         for (Ignite g : G.allGrids()) {
-            if (g.cluster().localNode().isClient())
+            IgniteInternalCache<?, ?> holder = ((IgniteEx)g).cachex(cacheName);
+
+            // A server that hasn't started the cache holds none of its partitions.
+            if (g.cluster().localNode().isClient() || holder == null)
                 continue;
 
             GridDhtPartitionMap view = viewerTop.partitionMap(false).get(g.cluster().localNode().id());
 
-            GridDhtPartitionTopology top = ((IgniteEx)g).cachex(cacheName).context().topology();
+            GridDhtPartitionTopology top = holder.context().topology();
 
             for (int p = 0; p < top.partitions(); p++) {
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false, true);

@@ -17,14 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
+import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVersion;
 
 /**
  * Checks that the other nodes learn the state of a lost partition from its new owner. A server leaves with the only
@@ -35,15 +44,27 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "cache";
 
+    /** Attribute of the nodes that keep the cache's data. */
+    private static final String DATA_ATTR = "data";
+
+    /** Index of the server outside the cache's node filter. */
+    private static final int NO_DATA = 4;
+
     /** Partition loss policy of the cache. */
     private PartitionLossPolicy plc;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
-                .setBackups(0)
-                .setPartitionLossPolicy(plc));
+        boolean data = !igniteInstanceName.equals(getTestIgniteInstanceName(NO_DATA));
+
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setUserAttributes(Collections.singletonMap(DATA_ATTR, data));
+
+        // A node with the cache in its configuration starts it on join, even outside the node filter.
+        return data ? cfg.setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
+            .setBackups(0)
+            .setPartitionLossPolicy(plc)
+            .setNodeFilter(new AttributeNodeFilter(DATA_ATTR, true))) : cfg;
     }
 
     /** {@inheritDoc} */
@@ -77,6 +98,40 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     @Test
     public void testLostPartitionOwnedByCoordinator() throws Exception {
         checkServerLeft(IGNORE, 2);
+    }
+
+    /**
+     * Two servers leave in one merged exchange, and the coordinator becomes the only new owner. A server outside the
+     * node filter starts the cache after that and copies the partition map it kept without the cache.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    // A resend scheduled while the nodes start would come after the departure and hide a dropped map.
+    @WithSystemProperty(key = IGNITE_PRELOAD_RESEND_TIMEOUT, value = "0")
+    public void testLostPartitionOwnedInMergedExchange() throws Exception {
+        plc = IGNORE;
+
+        IgniteEx crd = startGrids(3);
+        startClientGrid(3);
+        IgniteEx noData = startGrid(NO_DATA);
+
+        awaitPartitionMapExchange(true, true, null);
+
+        List<DiscoveryEvent> merged = new ArrayList<>();
+
+        mergeExchangeWaitVersion(crd, crd.cluster().topologyVersion() + 2, merged);
+
+        stopGrid(getTestIgniteInstanceName(2), true, false);
+        stopGrid(getTestIgniteInstanceName(1), true, false);
+
+        awaitPartitionMapsMatchLocalStates(CACHE);
+
+        assertEquals(1, merged.size());
+
+        noData.cache(CACHE);
+
+        awaitPartitionMapsMatchLocalStates(CACHE);
     }
 
     /**
