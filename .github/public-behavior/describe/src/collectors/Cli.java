@@ -94,7 +94,7 @@ public class Cli implements Collector {
 
         if (CommandUtils.executable(cmd)) {
             out.add(AREA, path, "command" + (experimental ? ", experimental" : "") + (deprecatedBy != null ? ", deprecated" : ""),
-                flags, tree.where(cmd.getClass(), null, -1, false), deprecation, "");
+                flags, tree.where(cmd.getClass(), null, -1, false), "", deprecation);
 
             int[] pos = {0};
 
@@ -119,7 +119,7 @@ public class Cli implements Collector {
                     positional.addAll(named);
 
                     out.add(AREA, path + ' ' + String.join("|", positional), "group, " + (grp.optional() ? "optional" : "required")
-                        + (grp.onlyOneOf() ? ", only one of" : ""), flags, tree.where(cmd.argClass(), null, -1, false), deprecation, "");
+                        + (grp.onlyOneOf() ? ", only one of" : ""), flags, tree.where(cmd.argClass(), null, -1, false), "", deprecation);
                 });
         }
 
@@ -168,6 +168,6 @@ public class Cli implements Collector {
 
         out.add(AREA, path + ' ' + (pos > 0 ? "<arg " + pos + '>' : CommandUtils.toFormattedFieldName(fld)),
             required + typeName + values + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags,
-            tree.where(fld.getDeclaringClass(), fld.getName(), -1, false), deprecation, "");
+            tree.where(fld.getDeclaringClass(), fld.getName(), -1, false), "", deprecation);
     }
 }

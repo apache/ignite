@@ -189,8 +189,8 @@ public class JavaApi implements Collector {
         String typeDeprecation = tree.deprecationWhere(cls, null, -1, deprecated);
 
         out.add(AREA, name, markers(cls) + modifiers(cls.getModifiers() & mask) + kind + ' ' + cls.getSimpleName()
-            + typeParams(cls.getTypeParameters(), vars) + (supers.isEmpty() ? "" : " : " + String.join(", ", supers))
-            + annotationUse(cls), Declarations.flags(deprecated, experimental), tree.where(cls, null, -1, false), typeDeprecation, "");
+            + typeParams(cls.getTypeParameters(), vars).stripTrailing() + (supers.isEmpty() ? "" : " : " + String.join(", ", supers))
+            + annotationUse(cls), Declarations.flags(deprecated, experimental), tree.where(cls, null, -1, false), "", typeDeprecation);
 
         Map<String, Member> members = new HashMap<>();
 
@@ -207,7 +207,7 @@ public class JavaApi implements Collector {
             boolean exp = experimental || marked(m.elem, m.owner, IgniteExperimental.class);
 
             out.add(AREA, name + '#' + key, m.text, Declarations.flags(deprecated || own, exp),
-                tree.where(m.owner, m.name, m.params, false), own ? tree.where(m.owner, m.name, m.params, true) : typeDeprecation, "");
+                tree.where(m.owner, m.name, m.params, false), "", own ? tree.where(m.owner, m.name, m.params, true) : typeDeprecation);
         });
     }
 

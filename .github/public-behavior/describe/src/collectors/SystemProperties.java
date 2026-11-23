@@ -45,8 +45,8 @@ public class SystemProperties implements Collector {
 
                 out.add("Configuration", "system property " + f.get(null), prop.type().getSimpleName()
                     + (dflt.isEmpty() ? "" : ", default " + dflt) + (deprecated ? ", deprecated" : ""),
-                    Declarations.flags(deprecated, false), tree.where(cls, f.getName(), -1, false),
-                    tree.deprecationWhere(cls, f.getName(), -1, deprecated), "");
+                    Declarations.flags(deprecated, false), tree.where(cls, f.getName(), -1, false), "",
+                    tree.deprecationWhere(cls, f.getName(), -1, deprecated));
             }
         }
     }

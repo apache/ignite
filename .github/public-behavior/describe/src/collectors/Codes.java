@@ -33,8 +33,14 @@ import framework.Declarations;
  * class nor its name is part of what they rely on. A code is identified by its group, such as thin client operations, and its
  * name. The name is a rename group: a code renamed within its group is matched with itself, not with a code of another group
  * that has the same value. Moving codes to another class changes only their row in the tables below.
+ * <p>
+ * A code is never marked deprecated: {@code @Deprecated} on an internal constant is not a mark that users see. So removing such
+ * a code is a change like any other.
  */
 public class Codes implements Collector {
+    /** Group of the query error codes. Ignite maps each of them to an SQLSTATE, whatever class declares it. */
+    private static final String QUERY_ERRORS = "query error code";
+
     /** Internal classes that declare codes as constants: area, group of the codes, class, names of the constants. */
     private static final String[][] CONSTANTS = {
         {"Thin client protocol", "operation", "org.apache.ignite.internal.processors.platform.client.ClientMessageParser", "OP_.*"},
@@ -50,7 +56,7 @@ public class Codes implements Collector {
         {"Stored data", "snapshot metadata", "org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata",
             "serialVersionUID"},
         {"Errors", "SQLSTATE", "org.apache.ignite.internal.processors.odbc.SqlStateCode", "[A-Z_0-9]+"},
-        {"Errors", "query error code", "org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode", "[A-Z_0-9]+"},
+        {"Errors", QUERY_ERRORS, "org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode", "[A-Z_0-9]+"},
         {"CLI", "exit code", "org.apache.ignite.internal.commandline.CommandHandler", "EXIT_CODE_.*|ERR_.*"},
         {"SQL keywords", "native parser", "org.apache.ignite.internal.sql.SqlKeyword", "[A-Z_0-9]+"},
     };
@@ -71,16 +77,14 @@ public class Codes implements Collector {
             List<Field> codes = codes(cls, c[3]);
 
             for (Field f : codes) {
-                boolean deprecated = f.isAnnotationPresent(Deprecated.class);
-
-                out.add(c[0], c[1] + ' ' + f.getName(), value(Declarations.staticValue(f)), Declarations.flags(deprecated, false),
-                    tree.where(cls, f.getName(), -1, false), tree.deprecationWhere(cls, f.getName(), -1, deprecated), f.getName());
+                out.add(c[0], c[1] + ' ' + f.getName(), value(Declarations.staticValue(f)), "", tree.where(cls, f.getName(), -1, false),
+                    f.getName(), null);
             }
 
             if (codes.isEmpty())
                 out.error("No constants matching " + c[3] + " found in " + c[2]);
 
-            if (cls == IgniteQueryErrorCode.class)
+            if (c[1].equals(QUERY_ERRORS))
                 sqlStates(tree, out, c[0], codes);
         }
 
@@ -90,10 +94,8 @@ public class Codes implements Collector {
 
             for (Object e : cls.getEnumConstants()) {
                 String name = ((Enum<?>)e).name();
-                boolean deprecated = cls.getField(name).isAnnotationPresent(Deprecated.class);
 
-                out.add(c[0], c[1] + ' ' + name, String.valueOf(code.invoke(e)), Declarations.flags(deprecated, false),
-                    tree.where(cls, name, -1, false), tree.deprecationWhere(cls, name, -1, deprecated), name);
+                out.add(c[0], c[1] + ' ' + name, String.valueOf(code.invoke(e)), "", tree.where(cls, name, -1, false), name, null);
             }
         }
     }
@@ -114,7 +116,7 @@ public class Codes implements Collector {
         return res;
     }
 
-    /** Describes the SQLSTATE that each query error code maps to. */
+    /** Describes the SQLSTATE that each query error code of a class maps to. */
     private static void sqlStates(BuiltTree tree, Declarations out, String area, List<Field> codes) {
         for (Field f : codes) {
             if (f.getType() != int.class)

@@ -50,6 +50,7 @@ jobs:
         working-directory: merge
         run: |
           git worktree add ../base HEAD^1
+          # The files that the collectors read. A collector that reads another path adds it here.
           if git diff --quiet HEAD^1 HEAD -- modules pom.xml parent bin .github/public-behavior; then
             echo "build=false" >> "$GITHUB_OUTPUT"
           else

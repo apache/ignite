@@ -48,8 +48,8 @@ public class SystemViews implements Collector {
                 new SystemViewRowAttributeWalker.AttributeVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> type) {
                         out.add("Monitoring", "system view " + row.getSimpleName() + " column " + name,
-                            "position " + (idx + 1) + ", " + type.getTypeName(), "", tree.where(row, name, 0, false), null,
-                            row.getSimpleName());
+                            "position " + (idx + 1) + ", " + type.getTypeName(), "", tree.where(row, name, 0, false),
+                            row.getSimpleName(), null);
                     }
                 });
         }

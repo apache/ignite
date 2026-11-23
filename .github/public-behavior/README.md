@@ -100,7 +100,10 @@ Each line is one declaration, with seven columns separated by tabs:
 2. **Key**: identifies the declaration within its area. The same key in both descriptions is the same declaration.
 3. **Value**: what users rely on. The check reports a declaration whose value changed. Values of declarations with the same
    key are joined with ` | `.
-4. **Flags**: `deprecated`, `experimental` or both, separated by a comma. They decide whether a change needs an RFC.
+4. **Flags**: `deprecated`, `experimental` or both, separated by a comma. They decide whether a change needs an RFC. A
+   collector sets a flag only for a mark that users see, and the value shows that mark too: marking a declaration
+   deprecated is a change, and the flag lets the reviewer decide on its later removal. `@Deprecated` on an internal
+   constant is not such a mark.
 5. **Location**: `path:line` of the declaration, or the path alone. The report shows it.
 6. **Rename group**: an internal name in the key that users do not see, such as the name of a protocol constant, or empty.
    Declarations whose group only changed its name are not a change. The group must be a part of the key, and its first
@@ -108,8 +111,12 @@ Each line is one declaration, with seven columns separated by tabs:
 7. **Deprecation**: `path:line` of the annotation that deprecates the declaration, or empty. The report uses it to show when
    a removed declaration was deprecated.
 
-Only the key and the value are compared. New columns go at the end: the check reads a description with fewer columns as if
-the missing ones were empty.
+Only the key and the value are compared. They keep every character, so two declarations that differ in a space stay
+different. A backslash, a tab, a line feed, a carriage return, another control character and a space at either end are
+written as `\\`, `\t`, `\n`, `\r`, `\uXXXX` and `\s`, and `|` in a value as `\|`. The report shows them this way. A
+collector that knows that some whitespace does not matter, such as in an SQL signature, normalizes it itself.
+
+New columns go at the end: the check reads a description with fewer columns as if the missing ones were empty.
 
 ## Changing the check
 
@@ -119,7 +126,9 @@ the check reviews that change.
 - **A PR changes Ignite code that the check reads.** The description of the PR merge fails, and the check log names the file
   in `describe/src/`. Each collector names the Ignite classes and files it reads at its start. Update the collector in the same
   PR. The target branch is still described by its own version, so a PR that changes nothing public shows no changes.
-- **An RFC changes what the check compares.** Add or change a collector and its row in the table above. Declarations that
+- **An RFC changes what the check compares.** Add or change a collector and its row in the table above. A collector that
+  reads files outside `modules`, `bin`, `parent` and the root `pom.xml` adds them to the path filter of the check workflow:
+  otherwise a PR that changes only those files skips the builds and passes. Declarations that
   the check starts to compare are reported as added, and the ones it stops comparing as removed. The reviewer checks them
   against the RFC.
 - **A PR changes only the check.** If the PR changes nothing outside `.github/public-behavior/` and the two workflows of the

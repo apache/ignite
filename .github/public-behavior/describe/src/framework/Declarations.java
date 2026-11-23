@@ -30,7 +30,9 @@ import java.util.TreeSet;
 
 /**
  * Public declarations of a tree, printed in the format that README.md describes: one declaration per line with its area, key,
- * value, flags, location, rename group and deprecation, separated by tabs.
+ * value, flags, location, rename group and deprecation, separated by tabs. Texts are written without losses: two declarations
+ * that differ in any character stay different. A collector that knows that some whitespace does not matter, such as in an SQL
+ * signature, normalizes it itself.
  */
 public class Declarations {
     /** Flag of a deprecated declaration. */
@@ -47,7 +49,7 @@ public class Declarations {
 
     /** Adds a declaration whose key has no internal names. */
     public void add(String area, String key, String val, String flags, String location) {
-        add(area, key, val, flags, location, null, "");
+        add(area, key, val, flags, location, "", null);
     }
 
     /**
@@ -55,20 +57,20 @@ public class Declarations {
      * their values are listed together, so a change to any of them is a change of the merged declaration.
      *
      * @param location Where the declaration is.
-     * @param deprecation Where the annotation that deprecates the declaration is: its own, or that of its type or parent
-     *      command. {@code null} if the declaration is not deprecated. The deprecation hint of a removed declaration uses it.
      * @param group Internal name in the key that users do not see, or an empty string. Comparison matches declarations whose
      *      group only changed its name, so the group must be a part of the key.
+     * @param deprecation Where the annotation that deprecates the declaration is: its own, or that of its type or parent
+     *      command. {@code null} if the declaration is not deprecated. The deprecation hint of a removed declaration uses it.
      */
-    public void add(String area, String key, String val, String flags, String location, String deprecation, String group) {
-        String k = oneLine(key);
+    public void add(String area, String key, String val, String flags, String location, String group, String deprecation) {
+        if (!key.contains(group))
+            errors.add("Rename group " + group + " is not a part of the key " + key);
 
-        if (!k.contains(group))
-            errors.add("Rename group " + group + " is not a part of the key " + k);
+        String k = escape(key, false);
+        Declaration d = decls.computeIfAbsent(area + '\t' + k, x -> new Declaration(area, k, escape(location, false),
+            escape(group, false), deprecation == null ? "" : escape(deprecation, false)));
 
-        Declaration d = decls.computeIfAbsent(area + '\t' + k, x -> new Declaration(area, k, location, deprecation, group));
-
-        d.values.add(oneLine(val));
+        d.values.add(escape(val, true));
 
         if (!flags.isEmpty())
             d.flags.addAll(Arrays.asList(flags.split(",")));
@@ -88,8 +90,39 @@ public class Declarations {
     public void print(PrintStream out) {
         for (Declaration d : decls.values()) {
             out.println(String.join("\t", d.area, d.key, String.join(" | ", d.values), String.join(",", d.flags), d.location,
-                d.group, d.deprecation == null ? "" : d.deprecation));
+                d.group, d.deprecation));
         }
+    }
+
+    /**
+     * @param value Whether the text is a value. Values of the same key are joined with {@code " | "}, so {@code |} in a value is
+     *      escaped too.
+     * @return Text on one line from which the original can be restored. A backslash, a control character and a space at either
+     *      end are escaped, so the report shows them.
+     */
+    private static String escape(String s, boolean value) {
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+
+            if (c == '\\' || value && c == '|')
+                res.append('\\').append(c);
+            else if (c == '\t')
+                res.append("\\t");
+            else if (c == '\n')
+                res.append("\\n");
+            else if (c == '\r')
+                res.append("\\r");
+            else if (c < ' ')
+                res.append(String.format("\\u%04x", (int)c));
+            else if (c == ' ' && (i == 0 || i == s.length() - 1))
+                res.append("\\s");
+            else
+                res.append(c);
+        }
+
+        return res.toString();
     }
 
     /** @return Flags of a declaration. */
@@ -152,10 +185,10 @@ public class Declarations {
         final String location;
 
         /** */
-        final String deprecation;
+        final String group;
 
         /** */
-        final String group;
+        final String deprecation;
 
         /** */
         final Set<String> values = new TreeSet<>();
@@ -164,12 +197,12 @@ public class Declarations {
         final Set<String> flags = new TreeSet<>();
 
         /** */
-        Declaration(String area, String key, String location, String deprecation, String group) {
+        Declaration(String area, String key, String location, String group, String deprecation) {
             this.area = area;
             this.key = key;
             this.location = location;
-            this.deprecation = deprecation;
             this.group = group;
+            this.deprecation = deprecation;
         }
     }
 }

@@ -116,6 +116,13 @@ test('a changed deprecated parameter points at its declaration, a removed one at
     assert.deepStrictEqual(location(''), [['deprecated-removal', 'DeactivateCommand.java:33']]);
 });
 
+test('values are compared as written: an escaped space or bar is a different value', () => {
+    const value = v => line('REST', 'command CACHE_GET', v);
+
+    assert.strictEqual(compare(value('get'), value('get\\s')).length, 1);
+    assert.strictEqual(compare(value('a \\| b'), value('a | b')).length, 1);
+});
+
 test('a description from a version of the check with fewer columns is read with the missing columns empty', () => {
     const older = BASE.split('\n').map(l => l.split('\t').slice(0, 3).join('\t')).join('\n');
 
