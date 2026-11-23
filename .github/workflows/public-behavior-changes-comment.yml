@@ -36,6 +36,7 @@ jobs:
       github.event.workflow_run.event == 'pull_request' &&
       contains(fromJSON('["success", "failure", "timed_out"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -44,7 +45,7 @@ jobs:
       - name: Checkout check scripts
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/public-behavior
+          sparse-checkout: .github/public-behavior/check
           persist-credentials: false
 
       - name: Download result
@@ -60,5 +61,5 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const check = require('./.github/public-behavior/check.js');
-            await check.publish({ github, context, core, resultFile: 'result/result.json', target: 'master' });
+            const { publish } = require('./.github/public-behavior/check/publish.js');
+            await publish({ github, context, core, resultFile: 'result/result.json', target: 'master' });

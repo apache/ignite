@@ -35,4 +35,9 @@ cp=$( { find modules -path '*/target/classpath.txt' -exec sh -c 'for f; do tr ":
 
 read -ra opts <<< "$(getJavaSpecificOpts 17 "")"
 
-java "${opts[@]}" -cp "$cp" "$here/PublicDeclarations.java" .
+classes=$(mktemp -d)
+trap 'rm -rf "$classes"' EXIT
+
+javac -proc:none -nowarn -d "$classes" -cp "$cp" "$here"/*.java >&2
+
+java "${opts[@]}" -cp "$classes:$cp" PublicDeclarations .

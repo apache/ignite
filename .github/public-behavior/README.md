@@ -45,6 +45,8 @@ the same value.
   Markdown link works. A link to another PR does not. The link must lead to the file: a link to another branch, tag or
   commit is checked through GitHub. With such a link, the check passes with a review warning.
 - **RFC needed.** Without an RFC in the PR or a valid link, the check fails and lists the changes.
+- **Changes to the check only.** The check passes with a review warning and lists what the new version of the check
+  describes differently. See [Changing the check](#changing-the-check).
 - **Check could not finish.** The check fails and says whether to fix the PR or to rerun the check.
 
 The result is shown in Checks and in one PR comment. The comment tells the author what to change and the reviewer what to
@@ -67,15 +69,73 @@ covers the changes, reviews compatibility and verifies any required vote on the 
 | Errors | SQLSTATE values, query error codes and the SQLSTATE of each code, thin client status codes and `control.sh` exit codes. | The conditions that cause each error. |
 | Results, effects and operations | Public modes and defaults of transactions, retries and cancellation through the Java API. | Returned values, side effects, ordering and timeouts. |
 
-Protocol, storage and error codes come from a list of internal classes in `PublicDeclarations.java`. A new class with such
+Protocol, storage and error codes come from a list of internal classes in `describe/Codes.java`. A new class with such
 codes needs an entry in that list.
+
+## How the check works
+
+The check has two parts, connected by the description format below.
+
+- `describe/` finds the public declarations of a built source tree. `describe.sh` builds the tree and runs
+  `PublicDeclarations.java`. It runs one collector for each kind of declarations: `JavaApi`, `SystemProperties`,
+  `SystemViews`, `Cli`, `Codes`, `Sql` and `Distribution`. `BuiltTree` gives the collectors the published modules, their
+  classes and the packages that javadoc publishes. `SourceIndex` finds where a declaration is in the sources.
+  `Declarations` merges declarations with the same key and prints them.
+- `check/` decides what the descriptions mean for the PR. `compare.js` finds what the PR adds, removes or changes.
+  `rfc.js` applies the RFC rules to the files of the PR and to the links in its description. `outcome.js` picks the result
+  and checks `result.json`, which the PR job passes to the comment job. `render.js` writes the report. `report.js` runs in
+  the PR job. `publish.js` runs in the comment job, with the code of the target branch.
+
+Each build is described by its own version of the check: the PR merge by the version of the PR, the target branch by its
+own version. A version of the check can describe only the code it is written for. If the target branch has no check or its
+check fails, the version of the PR describes it, and Checks show a warning.
+
+### Description format
+
+Each line is one declaration, with seven columns separated by tabs:
+
+1. **Area**: the heading in the report, such as `Java API`.
+2. **Key**: identifies the declaration within its area. The same key in both descriptions is the same declaration.
+3. **Value**: what users rely on. The check reports a declaration whose value changed. Values of declarations with the same
+   key are joined with ` | `.
+4. **Flags**: `deprecated`, `experimental` or both, separated by a comma. They decide whether a change needs an RFC.
+5. **Location**: `path:line` of the declaration, or the path alone. The report shows it.
+6. **Rename group**: an internal name in the key that users do not see, such as the name of a protocol constant, or empty.
+   Declarations whose group only changed its name are not a change. The group must be a part of the key, and its first
+   occurrence counts.
+7. **Deprecation**: `path:line` of the annotation that deprecates the declaration, or empty. The report uses it to show when
+   a removed declaration was deprecated.
+
+Only the key and the value are compared. New columns go at the end: the check reads a description with fewer columns as if
+the missing ones were empty.
+
+## Changing the check
+
+- **A PR changes Ignite code that the check reads.** The description of the PR merge fails, and the check log names the file
+  in `describe/`. Each collector names the Ignite classes and files it reads at its start. Update the collector in the same
+  PR. The target branch is still described by its own version, so a PR that changes nothing public shows no changes.
+- **An RFC changes what the check compares.** Add or change a collector and its row in the table above. Declarations that
+  the check starts to compare are reported as added, and the ones it stops comparing as removed. The reviewer checks them
+  against the RFC.
+- **A PR changes only the check.** If the PR changes nothing outside `.github/public-behavior/` and the two workflows of the
+  check, the check passes with a review warning and lists what the new version describes differently. If the new version
+  describes the code as the old one did, the check passes without a comment. Keep such changes apart from changes of Ignite
+  code, so that the list shows only the effect of the check.
+- **The check fails on the target branch.** A PR that does not change the check gets a check that could not finish. A PR
+  that fixes the check passes, because its version describes the target branch.
+- **A PR changes `check/` or the workflows.** The PR job runs `check/` and its tests from the PR. The comment job runs from
+  the target branch, so test changes to `publish.js` and to the comment workflow in a fork whose default branch has them.
+  Add new fields to `result.json` without changing the old ones: the comment job of the target branch reads the result of
+  the PR.
 
 ## Running locally
 
 To describe the public declarations of a source tree, run from its root with JDK 17:
 
-    bash .github/public-behavior/describe.sh > declarations.txt
+    bash .github/public-behavior/describe/describe.sh > declarations.txt
 
-To test the check logic, run:
+To check a change of `describe/`, describe the same tree with the old and the new version and compare the two files.
 
-    node --test .github/public-behavior/check.test.js
+To test `check/`, run:
+
+    node --test .github/public-behavior/check/*.test.js
