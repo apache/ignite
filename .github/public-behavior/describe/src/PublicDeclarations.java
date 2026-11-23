@@ -21,6 +21,9 @@ import collectors.Cli;
 import collectors.Codes;
 import collectors.Distribution;
 import collectors.JavaApi;
+import collectors.JdbcDriver;
+import collectors.PageVersions;
+import collectors.Scripts;
 import collectors.Sql;
 import collectors.SystemProperties;
 import collectors.SystemViews;
@@ -44,7 +47,10 @@ public class PublicDeclarations {
         new Cli(),
         new Codes(),
         new Sql(),
-        new Distribution()
+        new Distribution(),
+        new JdbcDriver(),
+        new PageVersions(),
+        new Scripts()
     );
 
     /** Advice for a PR that changes the Ignite code or build files that a file of the check reads. */

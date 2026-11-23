@@ -50,6 +50,9 @@ public class Cli implements Collector {
     /** Field of {@link CommandHandler.CommandName} with the name that the help prints. */
     private static final String PRINTED_NAME = "name";
 
+    /** Method of {@link Command} that a command overrides to ask for confirmation before it runs. */
+    private static final String CONFIRMATION = "confirmationPrompt";
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void describe(BuiltTree tree, Declarations out) throws Exception {
@@ -72,7 +75,8 @@ public class Cli implements Collector {
      * Describes a command and its subcommands. {@code control.sh} refuses a command marked experimental unless
      * {@code --enable-experimental} is given, and it checks the mark of the command itself, not of its parents. So that mark is
      * part of the command. A command is deprecated if it or a parent is: removing the parent removes the command. The
-     * deprecation hint of the command and its parameters points at that annotation.
+     * deprecation hint of the command and its parameters points at that annotation. A command that asks for confirmation
+     * stops a script that does not pass {@code --yes}, so that is part of the command too.
      */
     private static void command(BuiltTree tree, Declarations out, Command<?, ?> cmd, List<Command<?, ?>> parents) {
         CommandHandler.CommandName name = new CommandHandler.CommandName();
@@ -93,8 +97,11 @@ public class Cli implements Collector {
         String deprecation = deprecatedBy == null ? null : tree.where(deprecatedBy, null, -1, true);
 
         if (CommandUtils.executable(cmd)) {
-            out.add(AREA, path, "command" + (experimental ? ", experimental" : "") + (deprecatedBy != null ? ", deprecated" : ""),
-                flags, tree.where(cmd.getClass(), null, -1, false), "", deprecation);
+            boolean confirms = Arrays.stream(cmd.getClass().getMethods())
+                .anyMatch(m -> m.getName().equals(CONFIRMATION) && m.getDeclaringClass() != Command.class);
+
+            out.add(AREA, path, "command" + (experimental ? ", experimental" : "") + (deprecatedBy != null ? ", deprecated" : "")
+                + (confirms ? ", asks for confirmation" : ""), flags, tree.where(cmd.getClass(), null, -1, false), "", deprecation);
 
             int[] pos = {0};
 

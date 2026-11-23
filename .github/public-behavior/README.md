@@ -56,19 +56,26 @@ covers the changes, reviews compatibility and verifies any required vote on the 
 
 ## What the check compares
 
-| Public contract | The check compares | The reviewer checks |
+| Public contract | The check compares | Not compared, and why |
 | --- | --- | --- |
-| Programming APIs, plugins and SPIs | Public and protected types and members of the packages published in javadoc, in the modules listed in `ignite-bom`: signatures, supertypes, constant values, enum order, annotation defaults, where an annotation may be used and how long it is kept, `@Deprecated` and `@IgniteExperimental`. Members inherited from internal classes and interfaces count as members of the public type, except static methods of interfaces, which Java does not inherit. Names of type parameters are not compared. | Whether internal types used in public signatures are part of the public API. Source and binary compatibility. When callbacks run. The .NET and C++ APIs. |
-| SQL | Keywords of the Calcite parser and of the native DDL parser. Operators and functions of the Calcite engine with their allowed signatures. | Data types, functions of the H2 engine, and which queries succeed and what they return. |
-| REST | Command names accepted in the `cmd` parameter. | Routes, parameters and the response format. |
-| CLI | `control.sh` commands and subcommands, including whether a command is experimental (its own mark, which `control.sh` checks) or deprecated (its own or a parent's mark), named and positional parameters with their types, accepted enum values and whether they are required, groups of parameters, common options and exit codes. | Custom validation, whether a command asks for confirmation, and the command output. |
-| Configuration | Configuration classes through the Java API, including default value constants. System properties printed by `ignite.sh -systemProps`: name, type, default value and deprecation. | Distributed properties, environment variables of the scripts, and defaults computed at runtime. |
-| Monitoring | Name, type and position of each system view column. JMX interfaces and event types through the Java API. | Metric names and units, system view names, and when events fire. Ignite registers these at runtime. |
-| Client protocols and external formats | Thin client operation codes, status codes, protocol versions and feature IDs. JDBC and ODBC request types and protocol versions. Binary format constants. | Message layout, version negotiation, and supported client/server combinations. |
-| Stored data | WAL record type indices, page IO types and the serialization version of snapshot metadata. | Record layout, reading old data, migration and recovery. |
-| Distribution and runtime | Entries of `ignite-bom` as Maven publishes it, including the ones it takes from the parent POM, with their type and classifier, the Java release that the build targets, the minimum Java version in the launch scripts, NuGet package IDs and their target frameworks. | Supported JDK and OS combinations and upgrade paths. |
-| Errors | SQLSTATE values, query error codes and the SQLSTATE of each code, thin client status codes and `control.sh` exit codes. | The conditions that cause each error. |
-| Results, effects and operations | Public modes and defaults of transactions, retries and cancellation through the Java API. | Returned values, side effects, ordering and timeouts. |
+| Programming APIs, plugins and SPIs | Public and protected types and members of the packages published in javadoc, in the modules listed in `ignite-bom`: signatures, supertypes, constant values, enum order, annotation defaults, where an annotation may be used and how long it is kept, `@Deprecated` and `@IgniteExperimental`. Members inherited from internal classes and interfaces count as members of the public type, except static methods of interfaces, which Java does not inherit. Names of type parameters are not compared. | The .NET and C++ APIs: the check builds only Java. |
+| SQL | Keywords of the Calcite parser and of the native DDL parser. Operators and functions of the Calcite engine with their allowed signatures. | Functions of the H2 engine: they come from the H2 library, and Ignite does not list them. |
+| REST | Command names accepted in the `cmd` parameter. | Parameters and response fields of each command: the command handlers read and write them by name in code, and no declaration lists them. |
+| CLI | `control.sh` commands and subcommands, including whether a command is experimental (its own mark, which `control.sh` checks) or deprecated (its own or a parent's mark) and whether it asks for confirmation, named and positional parameters with their types, accepted enum values and whether they are required, groups of parameters, common options and exit codes. Options of `ignite.sh` that `bin/include/parseargs.sh` handles. | Options of `ignite.bat` and the help option of the launcher: `CommandLineTransformer` and `CommandLineStartup` parse them in code, with no declaration. |
+| Configuration | Configuration classes through the Java API, including default value constants. System properties printed by `ignite.sh -systemProps`: name, type, default value and deprecation. Connection properties of the JDBC thin driver: name, whether required, default and accepted values. | Distributed properties: Ignite creates them when a node starts. Environment variables of the scripts: the scripts read them among their internal variables, with no list of their own. |
+| Monitoring | Name, type and position of each system view column. JMX interfaces and event types through the Java API. | Metric names and types and system view names: Ignite registers them when a node starts, often under computed names. |
+| Client protocols and external formats | Thin client operation codes, status codes, protocol versions and feature IDs. JDBC and ODBC request types and protocol versions. Binary format constants. | Layout of thin client, JDBC and ODBC messages: the code that reads and writes the fields sets it, and no declaration describes it. Attributes of the ODBC connection string: the ODBC driver is written in C++. |
+| Stored data | WAL record type indices, page IO types, the latest version of each page type and the serialization version of snapshot metadata. | Layout of WAL records and pages: the code that reads and writes them sets it. The serialized form of stored cache configurations: Ignite writes them with Java serialization, and the classes it stores are yet to be identified. Versions of pages that Ignite registers when a node starts, such as H2 index pages. |
+| Distribution and runtime | Entries of `ignite-bom` as Maven publishes it, including the ones it takes from the parent POM, with their type and classifier, the Java release that the build targets, the minimum Java version in the launch scripts, the launch scripts in `bin`, NuGet package IDs and their target frameworks. | Docker images and DEB and RPM packages: separate scripts in `deliveries` and `packaging` build them, and the check does not read them yet. |
+| Errors | SQLSTATE values, query error codes and the SQLSTATE of each code, thin client status codes and `control.sh` exit codes. | Nothing. |
+| Results, effects and operations | Public modes and defaults of transactions, retries and cancellation through the Java API. | Nothing beyond behavior, see below. |
+
+Behavior is outside what the check compares, and the reviewer checks it: returned values and side effects, ordering,
+timeouts and when callbacks and events run; custom validation of `control.sh` arguments and the command output; which
+queries succeed and what they return; defaults computed at runtime; source and binary compatibility beyond signatures, and
+whether internal types used in public signatures are part of the public API; version negotiation and supported
+client/server combinations; reading old data, migration and recovery; supported JDK and OS combinations and upgrade paths;
+the conditions that cause each error.
 
 Protocol, storage and error codes come from a list of internal classes and the groups of their codes in
 `describe/src/collectors/Codes.java`. A new class with such codes needs an entry in that list.
@@ -101,9 +108,9 @@ Each line is one declaration, with seven columns separated by tabs:
 3. **Value**: what users rely on. The check reports a declaration whose value changed. Values of declarations with the same
    key are joined with ` | `.
 4. **Flags**: `deprecated`, `experimental` or both, separated by a comma. They decide whether a change needs an RFC. A
-   collector sets a flag only for a mark that users see, and the value shows that mark too: marking a declaration
-   deprecated is a change, and the flag lets the reviewer decide on its later removal. `@Deprecated` on an internal
-   constant is not such a mark.
+   collector sets a flag only for a mark that users see, and the value of the declaration, or of the type or command
+   that contains it, shows that mark too: marking a declaration deprecated is a change, and the flag lets the reviewer
+   decide on its later removal. `@Deprecated` on an internal constant is not such a mark.
 5. **Location**: `path:line` of the declaration, or the path alone. The report shows it.
 6. **Rename group**: an internal name in the key that users do not see, such as the name of a protocol constant, or empty.
    Declarations whose group only changed its name are not a change. The group must be a part of the key, and its first
