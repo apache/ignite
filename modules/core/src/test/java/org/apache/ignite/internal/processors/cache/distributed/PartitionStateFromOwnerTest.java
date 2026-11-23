@@ -107,8 +107,7 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    // A resend scheduled while the nodes start would come after the departure and hide a dropped map.
-    @WithSystemProperty(key = IGNITE_PRELOAD_RESEND_TIMEOUT, value = "0")
+    @WithSystemProperty(key = IGNITE_PRELOAD_RESEND_TIMEOUT, value = "0") // A startup resend would hide a dropped map.
     public void testLostPartitionOwnedInMergedExchange() throws Exception {
         plc = IGNORE;
 

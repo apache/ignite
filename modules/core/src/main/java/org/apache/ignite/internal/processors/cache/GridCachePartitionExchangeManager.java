@@ -1233,13 +1233,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     cctx.affinity().checkRebalanceState(top, grp.groupId());
             }
 
-            GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+            AffinityTopologyVersion rmtTopVer = topVer;
 
-            // No need to send to nodes which did not finish their first exchange.
-            AffinityTopologyVersion rmtTopVer = topVer != null ? topVer :
-                lastFut != null ?
+            if (rmtTopVer == null) {
+                GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+
+                // No need to send to nodes which did not finish their first exchange.
+                rmtTopVer = lastFut != null ?
                     (lastFut.isDone() && lastFut.error() == null ? lastFut.topologyVersion() : lastFut.initialVersion())
                     : AffinityTopologyVersion.NONE;
+            }
 
             Collection<ClusterNode> rmts = cctx.discovery().remoteAliveNodesWithCaches(rmtTopVer);
 
