@@ -51,9 +51,21 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.ModifiersTree;
+import com.sun.source.tree.Tree;
+import com.sun.source.tree.VariableTree;
+import com.sun.source.util.JavacTask;
+import com.sun.source.util.SourcePositions;
+import com.sun.source.util.Trees;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
-import org.apache.calcite.sql.util.ReflectiveSqlOperatorTable;
+import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.ignite.SystemProperty;
 import org.apache.ignite.internal.commandline.ArgumentParser;
 import org.apache.ignite.internal.commandline.CommandHandler;
@@ -66,9 +78,7 @@ import org.apache.ignite.internal.management.api.CommandsRegistry;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
-import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteOwnSqlOperatorTable;
-import org.apache.ignite.internal.processors.query.calcite.sql.fun.IgniteStdSqlOperatorTable;
-import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerGenerator;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
@@ -89,9 +99,6 @@ public class PublicDeclarations {
 
     /** */
     private static final String EXPERIMENTAL = "experimental";
-
-    /** Words that start a statement rather than a declaration. */
-    private static final Set<String> STATEMENTS = Set.of("return", "new", "throw", "case", "else", "assert", "yield");
 
     /** Internal classes that declare protocol, storage and error constants: area, class, names of the constants. */
     private static final String[][] CONSTANTS = {
@@ -131,8 +138,14 @@ public class PublicDeclarations {
     /** Source files of published top-level classes. */
     private static final Map<String, Path> sources = new HashMap<>();
 
-    /** Lines of source files read so far. */
-    private static final Map<Path, List<String>> texts = new HashMap<>();
+    /** Declarations of source files parsed so far. */
+    private static final Map<Path, Map<String, Map<String, List<Decl>>>> parsed = new HashMap<>();
+
+    /** */
+    private static final JavaCompiler JAVAC = ToolProvider.getSystemJavaCompiler();
+
+    /** */
+    private static final StandardJavaFileManager FILES = JAVAC.getStandardFileManager(null, null, null);
 
     /** Tree root. */
     private static Path root;
@@ -311,7 +324,7 @@ public class PublicDeclarations {
 
     /**
      * @param cls Class.
-     * @param member Member name, or {@code null} for the class itself.
+     * @param member Member name, or {@code null} for the class itself. A constructor has the name of its class.
      * @param params Number of parameters of a method or constructor, or -1 for a field or the class.
      * @param deprecated Whether to point at the {@code @Deprecated} annotation of the declaration.
      * @return Source file and line of the declaration, or the file alone if the line is not certain, or an empty string if
@@ -328,46 +341,19 @@ public class PublicDeclarations {
         if (src == null)
             return "";
 
-        List<String> text = texts.computeIfAbsent(src, f -> {
-            try {
-                return Files.readAllLines(f);
-            }
-            catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        });
-
         String file = root.relativize(src).toString();
-        Pattern typeDecl = Pattern.compile("\\b(class|interface|enum|@interface)\\s+" + Pattern.quote(cls.getSimpleName()) + "\\b");
-        int type = -1;
+        Map<String, List<Decl>> members = parsed.computeIfAbsent(src, PublicDeclarations::parse).get(classPath(cls));
 
-        for (int i = 0; i < text.size() && type < 0; i++)
-            type = typeDecl.matcher(text.get(i)).find() ? i : -1;
-
-        int line = type;
-
-        if (member != null) {
-            List<Integer> decls = declarations(text, Math.max(type, 0), member, params);
-
-            if (deprecated && decls.size() > 1)
-                decls = decls.stream().filter(i -> deprecatedAt(text, i) >= 0).collect(Collectors.toList());
-
-            if (decls.size() != 1)
-                return deprecated || type < 0 ? file : file + ':' + (type + 1);
-
-            line = decls.get(0);
-        }
-
-        if (line < 0)
+        if (members == null)
             return file;
 
-        if (deprecated) {
-            int d = deprecatedAt(text, line);
+        List<Decl> found = members.getOrDefault(member == null ? "" : member, List.of()).stream()
+            .filter(d -> d.params == params && (!deprecated || d.deprecated > 0)).collect(Collectors.toList());
 
-            return d < 0 ? file : file + ':' + (d + 1);
-        }
+        if (found.size() == 1)
+            return file + ':' + (deprecated ? found.get(0).deprecated : found.get(0).line);
 
-        return file + ':' + (line + 1);
+        return deprecated ? file : file + ':' + members.get("").get(0).line;
     }
 
     /** @return Where the {@code @Deprecated} annotation of a deprecated declaration is, or {@code null} for other declarations. */
@@ -375,74 +361,97 @@ public class PublicDeclarations {
         return deprecated ? where(cls, member, params, true) : null;
     }
 
-    /**
-     * @return Lines from {@code from} that declare the member, not just use it. A field may have a getter of the same name:
-     *      a type and a parameter list around the name declare a method, not the field.
-     */
-    private static List<Integer> declarations(List<String> text, int from, String name, int params) {
-        Pattern decl = Pattern.compile("^\\s*(?:([^=(;]*[\\w>\\]])\\s+)?" + Pattern.quote(name) + "\\s*([(=;,{]|$)");
-        List<Integer> res = new ArrayList<>();
-
-        for (int i = from; i < text.size(); i++) {
-            Matcher m = decl.matcher(text.get(i));
-
-            if (!m.find())
-                continue;
-
-            String prefix = m.group(1);
-            String[] words = prefix == null ? new String[0] : prefix.trim().split("\\s+");
-
-            if (prefix != null && STATEMENTS.contains(words[words.length - 1]))
-                continue;
-
-            boolean declares = params < 0
-                ? prefix != null ? !"(".equals(m.group(2)) : !"=".equals(m.group(2))
-                : "(".equals(m.group(2)) && prefix != null && paramCount(text, i, m.end()) == params;
-
-            if (declares)
-                res.add(i);
-        }
-
-        return res;
+    /** @return Name of a class within its source file, such as {@code Outer.Inner}. */
+    private static String classPath(Class<?> cls) {
+        return cls.getDeclaringClass() == null ? cls.getSimpleName() : classPath(cls.getDeclaringClass()) + '.' + cls.getSimpleName();
     }
 
-    /** @return Number of parameters in the list that starts right before {@code start} in the given line. */
-    private static int paramCount(List<String> text, int line, int start) {
-        StringBuilder list = new StringBuilder();
-        int depth = 1;
+    /**
+     * Parses a source file with the javac parser.
+     *
+     * @return Declarations of each class of the file by its {@link #classPath}, and then by member name. The class itself has
+     *      the empty name.
+     */
+    private static Map<String, Map<String, List<Decl>>> parse(Path src) {
+        JavacTask task = (JavacTask)JAVAC.getTask(null, FILES, null, List.of("-proc:none"), null, FILES.getJavaFileObjects(src));
 
-        for (int i = line; i < text.size() && i < line + 10 && depth > 0; i++) {
-            String s = i == line ? text.get(i).substring(start) : text.get(i);
+        try {
+            CompilationUnitTree cu = task.parse().iterator().next();
+            Source source = new Source(cu, cu.getSourceFile().getCharContent(true).toString(), Trees.instance(task).getSourcePositions());
+            Map<String, Map<String, List<Decl>>> res = new HashMap<>();
 
-            for (char c : s.toCharArray()) {
-                depth += c == '(' || c == '<' ? 1 : c == ')' || c == '>' ? -1 : 0;
+            for (Tree t : cu.getTypeDecls()) {
+                if (t instanceof ClassTree)
+                    source.index((ClassTree)t, "", res);
+            }
 
-                if (depth == 0)
-                    break;
+            return res;
+        }
+        catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
-                list.append(depth == 1 && c == ',' ? '\u0000' : c);
+    /** Source file parsed by javac. */
+    private record Source(CompilationUnitTree cu, String text, SourcePositions pos) {
+        /** Adds the declarations of a class and of its nested classes. */
+        void index(ClassTree cls, String outer, Map<String, Map<String, List<Decl>>> res) {
+            String name = cls.getSimpleName().toString();
+            String path = outer.isEmpty() ? name : outer + '.' + name;
+            Map<String, List<Decl>> members = res.computeIfAbsent(path, k -> new HashMap<>());
+
+            members.computeIfAbsent("", k -> new ArrayList<>()).add(decl(cls, cls.getModifiers(), null, name, -1));
+
+            for (Tree t : cls.getMembers()) {
+                if (t instanceof ClassTree)
+                    index((ClassTree)t, path, res);
+                else if (t instanceof MethodTree) {
+                    MethodTree m = (MethodTree)t;
+                    String member = m.getName().contentEquals("<init>") ? name : m.getName().toString();
+
+                    members.computeIfAbsent(member, k -> new ArrayList<>())
+                        .add(decl(m, m.getModifiers(), m.getReturnType(), member, m.getParameters().size()));
+                }
+                else if (t instanceof VariableTree) {
+                    VariableTree f = (VariableTree)t;
+                    String member = f.getName().toString();
+
+                    members.computeIfAbsent(member, k -> new ArrayList<>()).add(decl(f, f.getModifiers(), f.getType(), member, -1));
+                }
             }
         }
 
-        String params = list.toString().trim();
+        /**
+         * @param type Type of a field or return type of a method, or {@code null}. The name follows it.
+         * @return Declaration whose line is that of its name.
+         */
+        Decl decl(Tree decl, ModifiersTree mods, Tree type, String name, int params) {
+            long start = pos.getStartPosition(cu, decl);
+            long from = Math.max(start, Math.max(pos.getEndPosition(cu, mods), type == null ? -1 : pos.getEndPosition(cu, type)));
+            Matcher m = Pattern.compile("\\b" + Pattern.quote(name) + "\\b").matcher(text);
+            long at = m.find((int)from) && m.start() < pos.getEndPosition(cu, decl) ? m.start() : start;
 
-        return params.isEmpty() ? 0 : params.split("\u0000", -1).length;
-    }
+            long deprecated = mods.getAnnotations().stream()
+                .filter(a -> a.getAnnotationType().toString().matches("(java\\.lang\\.)?Deprecated"))
+                .mapToLong(a -> line(pos.getStartPosition(cu, a))).findFirst().orElse(-1);
 
-    /** @return Line of the {@code @Deprecated} annotation of the declaration at {@code line}, or -1. */
-    private static int deprecatedAt(List<String> text, int line) {
-        for (int i = line; i >= 0 && line - i < 20; i--) {
-            if (text.get(i).contains("@Deprecated"))
-                return i;
-
-            String l = text.get(i).trim();
-
-            if (i < line && (l.endsWith(";") || l.endsWith("}") || l.endsWith("{") || l.endsWith("*/")))
-                return -1;
+            return new Decl(params, line(at), deprecated);
         }
 
-        return -1;
+        /** @return Line of a position in the file. */
+        long line(long at) {
+            return cu.getLineMap().getLineNumber(at);
+        }
     }
+
+    /**
+     * Declaration in a source file.
+     *
+     * @param params Number of parameters of a method or constructor, or -1 for a field or a class.
+     * @param line Line of its name.
+     * @param deprecated Line of its {@code @Deprecated}, or -1.
+     */
+    private record Decl(int params, long line, long deprecated) {}
 
     /** @return Classes in the package of the class directories, loaded without initialization. */
     private static List<Class<?>> classes(List<Path> classDirs, String pkg, boolean publicOnly) throws IOException {
@@ -1089,44 +1098,43 @@ public class PublicDeclarations {
     }
 
     /**
-     * Describes the keywords of the Calcite SQL parser and the operators and functions of the Calcite engine. The kind and the
+     * Describes the keywords of the parser and the operators and functions that the Calcite engine uses. The kind and the
      * allowed signatures of an operator are part of the key, so the forms of an overloaded function are compared separately.
      * Operators that still share a key are counted, so removing one of them is a change. An operator registered twice is one
      * form: the parser uses the same object.
      */
     private static void sql() {
-        SqlAbstractParserImpl parser = IgniteSqlParserImpl.FACTORY.getParser(new StringReader(""));
+        FrameworkConfig cfg = CalciteQueryProcessor.FRAMEWORK_CONFIG;
+        SqlAbstractParserImpl parser = cfg.getParserConfig().parserFactory().getParser(new StringReader(""));
 
         for (String token : parser.getMetadata().getTokens()) {
             add("SQL keywords", "Calcite " + token, parser.getMetadata().isReservedWord(token) ? "reserved" : "non-reserved", "",
-                where(IgniteSqlParserImpl.class, null, -1, false));
+                where(parser.getClass(), null, -1, false));
         }
 
         Map<String, Set<SqlOperator>> forms = new TreeMap<>();
-        Map<String, String> locations = new HashMap<>();
 
-        for (ReflectiveSqlOperatorTable t : List.of(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance())) {
-            for (SqlOperator op : t.getOperatorList()) {
-                if (op.getName().startsWith("$"))
-                    continue;
+        for (SqlOperator op : cfg.getOperatorTable().getOperatorList()) {
+            if (op.getName().startsWith("$"))
+                continue;
 
-                String signatures;
+            String signatures;
 
-                try {
-                    signatures = op.getAllowedSignatures();
-                }
-                catch (RuntimeException e) {
-                    signatures = "";
-                }
-
-                String key = oneLine(op.getName() + ' ' + op.getSyntax() + ' ' + op.getKind() + ' ' + signatures);
-
-                forms.computeIfAbsent(key, k -> Collections.newSetFromMap(new IdentityHashMap<>())).add(op);
-                locations.putIfAbsent(key, where(t.getClass(), null, -1, false));
+            try {
+                signatures = op.getAllowedSignatures();
             }
+            catch (RuntimeException e) {
+                signatures = "";
+            }
+
+            String key = oneLine(op.getName() + ' ' + op.getSyntax() + ' ' + op.getKind() + ' ' + signatures);
+
+            forms.computeIfAbsent(key, k -> Collections.newSetFromMap(new IdentityHashMap<>())).add(op);
         }
 
-        forms.forEach((key, ops) -> add("SQL functions", key, ops.size() > 1 ? ops.size() + " operators" : "", "", locations.get(key)));
+        String location = where(CalciteQueryProcessor.class, "FRAMEWORK_CONFIG", -1, false);
+
+        forms.forEach((key, ops) -> add("SQL functions", key, ops.size() > 1 ? ops.size() + " operators" : "", "", location));
     }
 
     /** Describes runtime requirements and packages declared in build and launch files. */

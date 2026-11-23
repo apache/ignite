@@ -28,8 +28,7 @@ const { execFileSync } = require('child_process');
 
 const MARKER = '<!-- ignite-public-behavior-changes';
 const RFC_NAME = /^rfcs\/IGNITE-\d+-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
-const LINK = /https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/[^\s<>"'()\[\]]+/g;
-const RFC_LINK = /^https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/(.+?)\/(rfcs\/.+)$/;
+const RFC_PATH = /^(.+?)\/(rfcs\/.+)$/;
 const BLOB = /^[0-9a-f]{40,64}$/;
 const TEMPLATE = 'rfcs/TEMPLATE.md';
 const RFC_EXAMPLE = 'rfcs/IGNITE-12345-cache-timeout.md';
@@ -170,17 +169,20 @@ function rfcFiles(nameStatus) {
  * to its file, the result is unknown only when no file counts: one RFC is enough.
  *
  * @param body PR description.
+ * @param repo Target repository, such as {@code apache/ignite}.
  * @param baseRef Name of the target branch.
  * @param onTarget Checks that a file exists on the target branch.
- * @param atRef Checks that a file exists at a branch, tag or commit of apache/ignite. Throws when GitHub cannot tell.
+ * @param atRef Checks that a file exists at a branch, tag or commit of the target repository. Throws when GitHub cannot tell.
  */
-async function rfcLinks(body, baseRef, onTarget, atRef) {
+async function rfcLinks(body, repo, baseRef, onTarget, atRef) {
+    const prefix = `https://github.com/${repo}/`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(prefix + '(?:blob|tree)/([^\\s<>"\'()\\[\\]]+)', 'g');
     const linked = [];
     const problems = new Map();
     let failure = null;
 
-    for (const [url] of (body || '').matchAll(LINK)) {
-        const m = RFC_LINK.exec(url.replace(/[.,;:!]+$/, '').replace(/[?#].*$/, ''));
+    for (const [, rest] of (body || '').matchAll(pattern)) {
+        const m = RFC_PATH.exec(rest.replace(/[.,;:!]+$/, '').replace(/[?#].*$/, ''));
 
         if (!m || linked.includes(m[2]))
             continue;
@@ -340,7 +342,7 @@ function renderFindings(findings, limit, runUrl) {
 function rfcUrl(rfc, links) {
     return rfc.source === 'pr'
         ? `${links.headRepoUrl}/blob/${links.headSha}/${rfc.path}`
-        : `https://github.com/apache/ignite/blob/${links.baseRef.split('/').map(encodeURIComponent).join('/')}/${rfc.path}`;
+        : `${links.baseRepoUrl}/blob/${links.baseRef.split('/').map(encodeURIComponent).join('/')}/${rfc.path}`;
 }
 
 /** @return Title of an outcome. */
@@ -357,7 +359,7 @@ function title(res) {
 
 /**
  * @param res Validated result.
- * @param links Head repository URL, head SHA, base ref and, in the comment, the run URL.
+ * @param links Head repository URL, head SHA, base repository URL, base ref and, in the comment, the run URL.
  * @param limit Maximum number of change lines.
  * @return Markdown report.
  */
@@ -484,7 +486,7 @@ async function findRfc(findings, { github, pr, workspace }) {
         const onTarget = f => fs.statSync(path.join(workspace, 'base', f), { throwIfNoEntry: false })?.isFile() === true;
         const atRef = async (ref, file) => {
             try {
-                await github.rest.repos.getContent({ owner: 'apache', repo: 'ignite', path: file, ref });
+                await github.rest.repos.getContent({ owner: pr.base.repo.owner.login, repo: pr.base.repo.name, path: file, ref });
 
                 return true;
             }
@@ -496,7 +498,7 @@ async function findRfc(findings, { github, pr, workspace }) {
             }
         };
 
-        Object.assign(rfcs, await rfcLinks(pr.body, pr.base.ref, onTarget, atRef));
+        Object.assign(rfcs, await rfcLinks(pr.body, pr.base.repo.full_name, pr.base.ref, onTarget, atRef));
     }
 
     rfcs.blobs = new Map([...rfcs.files.map(f => [f, git('merge', 'rev-parse', `HEAD:${f}`).trim()]),
@@ -534,7 +536,7 @@ async function report({ github, core, context, steps, workspace = '.' }) {
 
     fs.writeFileSync(path.join(workspace, 'result.json'), JSON.stringify(res));
 
-    const links = { headRepoUrl: pr.head.repo.html_url, headSha: pr.head.sha, baseRef: pr.base.ref };
+    const links = { headRepoUrl: pr.head.repo.html_url, headSha: pr.head.sha, baseRepoUrl: pr.base.repo.html_url, baseRef: pr.base.ref };
 
     await core.summary.addRaw(render(res, links, SUMMARY_LINES)).write();
 
@@ -596,7 +598,10 @@ async function publish({ github, context, core, resultFile, target }) {
         res = { outcome: 'error', step: 'result' };
     }
 
-    const links = { headRepoUrl: run.head_repository.html_url, headSha: run.head_sha, baseRef: pr.base.ref, runUrl: run.html_url };
+    const links = {
+        headRepoUrl: run.head_repository.html_url, headSha: run.head_sha, baseRepoUrl: pr.base.repo.html_url, baseRef: pr.base.ref,
+        runUrl: run.html_url,
+    };
     const state = `${MARKER} state:${crypto.createHash('sha256').update(JSON.stringify(res)).digest('hex').slice(0, 16)} -->`;
 
     const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: pr.number, per_page: 100 });

@@ -31,6 +31,9 @@ const check = require('./check.js');
 const line = (area, key, value, flags = '', location = 'A.java:1', group = '', deprecation = '') =>
     [area, key, value, flags, location, group, deprecation].join('\t');
 
+/** Target repository of the PRs in the tests. */
+const APACHE = { owner: { login: 'apache' }, name: 'ignite', full_name: 'apache/ignite', html_url: 'https://github.com/apache/ignite' };
+
 /** @return Line of an internal constant {@code Class.NAME}, whose name is a rename group. */
 const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key.split('.').pop());
 
@@ -171,7 +174,7 @@ test('a link counts only if its file is on the target branch and the link leads 
     const checked = [];
     const atRef = async (ref, f) => checked.push(`${ref}:${f}`) && ref === '1a2b3c';
 
-    assert.deepStrictEqual(await check.rfcLinks(body, 'master', onTarget, atRef), {
+    assert.deepStrictEqual(await check.rfcLinks(body, 'apache/ignite', 'master', onTarget, atRef), {
         linked: ['rfcs/IGNITE-7-existing.md', 'rfcs/IGNITE-10-permalink.md'],
         badLinks: [
             { path: 'rfcs/IGNITE-9-typo.md', reason: 'url' },
@@ -189,10 +192,19 @@ test('a broken link does not hide a working link to the same file, and a path pa
         'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-z.md/extra';
     const onTarget = f => ['rfcs/IGNITE-7-y.md', 'rfcs/IGNITE-8-z.md'].includes(f);
 
-    assert.deepStrictEqual(await check.rfcLinks(body, 'master', onTarget, async () => false), {
+    assert.deepStrictEqual(await check.rfcLinks(body, 'apache/ignite', 'master', onTarget, async () => false), {
         linked: ['rfcs/IGNITE-7-y.md'],
         badLinks: [{ path: 'rfcs/IGNITE-8-z.md/extra', reason: 'name' }],
     });
+});
+
+test('only links to the target repository count', async () => {
+    const body = 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md ' +
+        'https://github.com/owner/standXrepo/blob/master/rfcs/IGNITE-8-z.md ' +
+        'https://github.com/owner/stand.repo/blob/master/rfcs/IGNITE-9-w.md';
+
+    assert.deepStrictEqual(await check.rfcLinks(body, 'owner/stand.repo', 'master', () => true, async () => false),
+        { linked: ['rfcs/IGNITE-9-w.md'], badLinks: [] });
 });
 
 test('a branch name may contain slashes', async () => {
@@ -200,7 +212,8 @@ test('a branch name may contain slashes', async () => {
     const checked = [];
     const atRef = async (ref, f) => checked.push(`${ref}:${f}`) > 0;
 
-    assert.deepStrictEqual(await check.rfcLinks(body, 'master', () => true, atRef), { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] });
+    assert.deepStrictEqual(await check.rfcLinks(body, 'apache/ignite', 'master', () => true, atRef),
+        { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] });
     assert.deepStrictEqual(checked, ['release/docs:rfcs/IGNITE-7-y.md']);
 });
 
@@ -213,13 +226,14 @@ test('one confirmed RFC is enough when GitHub cannot check another link, in eith
         const remote = `https://github.com/apache/ignite/blob/1a2b3c/${other}`;
 
         for (const body of [`${local} ${remote}`, `${remote} ${local}`]) {
-            assert.deepStrictEqual(await check.rfcLinks(body, 'master', onTarget, atRef),
+            assert.deepStrictEqual(await check.rfcLinks(body, 'apache/ignite', 'master', onTarget, atRef),
                 { linked: ['rfcs/IGNITE-7-y.md'], badLinks: [] }, body);
         }
     }
 
-    await assert.rejects(check.rfcLinks('https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-8-z.md', 'master', onTarget, atRef),
-        /Server Error/);
+    const unchecked = 'https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-8-z.md';
+
+    await assert.rejects(check.rfcLinks(unchecked, 'apache/ignite', 'master', onTarget, atRef), /Server Error/);
 });
 
 test('a PR without contract changes passes before the RFC check', () => {
@@ -278,6 +292,14 @@ test('PR data cannot escape code formatting', () => {
     assert.ok(md.includes('`````diff\n+ x ``` @someone [link](https://evil): ```` (A.java:1)\n`````'), md);
 });
 
+test('a linked RFC is shown on the target repository and branch', () => {
+    const rfcs = [{ path: 'rfcs/IGNITE-7-y.md', source: 'link' }];
+    const res = { outcome: 'rfc-found', findings: [CONTRACT], rfcs, invalidNames: [], badLinks: [] };
+    const md = check.render(res, { baseRepoUrl: 'https://github.com/owner/stand', baseRef: 'release/docs' }, 10);
+
+    assert.ok(md.includes('(https://github.com/owner/stand/blob/release/docs/rfcs/IGNITE-7-y.md)'), md);
+});
+
 test('long reports are cut to stay within the GitHub comment limit', () => {
     const findings = Array.from({ length: 30 }, (_, i) => ({ ...CONTRACT, key: 'k' + i, after: 'x'.repeat(i === 0 ? 1000 : 1) }));
     const md = check.render({ outcome: 'rfc-missing', findings, rfcs: [], invalidNames: [], badLinks: [] }, {}, 10);
@@ -326,7 +348,8 @@ function github({
     };
 
     const paginate = async (route, params) => route !== 'pulls.list' ? comments
-        : prs.filter(p => p.base === params.base).map(p => ({ number: p.number, head: { sha: headSha }, base: { ref: p.base } }));
+        : prs.filter(p => p.base === params.base)
+            .map(p => ({ number: p.number, head: { sha: headSha }, base: { ref: p.base, repo: APACHE } }));
 
     return { rest, paginate, calls, comments, commented };
 }
@@ -491,8 +514,11 @@ const WITH_CONTRACT_CHANGE = BASE + '\n' + line('CLI', 'control.sh --cache list 
  *
  * @param body PR description.
  * @param getContent Stub of the GitHub API call that reads a file at a ref.
+ * @param repo Target repository of the PR.
  */
-async function report(ws, { steps = BUILT, body = '', getContent = async () => { throw new Error('unexpected'); } } = {}) {
+async function report(ws, {
+    steps = BUILT, body = '', getContent = async () => { throw new Error('unexpected'); }, repo = APACHE,
+} = {}) {
     const out = { summary: '', annotations: [] };
     const core = {
         summary: { addRaw(s) { out.summary = s; return this; }, async write() {} },
@@ -501,7 +527,11 @@ async function report(ws, { steps = BUILT, body = '', getContent = async () => {
         error: m => out.annotations.push('error: ' + m),
     };
     const context = {
-        payload: { pull_request: { body, head: { sha: 'abc', repo: { html_url: 'https://github.com/fork/ignite' } }, base: { ref: 'master' } } },
+        payload: {
+            pull_request: {
+                body, head: { sha: 'abc', repo: { html_url: 'https://github.com/fork/ignite' } }, base: { ref: 'master', repo },
+            },
+        },
     };
 
     await check.report({ github: { rest: { repos: { getContent } } }, core, context, steps, workspace: ws });
@@ -525,12 +555,19 @@ test('report: an RFC file whose name git would quote fails with the filename err
     assert.deepStrictEqual([out.result.outcome, out.result.invalidNames], ['rfc-name', ['rfcs/обзор.md']]);
 });
 
-test('report: a link with a mistyped branch does not replace a missing RFC', async () => {
+test('report: a link with a mistyped branch does not replace a missing RFC, and GitHub is asked about the target repository', async () => {
     const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE });
-    const getContent = async () => { throw Object.assign(new Error('Not Found'), { status: 404 }); };
-    const out = await report(ws, { body: 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md', getContent });
+    const stand = { owner: { login: 'owner' }, name: 'stand', full_name: 'owner/stand', html_url: 'https://github.com/owner/stand' };
+    const asked = [];
+    const getContent = async args => {
+        asked.push(args);
+
+        throw Object.assign(new Error('Not Found'), { status: 404 });
+    };
+    const out = await report(ws, { body: 'https://github.com/owner/stand/blob/mastr/rfcs/IGNITE-7-y.md', getContent, repo: stand });
 
     assert.deepStrictEqual([out.result.outcome, out.result.badLinks], ['rfc-missing', [{ path: 'rfcs/IGNITE-7-y.md', reason: 'url' }]]);
+    assert.deepStrictEqual(asked, [{ owner: 'owner', repo: 'stand', path: 'rfcs/IGNITE-7-y.md', ref: 'mastr' }]);
 });
 
 test('report: a link that GitHub cannot confirm fails as a check that could not finish', async () => {
