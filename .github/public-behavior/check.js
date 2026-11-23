@@ -28,7 +28,8 @@ const { execFileSync } = require('child_process');
 
 const MARKER = '<!-- ignite-public-behavior-changes';
 const RFC_NAME = /^rfcs\/IGNITE-\d+-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
-const RFC_LINK = /https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/[^/\s]+\/(rfcs\/[A-Za-z0-9._-]*[A-Za-z0-9_-])/g;
+const RFC_LINK = /https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/([^/\s]+)\/(rfcs\/[A-Za-z0-9._-]*[A-Za-z0-9_-])/g;
+const BLOB = /^[0-9a-f]{40,64}$/;
 const TEMPLATE = 'rfcs/TEMPLATE.md';
 const RFC_EXAMPLE = 'rfcs/IGNITE-12345-cache-timeout.md';
 const PROCESS_URL = 'https://github.com/apache/ignite/tree/master/rfcs';
@@ -36,7 +37,9 @@ const CONTRACT_URL = 'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-2
 const KINDS = ['contract', 'deprecated-removal', 'experimental'];
 const OUTCOMES = ['clean', 'review', 'rfc-found', 'rfc-name', 'rfc-missing', 'error'];
 const FAILED = ['rfc-name', 'rfc-missing', 'error'];
-const STEPS = ['checkout', 'base', 'merge', 'report', 'result'];
+const STEPS = ['checkout', 'java', 'base', 'merge', 'links', 'report', 'result'];
+const LINK_PROBLEMS = ['name', 'missing', 'url'];
+const NO_RFC = { files: [], invalidNames: [], linked: [], badLinks: [] };
 const COMMENT_LINES = 100;
 const SUMMARY_LINES = 2000;
 const LINE_CHARS = 500;
@@ -49,9 +52,49 @@ function parse(text) {
         if (!line)
             continue;
 
-        const [area, key, value = '', flags = '', location = ''] = line.split('\t');
+        const [area, key, value = '', flags = '', location = '', group = ''] = line.split('\t');
 
-        res.set(area + '\t' + key, { area, key, value, flags: flags.split(',').filter(Boolean), location });
+        res.set(area + '\t' + key, { area, key, value, flags: flags.split(',').filter(Boolean), location, group });
+    }
+
+    return res;
+}
+
+/**
+ * @return Keys of the declarations whose rename group only changed its name: the group left the target branch, another group
+ *      came in the PR, and their declarations are the same apart from the group name.
+ */
+function renamedKeys(base, merge) {
+    const groups = (decls, other) => {
+        const present = new Set([...other.values()].filter(d => d.group).map(d => d.area + '\t' + d.group));
+        const res = new Map();
+
+        for (const [id, d] of decls) {
+            const gid = d.area + '\t' + d.group;
+
+            if (!d.group || present.has(gid))
+                continue;
+
+            if (!res.has(gid))
+                res.set(gid, { ids: [], parts: [] });
+
+            res.get(gid).ids.push(id);
+            res.get(gid).parts.push(d.key.replace(d.group, '\u0001') + '\u0000' + d.value);
+        }
+
+        return [...res.values()].map(g => ({ ids: g.ids, sig: g.ids[0].split('\t')[0] + '\u0002' + g.parts.sort().join('\u0002') }));
+    };
+
+    const added = groups(merge, base);
+    const res = new Set();
+
+    for (const left of groups(base, merge)) {
+        const i = added.findIndex(g => g.sig === left.sig);
+
+        if (i >= 0) {
+            [...left.ids, ...added[i].ids].forEach(id => res.add(id));
+            added.splice(i, 1);
+        }
     }
 
     return res;
@@ -64,6 +107,7 @@ function parse(text) {
 function compare(baseText, mergeText) {
     const base = parse(baseText);
     const merge = parse(mergeText);
+    const renamed = renamedKeys(base, merge);
     const res = [];
 
     const finding = (b, m) => {
@@ -83,12 +127,12 @@ function compare(baseText, mergeText) {
     for (const [id, b] of base) {
         const m = merge.get(id);
 
-        if (!m || m.value !== b.value)
+        if (!renamed.has(id) && (!m || m.value !== b.value))
             finding(b, m);
     }
 
     for (const [id, m] of merge) {
-        if (!base.has(id))
+        if (!renamed.has(id) && !base.has(id))
             finding(null, m);
     }
 
@@ -96,38 +140,51 @@ function compare(baseText, mergeText) {
 }
 
 /**
- * @param nameStatus Output of `git diff --name-status -M` between the target branch and the PR merge for rfcs/.
- * @param body PR description.
- * @param existsOnTarget Checks that a file exists on the target branch.
- * @return RFC files that the PR adds or updates, their invalid names, and RFC files linked from the description.
+ * @param nameStatus Output of `git diff --name-status -z -M` between the target branch and the PR merge for rfcs/.
+ * @return RFC files that the PR adds or updates and the ones with invalid names.
  */
-function findRfcs(nameStatus, body, existsOnTarget) {
+function rfcFiles(nameStatus) {
+    const parts = nameStatus.split('\0');
     const files = [];
 
-    for (const line of nameStatus.split('\n')) {
-        const [status, ...paths] = line.split('\t');
-        const file = paths[paths.length - 1];
+    for (let i = 0; i < parts.length && parts[i];) {
+        const status = parts[i++];
+        const file = /^[RC]/.test(status) ? parts[(i += 2) - 1] : parts[i++];
 
-        if (status && status !== 'D' && file.endsWith('.md') && file !== TEMPLATE)
+        if (status !== 'D' && file.endsWith('.md') && file !== TEMPLATE)
             files.push(file);
     }
 
+    return { ...NO_RFC, files, invalidNames: files.filter(f => !RFC_NAME.test(f)) };
+}
+
+/**
+ * Finds direct links to RFC files in the PR description. A link counts if its file is on the target branch and the link itself
+ * leads to that file.
+ *
+ * @param body PR description.
+ * @param baseRef Name of the target branch.
+ * @param onTarget Checks that a file exists on the target branch.
+ * @param atRef Checks that a file exists at a branch, tag or commit of apache/ignite. Throws when GitHub cannot tell.
+ */
+async function rfcLinks(body, baseRef, onTarget, atRef) {
     const linked = [];
     const badLinks = [];
 
-    for (const m of (body || '').matchAll(RFC_LINK)) {
-        const file = m[1];
-
+    for (const [, ref, file] of (body || '').matchAll(RFC_LINK)) {
         if (linked.includes(file) || badLinks.some(l => l.path === file))
             continue;
 
-        if (RFC_NAME.test(file) && existsOnTarget(file))
-            linked.push(file);
+        const problem = !RFC_NAME.test(file) ? 'name' : !onTarget(file) ? 'missing'
+            : ref !== baseRef && !(await atRef(ref, file)) ? 'url' : null;
+
+        if (problem)
+            badLinks.push({ path: file, reason: problem });
         else
-            badLinks.push({ path: file, reason: RFC_NAME.test(file) ? 'missing' : 'name' });
+            linked.push(file);
     }
 
-    return { files, invalidNames: files.filter(f => !RFC_NAME.test(f)), linked, badLinks };
+    return { linked, badLinks };
 }
 
 /** @return Outcome for described declarations, following the decision tree of IGNITE-29326. */
@@ -174,21 +231,21 @@ function validate(res) {
 
     const contract = res.findings.some(f => f.kind === 'contract');
 
-    if (!list(res.rfcs, 20, r => RFC_NAME.test(r.path) && ['pr', 'link'].includes(r.source))
+    if (!list(res.rfcs, 20, r => RFC_NAME.test(r.path) && ['pr', 'link'].includes(r.source) && (r.blob === undefined || BLOB.test(r.blob)))
         || (res.outcome === 'rfc-found') !== (res.rfcs.length > 0) || (res.outcome === 'review') === contract)
         fail('rfcs');
 
     if (!list(res.invalidNames, 20, p => str(p, 300)) || (res.outcome === 'rfc-name') !== (res.invalidNames.length > 0))
         fail('invalidNames');
 
-    if (!list(res.badLinks, 20, l => str(l.path, 300) && ['name', 'missing'].includes(l.reason)))
+    if (!list(res.badLinks, 20, l => str(l.path, 300) && LINK_PROBLEMS.includes(l.reason)))
         fail('badLinks');
 
     return {
         outcome: res.outcome,
         findings: res.findings.map(({ area, key, before, after, kind, location, hint }) =>
             ({ area, key, before, after, kind, location, ...(hint === undefined ? {} : { hint }) })),
-        rfcs: res.rfcs.map(({ path: p, source }) => ({ path: p, source })),
+        rfcs: res.rfcs.map(({ path: p, source, blob }) => ({ path: p, source, ...(blob === undefined ? {} : { blob }) })),
         invalidNames: [...res.invalidNames],
         badLinks: res.badLinks.map(({ path: p, reason }) => ({ path: p, reason })),
     };
@@ -289,9 +346,11 @@ function render(res, links, limit) {
 
     if (res.outcome === 'error') {
         out.push({
+            'java': 'The check could not set up Java. Rerun the check.',
             'base': 'The check could not build the target branch or describe its public declarations. Rerun the check.',
             'merge': 'The check could not build the PR merged into the target branch or describe its public declarations. ' +
                 'If the PR does not compile, fix it. Otherwise rerun the check.',
+            'links': 'GitHub could not confirm the RFC links in the PR description. Rerun the check.',
         }[res.step] || 'The check failed for a technical reason. Rerun the check.');
 
         if (links.runUrl)
@@ -325,8 +384,11 @@ function render(res, links, limit) {
             'Or link an existing RFC file on the target branch from the PR description.');
 
         if (res.badLinks.length > 0) {
-            out.push('', ...res.badLinks.map(l => `- ${code(l.path)} ` +
-                (l.reason === 'missing' ? 'is not on the target branch.' : `does not match ${code('rfcs/IGNITE-<ticket>-<short-title>.md')}.`)));
+            out.push('', ...res.badLinks.map(l => `- ${code(l.path)} ` + {
+                name: `does not match ${code('rfcs/IGNITE-<ticket>-<short-title>.md')}.`,
+                missing: 'is not on the target branch.',
+                url: 'is on the target branch, but the link does not lead to it.',
+            }[l.reason]));
         }
     }
 
@@ -335,9 +397,13 @@ function render(res, links, limit) {
     return out.join('\n').trimEnd();
 }
 
-/** @return Name of the first step that did not succeed, or undefined. */
-function failedStep(outcomes) {
-    return Object.keys(outcomes).find(s => outcomes[s] !== 'success' && outcomes[s] !== 'skipped');
+/**
+ * @param steps Outcomes of the workflow steps, in their order. Steps are skipped when the PR changes no sources or after an
+ *      earlier step failed.
+ * @return Name of the first step that failed, or undefined.
+ */
+function failedStep(steps) {
+    return Object.keys(steps).find(s => steps[s] !== 'success' && steps[s] !== 'skipped');
 }
 
 /**
@@ -377,8 +443,44 @@ function addDeprecationHints(findings, repo, core) {
     }
 }
 
+/**
+ * Looks for an RFC only when the PR changes the public contract: first among the files of the PR, then among the links in
+ * its description. Each RFC gets the blob of its file, so the comment changes when the RFC text changes.
+ */
+async function findRfc(findings, { github, pr, workspace }) {
+    if (!findings.some(f => f.kind === 'contract'))
+        return NO_RFC;
+
+    const git = (dir, ...args) => execFileSync('git', ['-C', path.join(workspace, dir), ...args], { encoding: 'utf8' });
+    const rfcs = rfcFiles(git('merge', 'diff', '--name-status', '-z', '-M', 'HEAD^1', 'HEAD', '--', 'rfcs/'));
+
+    if (rfcs.files.length === 0) {
+        const onTarget = f => fs.statSync(path.join(workspace, 'base', f), { throwIfNoEntry: false })?.isFile() === true;
+        const atRef = async (ref, file) => {
+            try {
+                await github.rest.repos.getContent({ owner: 'apache', repo: 'ignite', path: file, ref });
+
+                return true;
+            }
+            catch (e) {
+                if (e.status === 404)
+                    return false;
+
+                throw Object.assign(new Error(`Could not check ${file} at ${ref}: ${e.message}`), { step: 'links' });
+            }
+        };
+
+        Object.assign(rfcs, await rfcLinks(pr.body, pr.base.ref, onTarget, atRef));
+    }
+
+    rfcs.blobs = new Map([...rfcs.files.map(f => [f, git('merge', 'rev-parse', `HEAD:${f}`).trim()]),
+        ...rfcs.linked.map(f => [f, git('base', 'rev-parse', `HEAD:${f}`).trim()])]);
+
+    return rfcs;
+}
+
 /** Runs in the PR job after both versions are described. */
-async function report({ core, context, steps, workspace = '.' }) {
+async function report({ github, core, context, steps, workspace = '.' }) {
     const pr = context.payload.pull_request;
     const read = f => fs.existsSync(path.join(workspace, f)) ? fs.readFileSync(path.join(workspace, f), 'utf8') : '';
 
@@ -386,20 +488,22 @@ async function report({ core, context, steps, workspace = '.' }) {
 
     try {
         if (!res.step) {
-            const nameStatus = execFileSync('git', ['-C', path.join(workspace, 'merge'), 'diff', '--name-status', '-M', 'HEAD^1', 'HEAD',
-                '--', 'rfcs/'], { encoding: 'utf8' });
-            const onTarget = f => fs.statSync(path.join(workspace, 'base', f), { throwIfNoEntry: false })?.isFile() === true;
             const findings = compare(read('base.txt'), read('merge.txt'));
 
             addDeprecationHints(findings, path.join(workspace, 'base'), core);
 
-            res = validate(decide(findings, findRfcs(nameStatus, pr.body, onTarget)));
+            const rfcs = await findRfc(findings, { github, pr, workspace });
+            const decided = decide(findings, rfcs);
+
+            decided.rfcs = (decided.rfcs || []).map(r => ({ ...r, blob: rfcs.blobs.get(r.path) }));
+
+            res = validate(decided);
         }
     }
     catch (e) {
         core.error(e.stack || String(e));
 
-        res = { outcome: 'error', step: 'report' };
+        res = { outcome: 'error', step: e.step || 'report' };
     }
 
     fs.writeFileSync(path.join(workspace, 'result.json'), JSON.stringify(res));
@@ -429,7 +533,10 @@ async function findPr(github, owner, repo, run) {
     return prs.find(p => p.head.sha === run.head_sha) || null;
 }
 
-/** Runs in the workflow_run job: replaces the bot comment when the result changes. */
+/**
+ * Runs in the workflow_run job: replaces the bot comment when the result changes. A newer run for the same commit, started for
+ * example by an edit of the PR description, publishes instead of this one.
+ */
 async function publish({ github, context, core, resultFile }) {
     const { owner, repo } = context.repo;
     const run = context.payload.workflow_run;
@@ -437,6 +544,16 @@ async function publish({ github, context, core, resultFile }) {
 
     if (!pr) {
         core.info(`No open PR has head ${run.head_sha}; the result is outdated.`);
+
+        return;
+    }
+
+    const { data: runs } = await github.rest.actions.listWorkflowRuns({
+        owner, repo, workflow_id: run.workflow_id, head_sha: run.head_sha, per_page: 100,
+    });
+
+    if (runs.workflow_runs.some(r => r.run_number > run.run_number)) {
+        core.info(`A newer run checks ${run.head_sha}; it publishes the result.`);
 
         return;
     }
@@ -474,4 +591,4 @@ async function publish({ github, context, core, resultFile }) {
     });
 }
 
-module.exports = { compare, findRfcs, decide, validate, render, report, publish };
+module.exports = { compare, rfcFiles, rfcLinks, decide, validate, render, report, publish };

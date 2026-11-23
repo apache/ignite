@@ -17,16 +17,22 @@
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -37,6 +43,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,7 +58,6 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.argument.parser.CLIArgument;
 import org.apache.ignite.internal.management.IgniteCommandRegistry;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Command;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.CommandsRegistry;
@@ -67,9 +73,10 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 import org.apache.ignite.startup.cmdline.CommandLineStartup;
 
 /**
- * Prints the public declarations of a built Ignite source tree, one per line: area, key, value, flags and source location,
- * separated by tabs. Flags mark deprecated and experimental declarations. Descriptions, help texts and examples are left out,
- * so editing them changes nothing.
+ * Prints the public declarations of a built Ignite source tree, one per line: area, key, value, flags, source location and
+ * rename group, separated by tabs. Flags mark deprecated and experimental declarations. A rename group is an internal Java
+ * name that the key contains: renaming it changes nothing for users. Descriptions, help texts and examples are left out,
+ * so editing them changes nothing either.
  * <p>
  * Usage: {@code java -cp <classpath of the built tree> PublicDeclarations.java <tree root>}.
  */
@@ -80,6 +87,9 @@ public class PublicDeclarations {
 
     /** */
     private static final String EXPERIMENTAL = "experimental";
+
+    /** Words that start a statement rather than a declaration. */
+    private static final Set<String> STATEMENTS = Set.of("return", "new", "throw", "case", "else", "assert", "yield");
 
     /** Internal classes that declare protocol, storage and error constants: area, class, names of the constants. */
     private static final String[][] CONSTANTS = {
@@ -107,8 +117,8 @@ public class PublicDeclarations {
         {"Stored data", "org.apache.ignite.internal.pagemem.wal.record.WALRecord$RecordType", "index"},
     };
 
-    /** Output lines. */
-    private static final Set<String> lines = new TreeSet<>();
+    /** Declarations by area and key. */
+    private static final Map<String, Declaration> decls = new TreeMap<>();
 
     /** Problems that make the description incomplete. */
     private static final List<String> errors = new ArrayList<>();
@@ -144,7 +154,10 @@ public class PublicDeclarations {
         sql();
         distribution();
 
-        lines.forEach(System.out::println);
+        for (Declaration d : decls.values()) {
+            System.out.println(String.join("\t", d.area, d.key, String.join(" | ", d.values), String.join(",", d.flags), d.location,
+                d.group));
+        }
 
         if (!errors.isEmpty()) {
             errors.forEach(System.err::println);
@@ -153,9 +166,51 @@ public class PublicDeclarations {
         }
     }
 
-    /** Adds a declaration. */
+    /** Adds a declaration whose key has no internal names. */
     private static void add(String area, String key, String val, String flags, String location) {
-        lines.add(String.join("\t", area, oneLine(key), oneLine(val), flags, location));
+        add(area, key, val, flags, location, "");
+    }
+
+    /**
+     * Adds a declaration. Declarations with the same key, such as a system property that two constants declare, are merged:
+     * their values are listed together, so a change to any of them is a change of the merged declaration.
+     */
+    private static void add(String area, String key, String val, String flags, String location, String group) {
+        Declaration d = decls.computeIfAbsent(area + '\t' + oneLine(key), k -> new Declaration(area, oneLine(key), location, group));
+
+        d.values.add(oneLine(val));
+
+        if (!flags.isEmpty())
+            d.flags.addAll(Arrays.asList(flags.split(",")));
+    }
+
+    /** Declaration as it is printed. */
+    private static class Declaration {
+        /** */
+        final String area;
+
+        /** */
+        final String key;
+
+        /** */
+        final String location;
+
+        /** */
+        final String group;
+
+        /** */
+        final Set<String> values = new TreeSet<>();
+
+        /** */
+        final Set<String> flags = new TreeSet<>();
+
+        /** */
+        Declaration(String area, String key, String location, String group) {
+            this.area = area;
+            this.key = key;
+            this.location = location;
+            this.group = group;
+        }
     }
 
     /** */
@@ -246,10 +301,12 @@ public class PublicDeclarations {
     /**
      * @param cls Class.
      * @param member Member name, or {@code null} for the class itself.
+     * @param params Number of parameters of a method or constructor, or -1 for a field or the class.
      * @param deprecated Whether to point at the {@code @Deprecated} annotation of the declaration.
-     * @return Source file and line of the declaration, as precise as a text search allows, or an empty string.
+     * @return Source file and line of the declaration, or the file alone if the line is not certain, or an empty string if
+     *      the class has no source file. For a deprecated declaration the line is that of its {@code @Deprecated}.
      */
-    private static String where(Class<?> cls, String member, boolean deprecated) {
+    private static String where(Class<?> cls, String member, int params, boolean deprecated) {
         Class<?> top = cls;
 
         while (top.getDeclaringClass() != null)
@@ -269,38 +326,100 @@ public class PublicDeclarations {
             }
         });
 
-        int type = find(text, 0, "\\b(class|interface|enum|@interface)\\s+" + Pattern.quote(cls.getSimpleName()) + "\\b");
-        int line = member == null ? type : find(text, Math.max(type, 0), "\\b" + Pattern.quote(member) + "\\b\\s*[(=;,]");
+        String file = root.relativize(src).toString();
+        Pattern typeDecl = Pattern.compile("\\b(class|interface|enum|@interface)\\s+" + Pattern.quote(cls.getSimpleName()) + "\\b");
+        int type = -1;
+
+        for (int i = 0; i < text.size() && type < 0; i++)
+            type = typeDecl.matcher(text.get(i)).find() ? i : -1;
+
+        int line = type;
+
+        if (member != null) {
+            List<Integer> decls = declarations(text, Math.max(type, 0), member, params);
+
+            if (deprecated && decls.size() > 1)
+                decls = decls.stream().filter(i -> deprecatedAt(text, i) >= 0).collect(Collectors.toList());
+
+            if (decls.size() != 1)
+                return deprecated || type < 0 ? file : file + ':' + (type + 1);
+
+            line = decls.get(0);
+        }
 
         if (line < 0)
-            line = type;
+            return file;
 
-        if (line < 0)
-            return root.relativize(src).toString();
+        if (deprecated) {
+            int d = deprecatedAt(text, line);
 
-        for (int i = line; deprecated && i >= 0 && line - i < 20; i--) {
-            if (text.get(i).contains("@Deprecated")) {
-                line = i;
+            return d < 0 ? file : file + ':' + (d + 1);
+        }
 
-                break;
+        return file + ':' + (line + 1);
+    }
+
+    /** @return Lines from {@code from} that declare the member, not just use it. */
+    private static List<Integer> declarations(List<String> text, int from, String name, int params) {
+        Pattern decl = Pattern.compile("^\\s*(?:([^=(;]*[\\w>\\]])\\s+)?" + Pattern.quote(name) + "\\s*([(=;,{]|$)");
+        List<Integer> res = new ArrayList<>();
+
+        for (int i = from; i < text.size(); i++) {
+            Matcher m = decl.matcher(text.get(i));
+
+            if (!m.find())
+                continue;
+
+            String prefix = m.group(1);
+            String[] words = prefix == null ? new String[0] : prefix.trim().split("\\s+");
+
+            if (prefix != null && STATEMENTS.contains(words[words.length - 1]))
+                continue;
+
+            boolean declares = params < 0
+                ? prefix != null || !"=".equals(m.group(2))
+                : "(".equals(m.group(2)) && prefix != null && paramCount(text, i, m.end()) == params;
+
+            if (declares)
+                res.add(i);
+        }
+
+        return res;
+    }
+
+    /** @return Number of parameters in the list that starts right before {@code start} in the given line. */
+    private static int paramCount(List<String> text, int line, int start) {
+        StringBuilder list = new StringBuilder();
+        int depth = 1;
+
+        for (int i = line; i < text.size() && i < line + 10 && depth > 0; i++) {
+            String s = i == line ? text.get(i).substring(start) : text.get(i);
+
+            for (char c : s.toCharArray()) {
+                depth += c == '(' || c == '<' ? 1 : c == ')' || c == '>' ? -1 : 0;
+
+                if (depth == 0)
+                    break;
+
+                list.append(depth == 1 && c == ',' ? '\u0000' : c);
             }
+        }
+
+        String params = list.toString().trim();
+
+        return params.isEmpty() ? 0 : params.split("\u0000", -1).length;
+    }
+
+    /** @return Line of the {@code @Deprecated} annotation of the declaration at {@code line}, or -1. */
+    private static int deprecatedAt(List<String> text, int line) {
+        for (int i = line; i >= 0 && line - i < 20; i--) {
+            if (text.get(i).contains("@Deprecated"))
+                return i;
 
             String l = text.get(i).trim();
 
-            if (i < line && (l.endsWith(";") || l.endsWith("}")))
-                break;
-        }
-
-        return root.relativize(src) + ":" + (line + 1);
-    }
-
-    /** @return Index of the first line from {@code from} that matches the pattern, or -1. */
-    private static int find(List<String> text, int from, String regex) {
-        Pattern p = Pattern.compile(regex);
-
-        for (int i = from; i < text.size(); i++) {
-            if (p.matcher(text.get(i)).find())
-                return i;
+            if (i < line && (l.endsWith(";") || l.endsWith("}") || l.endsWith("{") || l.endsWith("*/")))
+                return -1;
         }
 
         return -1;
@@ -347,7 +466,7 @@ public class PublicDeclarations {
 
         for (Class<?> cls : classes(classDirs, "", true)) {
             try {
-                if (apiType(cls) && !where(cls, null, false).isEmpty()) {
+                if (apiType(cls) && !where(cls, null, -1, false).isEmpty()) {
                     javaType(cls);
 
                     types++;
@@ -395,41 +514,118 @@ public class PublicDeclarations {
         return false;
     }
 
+    /**
+     * @return Names of the type parameters of the class and of the classes that enclose it, by position: renaming a type
+     *      parameter does not change what users can write.
+     */
+    private static Map<TypeVariable<?>, String> typeVars(Class<?> cls) {
+        Map<TypeVariable<?>, String> res = new HashMap<>();
+        int depth = 0;
+
+        for (Class<?> c = cls; c != null; c = c.getDeclaringClass(), depth++) {
+            TypeVariable<?>[] vars = c.getTypeParameters();
+
+            for (int i = 0; i < vars.length; i++)
+                res.put(vars[i], "#" + (depth == 0 ? "" : depth + ".") + (i + 1));
+        }
+
+        return res;
+    }
+
+    /** @return Type parameters of a method or constructor named by position, added to those of its class. */
+    private static Map<TypeVariable<?>, String> typeVars(Executable e, Map<TypeVariable<?>, String> classVars) {
+        Map<TypeVariable<?>, String> res = new HashMap<>(classVars);
+        TypeVariable<?>[] vars = e.getTypeParameters();
+
+        for (int i = 0; i < vars.length; i++)
+            res.put(vars[i], "#m" + (i + 1));
+
+        return res;
+    }
+
+    /** @return Type as users write it, with type parameters named by position. */
+    private static String typeText(Type t, Map<TypeVariable<?>, String> vars) {
+        if (t instanceof Class)
+            return ((Class<?>)t).isArray() ? typeText(((Class<?>)t).getComponentType(), vars) + "[]" : t.getTypeName();
+
+        if (t instanceof ParameterizedType) {
+            ParameterizedType p = (ParameterizedType)t;
+
+            return typeText(p.getRawType(), vars)
+                + Arrays.stream(p.getActualTypeArguments()).map(a -> typeText(a, vars)).collect(Collectors.joining(", ", "<", ">"));
+        }
+
+        if (t instanceof TypeVariable)
+            return vars.getOrDefault(t, ((TypeVariable<?>)t).getName());
+
+        if (t instanceof WildcardType) {
+            WildcardType w = (WildcardType)t;
+
+            if (w.getLowerBounds().length > 0)
+                return "? super " + typeText(w.getLowerBounds()[0], vars);
+
+            return w.getUpperBounds()[0] == Object.class ? "?" : "? extends " + typeText(w.getUpperBounds()[0], vars);
+        }
+
+        if (t instanceof GenericArrayType)
+            return typeText(((GenericArrayType)t).getGenericComponentType(), vars) + "[]";
+
+        return t.getTypeName();
+    }
+
     /** Describes a public type and the members that users can call or extend. */
     private static void javaType(Class<?> cls) {
         String name = cls.getCanonicalName();
         boolean deprecated = marked(cls, cls.getDeclaringClass(), Deprecated.class);
         boolean experimental = marked(cls, cls.getDeclaringClass(), IgniteExperimental.class);
+        Map<TypeVariable<?>, String> vars = typeVars(cls);
 
         Set<String> supers = new TreeSet<>();
 
-        collectSupertypes(cls, supers);
+        collectSupertypes(cls, vars, supers);
 
         String kind = cls.isAnnotation() ? "@interface" : cls.isInterface() ? "interface" : cls.isEnum() ? "enum" : "class";
         int mask = Modifier.PUBLIC | Modifier.PROTECTED | Modifier.STATIC
             | (cls.isInterface() || cls.isEnum() ? 0 : Modifier.FINAL | Modifier.ABSTRACT);
+        String typeWhere = where(cls, null, -1, deprecated);
 
         add("Java API", name, markers(cls) + modifiers(cls.getModifiers() & mask) + kind + ' ' + cls.getSimpleName()
-            + typeParams(cls.getTypeParameters()) + (supers.isEmpty() ? "" : " : " + String.join(", ", supers)),
-            flags(deprecated, experimental), where(cls, null, deprecated));
+            + typeParams(cls.getTypeParameters(), vars) + (supers.isEmpty() ? "" : " : " + String.join(", ", supers))
+            + annotationUse(cls), flags(deprecated, experimental), typeWhere);
 
         Map<String, Member> members = new HashMap<>();
 
-        describeMembers(cls, cls, members);
+        describeMembers(cls, cls, vars, members);
 
         Set<Class<?>> internalSupers = new LinkedHashSet<>();
 
         collectInternalSupertypes(cls, internalSupers);
 
         for (Class<?> sup : internalSupers)
-            describeMembers(sup, cls, members);
+            describeMembers(sup, cls, vars, members);
 
         members.forEach((key, m) -> {
-            boolean dep = deprecated || m.elem.isAnnotationPresent(Deprecated.class);
+            boolean own = m.elem.isAnnotationPresent(Deprecated.class);
             boolean exp = experimental || marked(m.elem, m.owner, IgniteExperimental.class);
+            String location = own ? where(m.owner, m.name, m.params, true) : deprecated ? typeWhere : where(m.owner, m.name, m.params, false);
 
-            add("Java API", name + '#' + key, m.text, flags(dep, exp), where(m.owner, m.name, dep));
+            add("Java API", name + '#' + key, m.text, flags(deprecated || own, exp), location);
         });
+    }
+
+    /** @return Where an annotation type may be used and how long it is kept, or an empty string for other types. */
+    private static String annotationUse(Class<?> cls) {
+        if (!cls.isAnnotation())
+            return "";
+
+        Target target = cls.getAnnotation(Target.class);
+        Retention retention = cls.getAnnotation(Retention.class);
+
+        return " @Target" + (target == null ? "(default)"
+            : Arrays.stream(target.value()).map(Enum::name).sorted().collect(Collectors.joining(", ", "{", "}")))
+            + " @Retention(" + (retention == null ? "CLASS" : retention.value()) + ')'
+            + (cls.isAnnotationPresent(Inherited.class) ? " @Inherited" : "")
+            + (cls.isAnnotationPresent(Repeatable.class) ? " @Repeatable" : "");
     }
 
     /** Member of a public type. */
@@ -443,20 +639,24 @@ public class PublicDeclarations {
         /** Name in the source. */
         final String name;
 
+        /** Number of parameters of a method or constructor, or -1 for a field. */
+        final int params;
+
         /** Description. */
         final String text;
 
         /** */
-        Member(AnnotatedElement elem, Class<?> owner, String name, String text) {
+        Member(AnnotatedElement elem, Class<?> owner, String name, int params, String text) {
             this.elem = elem;
             this.owner = owner;
             this.name = name;
+            this.params = params;
             this.text = text;
         }
     }
 
     /** Collects public supertypes, looking through Ignite internal ones. */
-    private static void collectSupertypes(Class<?> cls, Set<String> res) {
+    private static void collectSupertypes(Class<?> cls, Map<TypeVariable<?>, String> vars, Set<String> res) {
         List<Type> direct = new ArrayList<>(Arrays.asList(cls.getGenericInterfaces()));
 
         if (cls.getGenericSuperclass() != null && cls.getSuperclass() != Object.class && !cls.isEnum())
@@ -466,9 +666,9 @@ public class PublicDeclarations {
             Class<?> raw = t instanceof ParameterizedType ? (Class<?>)((ParameterizedType)t).getRawType() : (Class<?>)t;
 
             if (internalType(raw))
-                collectSupertypes(raw, res);
+                collectSupertypes(raw, vars, res);
             else if (raw != java.lang.annotation.Annotation.class)
-                res.add(t.getTypeName());
+                res.add(typeText(t, vars));
         }
     }
 
@@ -486,11 +686,13 @@ public class PublicDeclarations {
     }
 
     /** Describes the members of {@code src} as members of the public type {@code api}, keeping members described earlier. */
-    private static void describeMembers(Class<?> src, Class<?> api, Map<String, Member> res) {
+    private static void describeMembers(Class<?> src, Class<?> api, Map<TypeVariable<?>, String> vars, Map<String, Member> res) {
         for (Constructor<?> c : src == api ? src.getDeclaredConstructors() : new Constructor<?>[0]) {
             if (!c.isSynthetic() && accessible(c.getModifiers(), api)) {
-                res.putIfAbsent("<init>" + params(c),
-                    new Member(c, src, api.getSimpleName(), markers(c) + modifiers(c.getModifiers()) + api.getSimpleName() + signature(c)));
+                Map<TypeVariable<?>, String> v = typeVars(c, vars);
+
+                res.putIfAbsent("<init>" + params(c), new Member(c, src, api.getSimpleName(), c.getParameterCount(),
+                    markers(c) + modifiers(c.getModifiers()) + typeParams(c.getTypeParameters(), v) + api.getSimpleName() + signature(c, v)));
             }
         }
 
@@ -498,19 +700,20 @@ public class PublicDeclarations {
             if (m.isSynthetic() || m.isBridge() || !accessible(m.getModifiers(), api))
                 continue;
 
+            Map<TypeVariable<?>, String> v = typeVars(m, vars);
             String dflt = m.getDefaultValue() == null ? "" : " default " + valueText(m.getDefaultValue());
 
-            res.putIfAbsent(m.getName() + params(m), new Member(m, src, m.getName(), markers(m) + modifiers(m.getModifiers())
-                + (m.isDefault() ? "default " : "") + typeParams(m.getTypeParameters()) + m.getGenericReturnType().getTypeName()
-                + ' ' + m.getName() + signature(m) + dflt));
+            res.putIfAbsent(m.getName() + params(m), new Member(m, src, m.getName(), m.getParameterCount(), markers(m)
+                + modifiers(m.getModifiers()) + (m.isDefault() ? "default " : "") + typeParams(m.getTypeParameters(), v)
+                + typeText(m.getGenericReturnType(), v) + ' ' + m.getName() + signature(m, v) + dflt));
         }
 
         for (Field f : src.getDeclaredFields()) {
             if (f.isSynthetic() || !accessible(f.getModifiers(), api))
                 continue;
 
-            res.putIfAbsent(f.getName(), new Member(f, src, f.getName(), markers(f) + modifiers(f.getModifiers())
-                + f.getGenericType().getTypeName() + ' ' + f.getName() + constantValue(f)));
+            res.putIfAbsent(f.getName(), new Member(f, src, f.getName(), -1, markers(f) + modifiers(f.getModifiers())
+                + typeText(f.getGenericType(), vars) + ' ' + f.getName() + constantValue(f)));
         }
     }
 
@@ -520,12 +723,12 @@ public class PublicDeclarations {
     }
 
     /** @return Generic parameter and exception types. */
-    private static String signature(Executable e) {
+    private static String signature(Executable e, Map<TypeVariable<?>, String> vars) {
         Type[] params = e.getGenericParameterTypes();
         List<String> names = new ArrayList<>();
 
         for (int i = 0; i < params.length; i++) {
-            String n = params[i].getTypeName();
+            String n = typeText(params[i], vars);
 
             names.add(e.isVarArgs() && i == params.length - 1 ? n.substring(0, n.length() - 2) + "..." : n);
         }
@@ -533,19 +736,19 @@ public class PublicDeclarations {
         Type[] exceptions = e.getGenericExceptionTypes();
 
         return '(' + String.join(", ", names) + ')' + (exceptions.length == 0 ? "" :
-            Arrays.stream(exceptions).map(Type::getTypeName).sorted().collect(Collectors.joining(", ", " throws ", "")));
+            Arrays.stream(exceptions).map(t -> typeText(t, vars)).sorted().collect(Collectors.joining(", ", " throws ", "")));
     }
 
     /** @return Type parameters with their bounds. */
-    private static String typeParams(TypeVariable<?>[] vars) {
-        if (vars.length == 0)
+    private static String typeParams(TypeVariable<?>[] params, Map<TypeVariable<?>, String> vars) {
+        if (params.length == 0)
             return "";
 
-        return Arrays.stream(vars).map(v -> {
-            List<String> bounds = Arrays.stream(v.getBounds()).filter(b -> b != Object.class).map(Type::getTypeName)
+        return Arrays.stream(params).map(p -> {
+            List<String> bounds = Arrays.stream(p.getBounds()).filter(b -> b != Object.class).map(b -> typeText(b, vars))
                 .collect(Collectors.toList());
 
-            return v.getName() + (bounds.isEmpty() ? "" : " extends " + String.join(" & ", bounds));
+            return vars.get(p) + (bounds.isEmpty() ? "" : " extends " + String.join(" & ", bounds));
         }).collect(Collectors.joining(", ", "<", "> "));
     }
 
@@ -637,12 +840,15 @@ public class PublicDeclarations {
 
                 add("Configuration", "system property " + f.get(null), prop.type().getSimpleName()
                     + (dflt.isEmpty() ? "" : ", default " + dflt) + (deprecated ? ", deprecated" : ""),
-                    flags(deprecated, false), where(cls, f.getName(), deprecated));
+                    flags(deprecated, false), where(cls, f.getName(), -1, deprecated));
             }
         }
     }
 
-    /** Describes system view columns in the order that the generated walkers give them to clients. */
+    /**
+     * Describes system view columns in the order that the generated walkers give them to clients. The class of the view row
+     * is a rename group: the SQL name of the view is registered at runtime, and renaming the class changes nothing.
+     */
     private static void systemViews(List<Path> classDirs) throws Exception {
         int walkers = 0;
 
@@ -660,7 +866,7 @@ public class PublicDeclarations {
                 new SystemViewRowAttributeWalker.AttributeVisitor() {
                     @Override public <T> void accept(int idx, String name, Class<T> type) {
                         add("Monitoring", "system view " + row.getSimpleName() + " column " + name,
-                            "position " + (idx + 1) + ", " + type.getTypeName(), "", where(row, name, false));
+                            "position " + (idx + 1) + ", " + type.getTypeName(), "", where(row, name, 0, false), row.getSimpleName());
                     }
                 });
         }
@@ -681,11 +887,14 @@ public class PublicDeclarations {
 
         for (CLIArgument<?> arg : (List<CLIArgument<?>>)common.get(new ArgumentParser(null, registry, null))) {
             add("CLI", "control.sh " + arg.name(), "common option, " + (arg.optional() ? "optional" : "required") + ", "
-                + arg.type().getTypeName() + (arg.isSensitive() ? ", sensitive" : ""), "", where(ArgumentParser.class, null, false));
+                + arg.type().getTypeName() + (arg.isSensitive() ? ", sensitive" : ""), "", where(ArgumentParser.class, null, -1, false));
         }
     }
 
-    /** Describes a command and its subcommands. */
+    /**
+     * Describes a command and its subcommands. {@code control.sh} refuses experimental commands unless
+     * {@code --enable-experimental} is given, so the experimental mark is part of the command.
+     */
     private static void command(Command<?, ?> cmd, List<Command<?, ?>> parents) {
         CommandHandler.CommandName name = new CommandHandler.CommandName();
 
@@ -693,19 +902,20 @@ public class PublicDeclarations {
         name.accept(cmd);
 
         String path = "control.sh" + commandName(name);
-        boolean experimental = cmd.getClass().isAnnotationPresent(IgniteExperimental.class)
-            || parents.stream().anyMatch(p -> p.getClass().isAnnotationPresent(IgniteExperimental.class));
-        String flags = flags(false, experimental);
+        boolean experimental = cmd.getClass().isAnnotationPresent(IgniteExperimental.class);
+        boolean deprecated = cmd.getClass().isAnnotationPresent(Deprecated.class)
+            || parents.stream().anyMatch(p -> p.getClass().isAnnotationPresent(Deprecated.class));
+        String flags = flags(deprecated, experimental || parents.stream().anyMatch(p -> p.getClass().isAnnotationPresent(IgniteExperimental.class)));
 
         if (CommandUtils.executable(cmd)) {
-            add("CLI", path, "command" + (cmd.argClass().isAnnotationPresent(CliConfirmArgument.class) ? ", asks for confirmation" : ""),
-                flags, where(cmd.getClass(), null, false));
+            add("CLI", path, "command" + (experimental ? ", experimental" : "") + (deprecated ? ", deprecated" : ""),
+                flags, where(cmd.getClass(), null, -1, deprecated));
 
             int[] pos = {0};
 
             CommandUtils.visitCommandParams(cmd.argClass(),
-                fld -> parameter(path, fld, ++pos[0], flags),
-                fld -> parameter(path, fld, 0, flags),
+                fld -> parameter(path, fld, ++pos[0], false, flags),
+                fld -> parameter(path, fld, 0, false, flags),
                 (grp, flds) -> {
                     List<String> names = new ArrayList<>();
 
@@ -713,11 +923,11 @@ public class PublicDeclarations {
                         boolean positional = fld.isAnnotationPresent(Positional.class);
 
                         names.add(positional ? "<arg " + (pos[0] + 1) + '>' : CommandUtils.toFormattedFieldName(fld));
-                        parameter(path, fld, positional ? ++pos[0] : 0, flags);
+                        parameter(path, fld, positional ? ++pos[0] : 0, true, flags);
                     }
 
                     add("CLI", path + ' ' + String.join("|", names), "group, " + (grp.optional() ? "optional" : "required")
-                        + (grp.onlyOneOf() ? ", only one of" : ""), flags, where(cmd.argClass(), null, false));
+                        + (grp.onlyOneOf() ? ", only one of" : ""), flags, where(cmd.argClass(), null, -1, false));
                 });
         }
 
@@ -744,21 +954,29 @@ public class PublicDeclarations {
         }
     }
 
-    /** Describes a command parameter. Positional parameters are identified by position, named ones by name. */
-    private static void parameter(String path, Field fld, int pos, String flags) {
+    /**
+     * Describes a command parameter. Positional parameters are identified by position, named ones by name. The parser treats
+     * a named parameter of a group as optional and checks the group instead, so such a parameter is described as part of
+     * its group.
+     */
+    private static void parameter(String path, Field fld, int pos, boolean grouped, String flags) {
         Argument arg = fld.getAnnotation(Argument.class);
         Class<?> type = fld.getType().isArray() ? fld.getType().getComponentType() : fld.getType();
 
         String values = type.isEnum()
             ? Arrays.stream(type.getEnumConstants()).map(c -> ((Enum<?>)c).name()).collect(Collectors.joining("|", ", values ", ""))
             : "";
+        String required = pos == 0 && grouped ? "in a group, " : arg != null && arg.optional() ? "optional, " : "required, ";
 
         add("CLI", path + ' ' + (pos > 0 ? "<arg " + pos + '>' : CommandUtils.toFormattedFieldName(fld)),
-            (arg != null && arg.optional() ? "optional, " : "required, ") + fld.getType().getTypeName() + values
-                + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags, where(fld.getDeclaringClass(), fld.getName(), false));
+            required + fld.getType().getTypeName() + values + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags,
+            where(fld.getDeclaringClass(), fld.getName(), -1, false));
     }
 
-    /** Describes protocol, storage and error constants declared in internal classes. */
+    /**
+     * Describes protocol, storage and error constants declared in internal classes. The name of a constant is a rename group:
+     * users see only its value.
+     */
     private static void constants() throws ReflectiveOperationException {
         for (String[] c : CONSTANTS) {
             Class<?> cls = Class.forName(c[1]);
@@ -773,13 +991,14 @@ public class PublicDeclarations {
                     continue;
 
                 boolean deprecated = f.isAnnotationPresent(Deprecated.class);
+                String key = cls.getSimpleName() + '.' + f.getName();
+                Object val = staticValue(f);
 
-                add(c[0], cls.getSimpleName() + '.' + f.getName(), valueText(staticValue(f)), flags(deprecated, false),
-                    where(cls, f.getName(), deprecated));
+                add(c[0], key, valueText(val), flags(deprecated, false), where(cls, f.getName(), -1, deprecated), key);
 
                 if (cls == IgniteQueryErrorCode.class && type == int.class) {
-                    add(c[0], "SQLState of IgniteQueryErrorCode." + f.getName(),
-                        IgniteQueryErrorCode.codeToSqlState((Integer)staticValue(f)), "", where(cls, "codeToSqlState", false));
+                    add(c[0], "SQLSTATE of query error code " + val, IgniteQueryErrorCode.codeToSqlState((Integer)val), "",
+                        where(cls, "codeToSqlState", 1, false));
                 }
 
                 found++;
@@ -796,20 +1015,23 @@ public class PublicDeclarations {
             for (Object e : cls.getEnumConstants()) {
                 String name = ((Enum<?>)e).name();
                 boolean deprecated = cls.getField(name).isAnnotationPresent(Deprecated.class);
+                String key = cls.getSimpleName() + '.' + name;
 
-                add(c[0], cls.getSimpleName() + '.' + name, String.valueOf(code.invoke(e)), flags(deprecated, false),
-                    where(cls, name, deprecated));
+                add(c[0], key, String.valueOf(code.invoke(e)), flags(deprecated, false), where(cls, name, -1, deprecated), key);
             }
         }
     }
 
-    /** Describes the keywords of the Calcite SQL parser and the operators and functions of the Calcite engine. */
+    /**
+     * Describes the keywords of the Calcite SQL parser and the operators and functions of the Calcite engine. Each allowed
+     * signature is part of the key, so the forms of an overloaded function are compared separately.
+     */
     private static void sql() {
         SqlAbstractParserImpl parser = IgniteSqlParserImpl.FACTORY.getParser(new StringReader(""));
 
         for (String token : parser.getMetadata().getTokens()) {
             add("SQL keywords", "Calcite " + token, parser.getMetadata().isReservedWord(token) ? "reserved" : "non-reserved", "",
-                where(IgniteSqlParserImpl.class, null, false));
+                where(IgniteSqlParserImpl.class, null, -1, false));
         }
 
         for (ReflectiveSqlOperatorTable t : List.of(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance())) {
@@ -826,7 +1048,8 @@ public class PublicDeclarations {
                     signatures = "";
                 }
 
-                add("SQL functions", op.getName() + ' ' + op.getSyntax(), signatures, "", where(t.getClass(), op.getName(), false));
+                add("SQL functions", op.getName() + ' ' + op.getSyntax() + ' ' + signatures, "", "",
+                    where(t.getClass(), null, -1, false));
             }
         }
     }

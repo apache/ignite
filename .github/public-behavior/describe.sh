@@ -27,8 +27,9 @@ here=$(cd "$(dirname "$0")" && pwd)
 ./mvnw -B -ntp test-compile dependency:build-classpath -Dmdep.outputFile=target/classpath.txt -Dmdep.includeScope=compile \
     -Dmaven.test.skip=true -Plgpl -T 1C >&2
 
-cp=$( { find modules -path '*/target/classpath.txt' -exec cat {} + | tr ':' '\n'; find "$PWD/modules" -path '*/target/classes' -type d; } \
-    | grep . | sort -u | paste -sd: -)
+# classpath.txt has no line break at the end, so each file is split on its own.
+cp=$( { find modules -path '*/target/classpath.txt' -exec sh -c 'for f; do tr ":" "\n" < "$f"; echo; done' _ {} +;
+    find "$PWD/modules" -path '*/target/classes' -type d; } | grep . | sort -u | paste -sd: -)
 
 . bin/include/jvmdefaults.sh
 

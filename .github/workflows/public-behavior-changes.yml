@@ -55,6 +55,7 @@ jobs:
           fi
 
       - name: Setup java
+        id: java
         if: steps.prepare.outputs.build == 'true'
         uses: actions/setup-java@v4
         with:
@@ -79,13 +80,15 @@ jobs:
         uses: actions/github-script@v8
         env:
           PREPARE: ${{ steps.prepare.outcome }}
+          JAVA: ${{ steps.java.outcome }}
           BASE: ${{ steps.base.outcome }}
           MERGE: ${{ steps.merge.outcome }}
         with:
           script: |
             const check = require('./merge/.github/public-behavior/check.js');
-            const { PREPARE, BASE, MERGE } = process.env;
-            await check.report({ core, context, steps: { checkout: PREPARE, base: BASE, merge: MERGE } });
+            const { PREPARE, JAVA, BASE, MERGE } = process.env;
+            const steps = { checkout: PREPARE, java: JAVA, base: BASE, merge: MERGE };
+            await check.report({ github, core, context, steps });
 
       - name: Upload result
         if: always()

@@ -28,12 +28,18 @@ const { test } = require('node:test');
 const check = require('./check.js');
 
 /** @return Declaration line in the format of PublicDeclarations.java. */
-const line = (area, key, value, flags = '', location = 'A.java:1') => [area, key, value, flags, location].join('\t');
+const line = (area, key, value, flags = '', location = 'A.java:1', group = '') => [area, key, value, flags, location, group].join('\t');
+
+/** @return Line of an internal constant, whose name is a rename group. */
+const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key);
+
+/** @return Line of a system view column, whose row class is a rename group. */
+const column = (view, name, value) => line('Monitoring', `system view ${view} column ${name}`, value, '', 'A.java:1', view);
 
 const BASE = [
     line('CLI', 'control.sh --cache list --groups', 'optional, boolean'),
-    line('Monitoring', 'system view CacheView column cacheName', 'position 1, java.lang.String'),
-    line('Monitoring', 'system view CacheView column cacheId', 'position 2, int'),
+    column('CacheView', 'cacheName', 'position 1, java.lang.String'),
+    column('CacheView', 'cacheId', 'position 2, int'),
     line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated'),
     line('Java API', 'org.apache.ignite.Exp#run()', 'public void run()', 'experimental'),
 ].join('\n');
@@ -58,6 +64,28 @@ test('added, removed and changed declarations are found', () => {
         ['control.sh --cache list --seq', null, 'optional, boolean', 'contract'],
         ['system view CacheView column cacheId', 'position 2, int', 'position 1, int', 'contract'],
         ['system view CacheView column cacheName', 'position 1, java.lang.String', 'position 2, java.lang.String', 'contract'],
+    ]);
+});
+
+test('renaming an internal constant or a view row class is not a change', () => {
+    const base = [constant('REST', 'GridRestCommand.CACHE_GET', 'get'), BASE].join('\n');
+    const merge = [constant('REST', 'GridRestCommand.CACHE_GET_VALUE', 'get'), BASE.replace(/CacheView/g, 'CachesView')].join('\n');
+
+    assert.deepStrictEqual(check.compare(base, merge), []);
+});
+
+test('two operations that swap their codes are reported, and so is a renamed view with a moved column', () => {
+    const base = [constant('Thin client protocol', 'Parser.OP_GET', '1000'), constant('Thin client protocol', 'Parser.OP_PUT', '1001'), BASE].join('\n');
+    const merge = [constant('Thin client protocol', 'Parser.OP_GET', '1001'), constant('Thin client protocol', 'Parser.OP_PUT', '1000'),
+        BASE.replace(/CacheView/g, 'CachesView').replace('position 2, int', 'position 3, int')].join('\n');
+
+    assert.deepStrictEqual(check.compare(base, merge).map(f => [f.key, f.before, f.after]), [
+        ['system view CachesView column cacheId', null, 'position 3, int'],
+        ['system view CachesView column cacheName', null, 'position 1, java.lang.String'],
+        ['system view CacheView column cacheId', 'position 2, int', null],
+        ['system view CacheView column cacheName', 'position 1, java.lang.String', null],
+        ['Parser.OP_GET', '1000', '1001'],
+        ['Parser.OP_PUT', '1001', '1000'],
     ]);
 });
 
@@ -86,28 +114,44 @@ test('deprecating a declaration, changing a deprecated one or marking stable API
     assert.strictEqual(check.compare(base, experimental)[0].kind, 'contract');
 });
 
-test('RFC files of the PR and RFC links in the description are found', () => {
+test('RFC files of the PR are read from the NUL-separated git output, including names git would quote', () => {
     const nameStatus = [
-        'A\trfcs/IGNITE-1-new-feature.md',
-        'M\trfcs/IGNITE-2-updated.md',
-        'R100\trfcs/IGNITE-3-old.md\trfcs/IGNITE-4-renamed.md',
-        'A\trfcs/my-proposal.md',
-        'M\trfcs/TEMPLATE.md',
-        'A\trfcs/diagram.png',
-        'D\trfcs/IGNITE-5-removed.md',
+        'A', 'rfcs/IGNITE-1-new-feature.md',
+        'M', 'rfcs/IGNITE-2-updated.md',
+        'R100', 'rfcs/IGNITE-3-old.md', 'rfcs/IGNITE-4-renamed.md',
+        'A', 'rfcs/обзор.md',
+        'M', 'rfcs/TEMPLATE.md',
+        'A', 'rfcs/diagram.png',
+        'D', 'rfcs/IGNITE-5-removed.md',
         '',
-    ].join('\n');
+    ].join('\0');
 
-    const body = 'Covered by https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-existing.md. ' +
-        'See [RFC](https://github.com/apache/ignite/blob/ignite-2.18/rfcs/IGNITE-8-absent.md#compatibility), ' +
-        'https://github.com/apache/ignite/blob/master/rfcs/Bad_Name.md and https://github.com/apache/ignite/pull/13760.';
-
-    assert.deepStrictEqual(check.findRfcs(nameStatus, body, f => f === 'rfcs/IGNITE-7-existing.md'), {
-        files: ['rfcs/IGNITE-1-new-feature.md', 'rfcs/IGNITE-2-updated.md', 'rfcs/IGNITE-4-renamed.md', 'rfcs/my-proposal.md'],
-        invalidNames: ['rfcs/my-proposal.md'],
-        linked: ['rfcs/IGNITE-7-existing.md'],
-        badLinks: [{ path: 'rfcs/IGNITE-8-absent.md', reason: 'missing' }, { path: 'rfcs/Bad_Name.md', reason: 'name' }],
+    assert.deepStrictEqual(check.rfcFiles(nameStatus), {
+        ...NO_RFC,
+        files: ['rfcs/IGNITE-1-new-feature.md', 'rfcs/IGNITE-2-updated.md', 'rfcs/IGNITE-4-renamed.md', 'rfcs/обзор.md'],
+        invalidNames: ['rfcs/обзор.md'],
     });
+});
+
+test('a link counts only if its file is on the target branch and the link leads to it', async () => {
+    const body = 'Covered by https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-existing.md. ' +
+        'See [RFC](https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-9-typo.md#compatibility), ' +
+        'https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-10-permalink.md, ' +
+        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-absent.md, ' +
+        'https://github.com/apache/ignite/blob/master/rfcs/Bad_Name.md and https://github.com/apache/ignite/pull/13760.';
+    const onTarget = f => ['rfcs/IGNITE-7-existing.md', 'rfcs/IGNITE-9-typo.md', 'rfcs/IGNITE-10-permalink.md'].includes(f);
+    const checked = [];
+    const atRef = async (ref, f) => checked.push(`${ref}:${f}`) && ref === '1a2b3c';
+
+    assert.deepStrictEqual(await check.rfcLinks(body, 'master', onTarget, atRef), {
+        linked: ['rfcs/IGNITE-7-existing.md', 'rfcs/IGNITE-10-permalink.md'],
+        badLinks: [
+            { path: 'rfcs/IGNITE-9-typo.md', reason: 'url' },
+            { path: 'rfcs/IGNITE-8-absent.md', reason: 'missing' },
+            { path: 'rfcs/Bad_Name.md', reason: 'name' },
+        ],
+    });
+    assert.deepStrictEqual(checked, ['mastr:rfcs/IGNITE-9-typo.md', '1a2b3c:rfcs/IGNITE-10-permalink.md']);
 });
 
 test('a PR without contract changes passes before the RFC check', () => {
@@ -149,6 +193,7 @@ test('results that the PR job could not produce are rejected', () => {
     assert.throws(() => check.validate({ outcome: 'approved' }));
     assert.throws(() => check.validate({ ...ok, findings: [{ ...CONTRACT, key: 'x\n### Approved' }] }));
     assert.throws(() => check.validate({ ...ok, outcome: 'rfc-found', rfcs: [{ path: 'rfcs/IGNITE-1-x.md)](https://evil', source: 'pr' }] }));
+    assert.throws(() => check.validate({ ...ok, outcome: 'rfc-found', rfcs: [{ path: 'rfcs/IGNITE-1-x.md', source: 'pr', blob: 'not a blob' }] }));
     assert.throws(() => check.validate({ ...ok, outcome: 'review' }));
     assert.throws(() => check.validate({ ...ok, outcome: 'rfc-found' }));
 });
@@ -174,13 +219,20 @@ test('long reports are cut to stay within the GitHub comment limit', () => {
     assert.ok(md.includes('20 more changes are not shown here.'), md);
 });
 
-/** GitHub API stub that keeps the PR comments. */
-function github({ headSha = 'abc', comments = [] } = {}) {
+/**
+ * GitHub API stub that keeps the PR comments.
+ *
+ * @param headSha Head commit of the open PR.
+ * @param comments Comments that the PR already has.
+ * @param runNumbers Numbers of the check runs for the head commit.
+ */
+function github({ headSha = 'abc', comments = [], runNumbers = [1] } = {}) {
     const calls = [];
     let id = 100;
 
     const rest = {
         pulls: { list: 'pulls.list', get: async () => ({ data: { number: 7, head: { sha: headSha }, base: { ref: 'master' } } }) },
+        actions: { listWorkflowRuns: async () => ({ data: { workflow_runs: runNumbers.map(n => ({ run_number: n })) } }) },
         issues: {
             listComments: 'issues.listComments',
             deleteComment: async ({ comment_id }) => {
@@ -199,7 +251,7 @@ function github({ headSha = 'abc', comments = [] } = {}) {
     return { rest, paginate, calls, comments };
 }
 
-/** Publishes a result of a run for a fork PR. */
+/** Publishes the result of check run 1 for a fork PR. */
 async function publish(gh, res) {
     const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pbc-')), 'result.json');
 
@@ -211,7 +263,7 @@ async function publish(gh, res) {
         payload: {
             workflow_run: {
                 head_sha: 'abc', head_branch: 'ignite-1', pull_requests: [], html_url: 'https://github.com/apache/ignite/actions/runs/1',
-                head_repository: { owner: { login: 'fork' }, html_url: 'https://github.com/fork/ignite' },
+                head_repository: { owner: { login: 'fork' }, html_url: 'https://github.com/fork/ignite' }, workflow_id: 5, run_number: 1,
             },
         },
     };
@@ -249,6 +301,18 @@ test('the comment is replaced only when the result changes and says when all iss
     assert.ok(gh.comments[0].body.includes('All earlier issues are resolved.'));
 });
 
+test('a new version of the RFC text replaces the comment, so its link leads to the current text', async () => {
+    const gh = github();
+    const found = check.decide([CONTRACT], { ...NO_RFC, files: ['rfcs/IGNITE-1-x.md'] });
+    const withBlob = blob => ({ ...found, rfcs: [{ path: 'rfcs/IGNITE-1-x.md', source: 'pr', blob }] });
+
+    await publish(gh, withBlob('a'.repeat(40)));
+    await publish(gh, withBlob('a'.repeat(40)));
+    await publish(gh, withBlob('b'.repeat(40)));
+
+    assert.deepStrictEqual(gh.calls, ['create', 'delete 100', 'create']);
+});
+
 test('comments of other users are kept', async () => {
     const gh = github({ comments: [{ id: 1, body: '<!-- ignite-public-behavior-changes', user: { login: 'someone' } }] });
 
@@ -259,6 +323,14 @@ test('comments of other users are kept', async () => {
 
 test('a result for an outdated PR head is ignored', async () => {
     const gh = github({ headSha: 'newer' });
+
+    await publish(gh, check.decide([CONTRACT], NO_RFC));
+
+    assert.deepStrictEqual(gh.calls, []);
+});
+
+test('a result is ignored when a newer run checks the same commit', async () => {
+    const gh = github({ runNumbers: [1, 2] });
 
     await publish(gh, check.decide([CONTRACT], NO_RFC));
 
@@ -279,22 +351,30 @@ test('a missing or forged result is reported as a check that could not finish', 
 const git = (dir, ...args) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { stdio: 'pipe' });
 
 /**
- * Lays out the PR job workspace: the merge checkout whose last commit adds the given RFC, the target worktree and the
+ * Lays out the PR job workspace: the merge checkout whose last commit adds the given files, the target worktree and the
  * descriptions of both builds.
+ *
+ * @param files Files that the PR adds, by path.
+ * @param onTarget Files of the target branch, by path.
+ * @param merge Description of the PR merge, or null if the builds were skipped.
  */
-function workspace({ rfc = null, base = BASE, merge = null } = {}) {
+function workspace({ files = {}, onTarget = {}, base = BASE, merge = null } = {}) {
     const ws = fs.mkdtempSync(path.join(os.tmpdir(), 'pbc-ws-'));
     const dir = path.join(ws, 'merge');
 
     fs.mkdirSync(path.join(dir, 'rfcs'), { recursive: true });
     git(dir, 'init', '-q');
+
+    for (const [f, text] of Object.entries(onTarget))
+        fs.writeFileSync(path.join(dir, f), text);
+
+    git(dir, 'add', '.');
     git(dir, 'commit', '-q', '--allow-empty', '-m', 'target');
 
-    if (rfc) {
-        fs.writeFileSync(path.join(dir, rfc), 'rfc');
-        git(dir, 'add', '.');
-    }
+    for (const [f, text] of Object.entries(files))
+        fs.writeFileSync(path.join(dir, f), text);
 
+    git(dir, 'add', '.');
     git(dir, 'commit', '-q', '--allow-empty', '-m', 'merge');
     git(dir, 'worktree', 'add', '-q', '--detach', '../base', 'HEAD^1');
 
@@ -306,8 +386,16 @@ function workspace({ rfc = null, base = BASE, merge = null } = {}) {
     return ws;
 }
 
-/** Runs report() in the workspace. */
-async function report(ws, steps = { checkout: 'success', base: 'success', merge: 'success' }) {
+const BUILT = { checkout: 'success', java: 'success', base: 'success', merge: 'success' };
+const WITH_CONTRACT_CHANGE = BASE + '\n' + line('CLI', 'control.sh --cache list --seq', 'optional, boolean');
+
+/**
+ * Runs report() in the workspace.
+ *
+ * @param body PR description.
+ * @param getContent Stub of the GitHub API call that reads a file at a ref.
+ */
+async function report(ws, { steps = BUILT, body = '', getContent = async () => { throw new Error('unexpected'); } } = {}) {
     const out = { summary: '', annotations: [] };
     const core = {
         summary: { addRaw(s) { out.summary = s; return this; }, async write() {} },
@@ -316,30 +404,70 @@ async function report(ws, steps = { checkout: 'success', base: 'success', merge:
         error: m => out.annotations.push('error: ' + m),
     };
     const context = {
-        payload: { pull_request: { body: '', head: { sha: 'abc', repo: { html_url: 'https://github.com/fork/ignite' } }, base: { ref: 'master' } } },
+        payload: { pull_request: { body, head: { sha: 'abc', repo: { html_url: 'https://github.com/fork/ignite' } }, base: { ref: 'master' } } },
     };
 
-    await check.report({ core, context, steps, workspace: ws });
+    await check.report({ github: { rest: { repos: { getContent } } }, core, context, steps, workspace: ws });
 
     return { ...out, result: JSON.parse(fs.readFileSync(path.join(ws, 'result.json'), 'utf8')) };
 }
 
-test('report: a contract change with an RFC in the PR passes with a warning', async () => {
-    const out = await report(workspace({ rfc: 'rfcs/IGNITE-1-x.md', merge: BASE + '\n' + line('CLI', 'control.sh --cache list --seq', 'optional, boolean') }));
+test('report: a contract change with an RFC in the PR passes with a warning and names the RFC version', async () => {
+    const ws = workspace({ files: { 'rfcs/IGNITE-1-x.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE });
+    const out = await report(ws);
 
     assert.strictEqual(out.result.outcome, 'rfc-found');
+    assert.strictEqual(out.result.rfcs[0].blob, git(path.join(ws, 'merge'), 'rev-parse', 'HEAD:rfcs/IGNITE-1-x.md').toString().trim());
     assert.deepStrictEqual(out.annotations, ['warning: Review the RFC']);
     assert.ok(out.summary.includes('+ control.sh --cache list --seq: optional, boolean (A.java:1)'), out.summary);
 });
 
-test('report: a PR without module changes passes quietly', async () => {
-    const out = await report(workspace({ rfc: 'rfcs/IGNITE-1-x.md' }), { checkout: 'success', base: 'skipped', merge: 'skipped' });
+test('report: an RFC file whose name git would quote fails with the filename error', async () => {
+    const out = await report(workspace({ files: { 'rfcs/обзор.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE }));
+
+    assert.deepStrictEqual([out.result.outcome, out.result.invalidNames], ['rfc-name', ['rfcs/обзор.md']]);
+});
+
+test('report: a link with a mistyped branch does not replace a missing RFC', async () => {
+    const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE });
+    const getContent = async () => { throw Object.assign(new Error('Not Found'), { status: 404 }); };
+    const out = await report(ws, { body: 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md', getContent });
+
+    assert.deepStrictEqual([out.result.outcome, out.result.badLinks], ['rfc-missing', [{ path: 'rfcs/IGNITE-7-y.md', reason: 'url' }]]);
+});
+
+test('report: a link that GitHub cannot confirm fails as a check that could not finish', async () => {
+    const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE });
+    const getContent = async () => { throw Object.assign(new Error('Server Error'), { status: 502 }); };
+    const out = await report(ws, { body: 'https://github.com/apache/ignite/blob/1a2b3c/rfcs/IGNITE-7-y.md', getContent });
+
+    assert.deepStrictEqual(out.result, { outcome: 'error', step: 'links' });
+});
+
+test('report: links are not checked when the PR needs no RFC', async () => {
+    const merge = BASE.replace(line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated') + '\n', '');
+    const ws = workspace({ onTarget: { 'rfcs/IGNITE-7-y.md': 'rfc' }, merge });
+    const out = await report(ws, { body: 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md' });
+
+    assert.strictEqual(out.result.outcome, 'review');
+});
+
+test('report: a PR without source changes passes quietly', async () => {
+    const out = await report(workspace({ files: { 'rfcs/IGNITE-1-x.md': 'rfc' } }),
+        { steps: { checkout: 'success', java: 'skipped', base: 'skipped', merge: 'skipped' } });
 
     assert.deepStrictEqual([out.result, out.annotations], [{ outcome: 'clean' }, []]);
 });
 
+test('report: a failed Java setup fails as a check that could not finish, not as a clean PR', async () => {
+    const out = await report(workspace(), { steps: { checkout: 'success', java: 'failure', base: 'skipped', merge: 'skipped' } });
+
+    assert.deepStrictEqual(out.result, { outcome: 'error', step: 'java' });
+    assert.ok(out.summary.includes('could not set up Java'), out.summary);
+});
+
 test('report: a PR merge that does not build fails as a check that could not finish', async () => {
-    const out = await report(workspace(), { checkout: 'success', base: 'success', merge: 'failure' });
+    const out = await report(workspace(), { steps: { ...BUILT, merge: 'failure' } });
 
     assert.deepStrictEqual(out.result, { outcome: 'error', step: 'merge' });
     assert.ok(out.summary.includes('If the PR does not compile, fix it.'), out.summary);
@@ -363,23 +491,23 @@ async function deprecationHint(tag) {
         git(base, 'tag', tag);
 
     fs.writeFileSync(path.join(ws, 'base.txt'), line('Java API', 'org.apache.ignite.Old#run()', 'public void run()', 'deprecated', 'Old.java:2'));
-    fs.writeFileSync(path.join(ws, 'merge.txt'), '');
+    fs.writeFileSync(path.join(ws, 'merge.txt'), line('Java API', 'org.apache.ignite.Other#run()', 'public void run()'));
 
     const out = await report(ws);
 
-    assert.strictEqual(out.result.outcome, 'review');
-
-    return { hint: out.result.findings[0].hint, sha: git(base, 'rev-parse', '--short=10', 'HEAD').toString().trim() };
+    return { out, sha: git(base, 'rev-parse', '--short=10', 'HEAD').toString().trim() };
 }
 
 test('report: a removed deprecated declaration shows when it was deprecated and the first release', async () => {
-    const { hint, sha } = await deprecationHint('2.9.0');
+    const { out, sha } = await deprecationHint('2.9.0');
+    const removed = out.result.findings.find(f => f.kind === 'deprecated-removal');
 
-    assert.match(hint, new RegExp(`^deprecated in ${sha} on \\d{4}-\\d\\d-\\d\\d, first release 2\\.9\\.0$`));
+    assert.match(removed.hint, new RegExp(`^deprecated in ${sha} on \\d{4}-\\d\\d-\\d\\d, first release 2\\.9\\.0$`));
 });
 
 test('report: without release tags, as in a fork, the hint names no release', async () => {
-    const { hint, sha } = await deprecationHint(null);
+    const { out, sha } = await deprecationHint(null);
+    const removed = out.result.findings.find(f => f.kind === 'deprecated-removal');
 
-    assert.match(hint, new RegExp(`^deprecated in ${sha} on \\d{4}-\\d\\d-\\d\\d$`));
+    assert.match(removed.hint, new RegExp(`^deprecated in ${sha} on \\d{4}-\\d\\d-\\d\\d$`));
 });

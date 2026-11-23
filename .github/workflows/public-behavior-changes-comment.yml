@@ -24,6 +24,11 @@ on:
 
 permissions: {}
 
+# Publishes the results of one PR in the order their runs completed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
 jobs:
   comment:
     name: Comment on public behavior changes
