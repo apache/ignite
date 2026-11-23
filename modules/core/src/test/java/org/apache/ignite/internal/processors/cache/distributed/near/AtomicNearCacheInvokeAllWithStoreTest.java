@@ -18,7 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
@@ -34,6 +38,9 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -41,15 +48,15 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Checks the near cache of a client that sends an ATOMIC invokeAll of several keys to a cache with a write-through
+ * Checks the near cache of a client that sends an ATOMIC request of several keys to a cache with a write-through
  * store. The primary node processes such a request in {@code GridDhtAtomicCache.updateWithBatch()}. Each test leaves
- * the key in the middle of the request unwritten, so the near cache must keep its old value for this key.
+ * one key of the request unwritten, so the near cache must keep its old value for this key.
  */
 public class AtomicNearCacheInvokeAllWithStoreTest extends GridCommonAbstractTest {
-    /** Value of the keys before the invokeAll. */
+    /** Value of the keys before the request. */
     private static final Integer OLD_VAL = -1;
 
-    /** Keys of the invokeAll, sorted. The only server node is the primary node of every key. */
+    /** Keys of the request, sorted. The only server node is the primary node of every key. */
     private static final List<Integer> KEYS = Arrays.asList(1, 2, 3);
 
     /** Key in the middle of the request. */
@@ -65,7 +72,8 @@ public class AtomicNearCacheInvokeAllWithStoreTest extends GridCommonAbstractTes
     /** The entry processor leaves the middle key unchanged. */
     @Test
     public void testUnchangedKeyInTheMiddleOfInvokeAll() throws Exception {
-        checkMiddleKeyKeepsOldValue(cacheConfiguration(), new SetKeyAsValue(MIDDLE_KEY));
+        checkNearValues(cacheConfiguration(), KEYS, invokeAll(KEYS, new UpdateByKey(null, MIDDLE_KEY)),
+            Arrays.asList(1, OLD_VAL, 3));
     }
 
     /**
@@ -77,7 +85,8 @@ public class AtomicNearCacheInvokeAllWithStoreTest extends GridCommonAbstractTes
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration()
             .setExpiryPolicyFactory(ModifiedExpiryPolicy.factoryOf(new Duration(TimeUnit.MINUTES, 10)));
 
-        checkMiddleKeyKeepsOldValue(ccfg, new SetKeyAsValue(MIDDLE_KEY));
+        checkNearValues(ccfg, KEYS, invokeAll(KEYS, new UpdateByKey(null, MIDDLE_KEY)),
+            Arrays.asList(1, OLD_VAL, 3));
     }
 
     /** The entry processor changes every key, and the interceptor cancels the update of the middle key. */
@@ -85,7 +94,48 @@ public class AtomicNearCacheInvokeAllWithStoreTest extends GridCommonAbstractTes
     public void testInterceptorCancelsKeyInTheMiddleOfInvokeAll() throws Exception {
         CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration().setInterceptor(new CancelMiddleKeyUpdate());
 
-        checkMiddleKeyKeepsOldValue(ccfg, new SetKeyAsValue(null));
+        checkNearValues(ccfg, KEYS, invokeAll(KEYS, new UpdateByKey(null, null)), Arrays.asList(1, OLD_VAL, 3));
+    }
+
+    /** The entry processor removes every key, and the interceptor cancels the remove of the middle key. */
+    @Test
+    public void testInterceptorCancelsKeyInTheMiddleOfInvokeAllRemove() throws Exception {
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration().setInterceptor(new CancelMiddleKeyUpdate());
+
+        checkNearValues(ccfg, KEYS, invokeAll(KEYS, new UpdateByKey(KEYS, null)), Arrays.asList(null, OLD_VAL, null));
+    }
+
+    /** The interceptor cancels the put of the middle key in a putAll. */
+    @Test
+    public void testInterceptorCancelsKeyInTheMiddleOfPutAll() throws Exception {
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration().setInterceptor(new CancelMiddleKeyUpdate());
+
+        Map<Integer, Integer> vals = new TreeMap<>();
+
+        for (Integer key : KEYS)
+            vals.put(key, key);
+
+        checkNearValues(ccfg, KEYS, c -> c.putAllAsync(vals), Arrays.asList(1, OLD_VAL, 3));
+    }
+
+    /** The interceptor cancels the remove of the middle key in a removeAll. */
+    @Test
+    public void testInterceptorCancelsKeyInTheMiddleOfRemoveAll() throws Exception {
+        CacheConfiguration<Integer, Integer> ccfg = cacheConfiguration().setInterceptor(new CancelMiddleKeyUpdate());
+
+        checkNearValues(ccfg, KEYS, c -> c.removeAllAsync(new TreeSet<>(KEYS)), Arrays.asList(null, OLD_VAL, null));
+    }
+
+    /**
+     * The entry processor sets, removes and sets the first keys, so the primary node writes them in three batches.
+     * Then it leaves the next key unchanged and sets the last key.
+     */
+    @Test
+    public void testUnchangedKeyAfterPutAndRemoveBatchesOfInvokeAll() throws Exception {
+        List<Integer> keys = Arrays.asList(1, 2, 3, 4, 5);
+
+        checkNearValues(cacheConfiguration(), keys, invokeAll(keys, new UpdateByKey(Collections.singletonList(2), 4)),
+            Arrays.asList(1, null, 3, OLD_VAL, 5));
     }
 
     /**
@@ -100,17 +150,32 @@ public class AtomicNearCacheInvokeAllWithStoreTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param keys Keys.
+     * @param entryProc Entry processor.
+     * @return Operation that runs an invokeAll of the keys, sorted.
+     */
+    private static IgniteClosure<IgniteCache<Integer, Integer>, IgniteFuture<?>> invokeAll(
+        Collection<Integer> keys,
+        CacheEntryProcessor<Integer, Integer, Void> entryProc
+    ) {
+        return c -> c.invokeAllAsync(new TreeSet<>(keys), entryProc);
+    }
+
+    /**
      * Starts a server node and a client node with a near cache, puts the old value to every key, and runs the
-     * invokeAll from the client. Then the near cache must have the old value for the middle key, and the key as the
-     * value for every other key.
+     * operation from the client. Then the near cache must have the expected value of every key.
      *
      * @param ccfg Cache configuration.
-     * @param entryProc Entry processor of the invokeAll.
+     * @param keys Keys of the operation, sorted.
+     * @param op Operation.
+     * @param expVals Expected near cache value of each key, {@code null} for a removed key.
      * @throws Exception If failed.
      */
-    private void checkMiddleKeyKeepsOldValue(
+    private void checkNearValues(
         CacheConfiguration<Integer, Integer> ccfg,
-        CacheEntryProcessor<Integer, Integer, Void> entryProc
+        List<Integer> keys,
+        IgniteClosure<IgniteCache<Integer, Integer>, IgniteFuture<?>> op,
+        List<Integer> expVals
     ) throws Exception {
         IgniteEx srv = startGrid(0);
         IgniteEx client = startClientGrid(1);
@@ -121,51 +186,64 @@ public class AtomicNearCacheInvokeAllWithStoreTest extends GridCommonAbstractTes
             client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
         // Puts the keys one by one, so the near cache of the client has all of them.
-        for (Integer key : KEYS)
+        for (Integer key : keys)
             cache.put(key, OLD_VAL);
 
         Throwable err = null;
 
         try {
-            // Sorted, so the middle key is in the middle of the request.
-            cache.invokeAllAsync(new TreeSet<>(KEYS), entryProc).get(10_000);
+            op.apply(cache).get(10_000);
         }
         catch (Exception e) {
             err = e;
         }
 
-        assertEquals(KEYS.get(0), cache.localPeek(KEYS.get(0), CachePeekMode.NEAR));
-        assertEquals("The middle key has a wrong value in the near cache",
-            OLD_VAL, cache.localPeek(MIDDLE_KEY, CachePeekMode.NEAR));
-        assertEquals(KEYS.get(2), cache.localPeek(KEYS.get(2), CachePeekMode.NEAR));
+        for (int i = 0; i < keys.size(); i++) {
+            assertEquals("Key " + keys.get(i) + " has a wrong value in the near cache",
+                expVals.get(i), cache.localPeek(keys.get(i), CachePeekMode.NEAR));
+        }
 
-        assertNull("invokeAll failed: " + err, err);
+        assertNull("The operation failed: " + err, err);
     }
 
-    /** Sets the key as the value of every key except one, which it leaves unchanged. */
-    private static class SetKeyAsValue implements CacheEntryProcessor<Integer, Integer, Void> {
+    /** Removes the keys to remove, leaves one key unchanged, and sets the key as the value of every other key. */
+    private static class UpdateByKey implements CacheEntryProcessor<Integer, Integer, Void> {
+        /** Keys to remove, or {@code null} to remove none. */
+        private final Collection<Integer> rmvKeys;
+
         /** Key to leave unchanged, or {@code null} to change every key. */
         private final Integer unchangedKey;
 
-        /** */
-        SetKeyAsValue(Integer unchangedKey) {
+        /**
+         * @param rmvKeys Keys to remove, or {@code null} to remove none.
+         * @param unchangedKey Key to leave unchanged, or {@code null} to change every key.
+         */
+        UpdateByKey(Collection<Integer> rmvKeys, Integer unchangedKey) {
+            this.rmvKeys = rmvKeys;
             this.unchangedKey = unchangedKey;
         }
 
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> entry, Object... args) {
-            if (!entry.getKey().equals(unchangedKey))
+            if (rmvKeys != null && rmvKeys.contains(entry.getKey()))
+                entry.remove();
+            else if (!entry.getKey().equals(unchangedKey))
                 entry.setValue(entry.getKey());
 
             return null;
         }
     }
 
-    /** Cancels every update of the middle key, except the put of the old value. */
+    /** Cancels every put and remove of the middle key, except the put of the old value. */
     private static class CancelMiddleKeyUpdate extends CacheInterceptorAdapter<Integer, Integer> {
         /** {@inheritDoc} */
         @Override public Integer onBeforePut(Cache.Entry<Integer, Integer> entry, Integer newVal) {
             return MIDDLE_KEY.equals(entry.getKey()) && !OLD_VAL.equals(newVal) ? null : newVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteBiTuple<Boolean, Integer> onBeforeRemove(Cache.Entry<Integer, Integer> entry) {
+            return new IgniteBiTuple<>(MIDDLE_KEY.equals(entry.getKey()), entry.getValue());
         }
     }
 
