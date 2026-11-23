@@ -259,6 +259,8 @@ test('results that the PR job could not produce are rejected', () => {
     assert.throws(() => check.validate({ ...ok, outcome: 'rfc-found', rfcs: [{ path: 'rfcs/IGNITE-1-x.md', source: 'pr', blob: 'not a blob' }] }));
     assert.throws(() => check.validate({ ...ok, outcome: 'review' }));
     assert.throws(() => check.validate({ ...ok, outcome: 'rfc-found' }));
+    assert.throws(() => check.validate({ ...ok, notShown: 0 }));
+    assert.throws(() => check.validate({ ...ok, notShown: '1' }));
 });
 
 test('PR data cannot escape code formatting', () => {
@@ -551,7 +553,8 @@ test('report: all RFC names are checked, and only the shown list is cut', async 
     const valid = await report(workspace({ files, merge: WITH_CONTRACT_CHANGE }));
     const lastInvalid = await report(workspace({ files: { ...files, 'rfcs/zz-proposal.md': 'rfc' }, merge: WITH_CONTRACT_CHANGE }));
 
-    assert.deepStrictEqual([valid.result.outcome, valid.result.rfcs.length], ['rfc-found', 20]);
+    assert.deepStrictEqual([valid.result.outcome, valid.result.rfcs.length, valid.result.notShown], ['rfc-found', 20, 1]);
+    assert.match(valid.summary, /IGNITE-119-feature\.md\) and 1 more\./);
     assert.deepStrictEqual([lastInvalid.result.outcome, lastInvalid.result.invalidNames], ['rfc-name', ['rfcs/zz-proposal.md']]);
 });
 

@@ -265,6 +265,9 @@ function validate(res) {
     if (!list(res.badLinks, SHOWN_FILES, l => str(l.path, 300) && LINK_PROBLEMS.includes(l.reason)))
         fail('badLinks');
 
+    if (res.notShown !== undefined && !(Number.isInteger(res.notShown) && res.notShown > 0))
+        fail('notShown');
+
     return {
         outcome: res.outcome,
         findings: res.findings.map(({ area, key, before, after, kind, location, hint }) =>
@@ -272,6 +275,7 @@ function validate(res) {
         rfcs: res.rfcs.map(({ path: p, source, blob }) => ({ path: p, source, ...(blob === undefined ? {} : { blob }) })),
         invalidNames: [...res.invalidNames],
         badLinks: res.badLinks.map(({ path: p, reason }) => ({ path: p, reason })),
+        ...(res.notShown === undefined ? {} : { notShown: res.notShown }),
     };
 }
 
@@ -383,6 +387,9 @@ function render(res, links, limit) {
         return out.join('\n');
     }
 
+    const notShown = res.notShown ? `${res.notShown} more` : '';
+    const notShownLine = notShown ? [`- ${notShown} not shown.`] : [];
+
     if (res.outcome === 'review') {
         out.push('This PR removes deprecated declarations or changes experimental API. ' +
             `The [RFC process](${PROCESS_URL}) lets authors remove APIs deprecated before it without an RFC, ` +
@@ -391,12 +398,13 @@ function render(res, links, limit) {
             'Reviewer: decide whether these changes need an RFC. For a deprecated declaration, check when it was deprecated.');
     }
     else if (res.outcome === 'rfc-found') {
-        out.push(`RFC: ${res.rfcs.map(r => `[${r.path}](${rfcUrl(r, links)})`).join(', ')}.`,
+        out.push(`RFC: ${res.rfcs.map(r => `[${r.path}](${rfcUrl(r, links)})`).join(', ')}${notShown ? ` and ${notShown}` : ''}.`,
             '',
             'Reviewer: check that the RFC covers the changes below, review compatibility and verify any required vote on the dev list.');
     }
     else if (res.outcome === 'rfc-name') {
         out.push(...res.invalidNames.map(p => `- ${code(p)} does not match ${code('rfcs/IGNITE-<ticket>-<short-title>.md')}.`),
+            ...notShownLine,
             '',
             `Rename the file, for example to ${code(RFC_EXAMPLE)}.`);
     }
@@ -412,7 +420,7 @@ function render(res, links, limit) {
                 name: `does not match ${code('rfcs/IGNITE-<ticket>-<short-title>.md')}.`,
                 missing: 'is not on the target branch.',
                 url: 'is on the target branch, but the link does not lead to it.',
-            }[l.reason]));
+            }[l.reason]), ...notShownLine);
         }
     }
 
@@ -521,10 +529,14 @@ async function report({ github, core, context, steps, workspace = '.' }) {
 
             decided.rfcs = (decided.rfcs || []).map(r => ({ ...r, blob: rfcs.blobs.get(r.path) }));
 
-            for (const shown of ['rfcs', 'invalidNames', 'badLinks'])
-                decided[shown] = decided[shown]?.slice(0, SHOWN_FILES);
+            let notShown = 0;
 
-            res = validate(decided);
+            for (const shown of ['rfcs', 'invalidNames', 'badLinks']) {
+                notShown += Math.max(0, (decided[shown]?.length ?? 0) - SHOWN_FILES);
+                decided[shown] = decided[shown]?.slice(0, SHOWN_FILES);
+            }
+
+            res = validate(notShown > 0 ? { ...decided, notShown } : decided);
         }
     }
     catch (e) {

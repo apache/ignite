@@ -44,6 +44,7 @@ import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -256,7 +257,8 @@ public class PublicDeclarations {
 
     /**
      * Describes the artifacts that {@code ignite-bom} declares, as Maven publishes them: the build writes the BOM with
-     * resolved properties to the file that {@code maven.flatten.file.name} names.
+     * resolved properties to the file that {@code maven.flatten.file.name} names. An artifact is identified as in Maven: by
+     * group, name, type and classifier. The Java API comes from the main JAR of each module of this tree that the BOM lists.
      *
      * @return Directories of the published modules built from this tree.
      */
@@ -264,8 +266,16 @@ public class PublicDeclarations {
         Map<String, Path> modules = new HashMap<>();
 
         try (Stream<Path> poms = Files.walk(root.resolve("modules"), 3)) {
-            for (Path pom : (Iterable<Path>)poms.filter(p -> p.endsWith("pom.xml"))::iterator)
-                modules.put(child(xml(pom).getDocumentElement(), "artifactId"), pom.getParent());
+            for (Path pom : (Iterable<Path>)poms.filter(p -> p.endsWith("pom.xml"))::iterator) {
+                Element project = xml(pom).getDocumentElement();
+                Element parent = (Element)project.getElementsByTagName("parent").item(0);
+                String group = child(project, "groupId");
+
+                if (group == null && parent != null)
+                    group = child(parent, "groupId");
+
+                modules.put(group + ':' + child(project, "artifactId"), pom.getParent());
+            }
         }
 
         List<Path> res = new ArrayList<>();
@@ -276,13 +286,14 @@ public class PublicDeclarations {
 
         for (int i = 0; i < deps.getLength(); i++) {
             Element dep = (Element)deps.item(i);
-            String artifact = child(dep, "artifactId");
-            String type = child(dep, "type");
-            boolean jar = type == null || "jar".equals(type);
+            String artifact = child(dep, "groupId") + ':' + child(dep, "artifactId");
+            String type = Objects.requireNonNullElse(child(dep, "type"), "jar");
+            String classifier = child(dep, "classifier");
 
-            add("Distribution", "ignite-bom: " + child(dep, "groupId") + ':' + artifact + (jar ? "" : ':' + type), "", "", bom);
+            add("Distribution", "ignite-bom: " + artifact + (classifier != null ? ':' + type + ':' + classifier
+                : "jar".equals(type) ? "" : ':' + type), "", "", bom);
 
-            if (jar && modules.containsKey(artifact))
+            if ("jar".equals(type) && classifier == null && modules.containsKey(artifact))
                 res.add(modules.get(artifact));
         }
 
@@ -775,7 +786,10 @@ public class PublicDeclarations {
         return res;
     }
 
-    /** Describes the members of {@code src} as members of the public type {@code api}, keeping members described earlier. */
+    /**
+     * Describes the members of {@code src} as members of the public type {@code api}, keeping members described earlier.
+     * A static method of an interface belongs to that interface only: Java does not inherit it.
+     */
     private static void describeMembers(Class<?> src, Class<?> api, Map<TypeVariable<?>, String> vars, Map<String, Member> res) {
         for (Constructor<?> c : src == api ? src.getDeclaredConstructors() : new Constructor<?>[0]) {
             if (!c.isSynthetic() && accessible(c.getModifiers(), api)) {
@@ -787,7 +801,8 @@ public class PublicDeclarations {
         }
 
         for (Method m : src.getDeclaredMethods()) {
-            if (m.isSynthetic() || m.isBridge() || !accessible(m.getModifiers(), api))
+            if (m.isSynthetic() || m.isBridge() || !accessible(m.getModifiers(), api)
+                || src != api && src.isInterface() && Modifier.isStatic(m.getModifiers()))
                 continue;
 
             Map<TypeVariable<?>, String> v = typeVars(m, vars);
