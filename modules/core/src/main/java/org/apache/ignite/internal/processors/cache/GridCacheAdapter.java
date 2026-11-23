@@ -738,7 +738,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary(), null));
+                its.add(offheapMgr.cacheEntriesIterator(ctx, modes.primary, modes.backup, topVer, ctx.keepBinary()));
             }
         }
         else if (modes.heap) {
@@ -2614,7 +2614,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         do {
             Iterator<CacheDataRow> it = ctx.offheap().cacheIterator(ctx.cacheId(),
-                true, true, null, null);
+                true, true, null);
 
             while (it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH)
                 keys.add((K)it.next().key());
@@ -3808,7 +3808,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             null,
             keepBinary,
             false,
-            null,
             txChanges.changedKeys()
         ).executeScanQuery(txChanges.newAndUpdatedEntries());
 
@@ -6123,6 +6122,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      *
      */
     protected abstract static class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
+        /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+        private static final long serialVersionUID = 3734584972859205191L;
+
         /** */
         protected final CacheMetricsImpl metrics;
 

@@ -22,7 +22,6 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Date;
-import org.jetbrains.annotations.Nullable;
 
 import static java.sql.Types.BIGINT;
 import static java.sql.Types.BINARY;
@@ -38,7 +37,6 @@ import static java.sql.Types.TIME;
 import static java.sql.Types.TIMESTAMP;
 import static java.sql.Types.TINYINT;
 import static java.sql.Types.VARCHAR;
-import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP_PREFIX;
 
 /**
  * Utility methods for thin JDBC driver.
@@ -46,21 +44,6 @@ import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP
 public class JdbcThinUtils {
     /** URL prefix. */
     public static final String URL_PREFIX = "jdbc:ignite:thin://";
-
-    /** Port number property name. */
-    public static final String PROP_PORT = PROP_PREFIX + "port";
-
-    /** Hostname property name. */
-    public static final String PROP_HOST = PROP_PREFIX + "host";
-
-    /** Byte representation of value "default" */
-    private static final byte BYTE_DEFAULT = 2;
-
-    /** Byte representation of value "disabled". */
-    private static final byte BYTE_ENABLED = 1;
-
-    /** Byte representation of value "disabled". */
-    private static final byte BYTE_DISABLED = 0;
 
     /**
      * Converts Java class name to type from {@link Types}.
@@ -171,37 +154,5 @@ public class JdbcThinUtils {
             long.class.getName().equals(cls) ||
             float.class.getName().equals(cls) ||
             double.class.getName().equals(cls));
-    }
-
-    /**
-     * Converts raw byte value to the nullable Boolean. Useful for the deserialization in the handshake.
-     *
-     * @param raw byte value to convert to Boolean.
-     * @return converted value.
-     */
-    @Nullable public static Boolean nullableBooleanFromByte(byte raw) {
-        switch (raw) {
-            case BYTE_DEFAULT:
-                return null;
-            case BYTE_ENABLED:
-                return Boolean.TRUE;
-            case BYTE_DISABLED:
-                return Boolean.FALSE;
-            default:
-                throw new NumberFormatException("Incorrect byte: " + raw + ". Impossible to read nullable Boolean from it.");
-        }
-    }
-
-    /**
-     * Converts nullable Boolean to the raw byte. Useful for the serialization in the handshake.
-     *
-     * @param val value to convert.
-     * @return byte representation.
-     */
-    public static byte nullableBooleanToByte(@Nullable Boolean val) {
-        if (val == null)
-            return BYTE_DEFAULT;
-
-        return val ? BYTE_ENABLED : BYTE_DISABLED;
     }
 }

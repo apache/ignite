@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -92,6 +93,9 @@ import static java.util.stream.Collectors.toList;
 public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     private static final Map<String, Scalar> SCALAR_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
+
+    /** Saves building a digest for expressions of a cached plan: they are the same instances on every execution. */
+    private static final Map<ExpressionsKey, Scalar> SCALAR_BY_EXPRESSIONS_CACHE = new GridBoundedConcurrentLinkedHashMap<>(1024);
 
     /** Placeholder for lowest possible value in range bound. This placeholder is only reqired to compare ranges. */
     private static final Object LOWEST_VALUE = new Object();
@@ -494,8 +498,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @return SingleScalar.
      */
     private SingleScalar scalar(List<RexNode> nodes, RelDataType type) {
-        return (SingleScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, false),
-            k -> compile(nodes, type, false));
+        return (SingleScalar)scalar(nodes, type, false);
     }
 
     /**
@@ -506,10 +509,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
      * @return BiScalar.
      */
     private BiScalar biScalar(RexNode node, RelDataType type) {
-        ImmutableList<RexNode> nodes = ImmutableList.of(node);
+        return (BiScalar)scalar(ImmutableList.of(node), type, true);
+    }
 
-        return (BiScalar)SCALAR_CACHE.computeIfAbsent(digest(nodes, type, true),
-            k -> compile(nodes, type, true));
+    /** */
+    private Scalar scalar(List<RexNode> nodes, RelDataType type, boolean biInParams) {
+        return SCALAR_BY_EXPRESSIONS_CACHE.computeIfAbsent(new ExpressionsKey(nodes, type, biInParams),
+            k -> SCALAR_CACHE.computeIfAbsent(digest(nodes, type, biInParams), d -> compile(nodes, type, biInParams)));
     }
 
     /** */
@@ -1190,6 +1196,50 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             correlates.put(variable.getName(), new FieldGetter(hnd_, corr_, variable.getType()));
 
             return variable;
+        }
+    }
+
+    /** */
+    private static class ExpressionsKey {
+        /** */
+        private final RexNode[] nodes;
+
+        /** */
+        private final RelDataType type;
+
+        /** */
+        private final boolean biInParams;
+
+        /** */
+        private ExpressionsKey(List<RexNode> nodes, RelDataType type, boolean biInParams) {
+            this.nodes = nodes.toArray(new RexNode[0]);
+            this.type = type;
+            this.biInParams = biInParams;
+        }
+
+        /** Expressions are compared by identity: equal ones can differ in details taken into account by the digest. */
+        @Override public boolean equals(Object o) {
+            ExpressionsKey key = (ExpressionsKey)o;
+
+            if (biInParams != key.biInParams || nodes.length != key.nodes.length || !Objects.equals(type, key.type))
+                return false;
+
+            for (int i = 0; i < nodes.length; i++) {
+                if (nodes[i] != key.nodes[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = 31 * Objects.hashCode(type) + Boolean.hashCode(biInParams);
+
+            for (RexNode node : nodes)
+                res = 31 * res + System.identityHashCode(node);
+
+            return res;
         }
     }
 }

@@ -26,6 +26,9 @@ import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_SIZE
  * Common functionality implementation for eviction policies factories.
  */
 public abstract class AbstractEvictionPolicyFactory<T> implements Factory<T> {
+    /** The value equal to computed by JVM for 2.18.0. Keep it to provide compatibility. */
+    private static final long serialVersionUID = 6105354811951034412L;
+
     /** */
     private int maxSize = DFLT_CACHE_SIZE;
 

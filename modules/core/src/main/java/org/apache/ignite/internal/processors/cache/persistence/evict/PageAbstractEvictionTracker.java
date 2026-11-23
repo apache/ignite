@@ -18,14 +18,12 @@ package org.apache.ignite.internal.processors.cache.persistence.evict;
 
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
@@ -53,24 +51,14 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Shared context. */
     private final GridCacheSharedContext sharedCtx;
 
-    /** Data region configuration. */
-    private final DataRegionConfiguration regCfg;
-
     /**
      * @param pageMem Page memory.
-     * @param plcCfg Data region configuration.
      * @param sharedCtx Shared context.
      */
-    PageAbstractEvictionTracker(
-        PageMemoryNoStoreImpl pageMem,
-        DataRegionConfiguration plcCfg,
-        GridCacheSharedContext sharedCtx
-    ) {
+    PageAbstractEvictionTracker(PageMemoryNoStoreImpl pageMem, GridCacheSharedContext sharedCtx) {
         this.pageMem = pageMem;
 
         this.sharedCtx = sharedCtx;
-
-        regCfg = plcCfg;
 
         trackingSize = pageMem.totalPages();
 
@@ -78,18 +66,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         // We subtract day to avoid fail in case of daylight shift or timezone change.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean evictionRequired() {
-        AbstractFreeList freeList = (AbstractFreeList)sharedCtx.database().freeList(regCfg.getName());
-
-        double pagesThreshold = regCfg.getEvictionThreshold() * regCfg.getMaxSize() / pageMem.systemPageSize();
-
-        return pageMem.loadedPages() > pagesThreshold && freeList.emptyDataPages() < regCfg.getEmptyPagesPoolSize();
-    }
-
     /**
      * @param pageIdx Page index.
-     * @return true if at least one data row has been evicted
+     * @return true if all data rows of the page have been evicted
      * @throws IgniteCheckedException If failed.
      */
     final boolean evictDataPage(int pageIdx) throws IgniteCheckedException {
@@ -133,18 +112,21 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             pageMem.releasePage(0, fakePageId, page);
         }
 
-        boolean evictionDone = false;
+        boolean evictionDone = !rowsToEvict.isEmpty();
 
         for (CacheDataRowAdapter dataRow : rowsToEvict) {
             GridCacheContext<?, ?> cacheCtx = sharedCtx.cacheContext(dataRow.cacheId());
 
-            if (!cacheCtx.userCache())
+            if (!cacheCtx.userCache()) {
+                evictionDone = false;
+
                 continue;
+            }
 
             GridCacheEntryEx entryEx = cacheCtx.isNear() ? cacheCtx.near().dht().entryEx(dataRow.key()) :
                 cacheCtx.cache().entryEx(dataRow.key());
 
-            evictionDone |= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
+            evictionDone &= entryEx.evictInternal(GridCacheVersionManager.EVICT_VER, null, true);
         }
 
         return evictionDone;

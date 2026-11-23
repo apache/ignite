@@ -76,7 +76,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <sync todir="${basedir}/wire" overwrite="true">
+                                <sync todir="${project.build.outputDirectory}/META-INF/ignite-wire" overwrite="true">
                                     <fileset dir="${basedir}/../core/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../indexing/target/classes/META-INF/ignite-wire"/>
                                     <fileset dir="${basedir}/../calcite/target/classes/META-INF/ignite-wire"/>
@@ -110,7 +110,7 @@
                                 <argument>-classpath</argument>
                                 <classpath/>
                                 <argument>org.apache.ignite.internal.wire.MessageIdsWriter</argument>
-                                <argument>${project.basedir}/wire</argument>
+                                <argument>${project.build.outputDirectory}/META-INF/ignite-wire</argument>
                             </arguments>
                         </configuration>
                     </execution>

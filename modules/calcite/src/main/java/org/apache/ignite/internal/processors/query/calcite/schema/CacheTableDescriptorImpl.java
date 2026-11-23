@@ -47,6 +47,7 @@ import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -642,6 +643,15 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
+    private static Object unwrap(Object val, GridCacheContext<?, ?> cctx, boolean keepBinary) {
+        // Fast path: simple values have nothing to unwrap.
+        if (val == null || QueryUtils.isSqlType(val.getClass()))
+            return val;
+
+        return cctx.unwrapBinaryIfNeeded(val, keepBinary, null);
+    }
+
+    /** */
     private static class KeyValDescriptor implements CacheColumnDescriptor {
         /** */
         private final GridQueryProperty desc;
@@ -733,7 +743,10 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src) {
-            return cctx.unwrapBinaryIfNeeded(isKey ? src.key() : src.value(), ectx.keepBinary(), null);
+            CacheObject co = isKey ? src.key() : src.value();
+
+            return co.isPlatformType() ? unwrap(co.value(cctx.cacheObjectContext(), true), cctx, ectx.keepBinary())
+                : cctx.unwrapBinaryIfNeeded(co, ectx.keepBinary(), null);
         }
 
         /** {@inheritDoc} */
@@ -819,7 +832,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         /** {@inheritDoc} */
         @Override public Object value(ExecutionContext<?> ectx, GridCacheContext<?, ?> cctx, CacheDataRow src)
             throws IgniteCheckedException {
-            return cctx.unwrapBinaryIfNeeded(desc.value(src.key(), src.value()), ectx.keepBinary(), null);
+            return unwrap(desc.value(src.key(), src.value()), cctx, ectx.keepBinary());
         }
 
         /** {@inheritDoc} */

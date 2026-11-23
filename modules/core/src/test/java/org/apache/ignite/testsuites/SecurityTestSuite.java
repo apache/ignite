@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.security.sandbox.SchedulerSandboxTe
 import org.apache.ignite.internal.processors.security.sandbox.SecuritySubjectPermissionsTest;
 import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
+import org.apache.ignite.internal.processors.security.service.ServiceLifecycleSecurityContextTest;
 import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.internal.processors.ssl.SslFactoryRegistryTest;
@@ -160,6 +161,7 @@ import org.junit.runners.Suite;
     MaintenanceModeNodeSecurityTest.class,
     ServiceAuthorizationTest.class,
     ServiceStaticConfigTest.class,
+    ServiceLifecycleSecurityContextTest.class,
     ClusterNodeOperationPermissionTest.class,
     NodeSecurityContextPropagationTest.class,
     NodeJoinPermissionsTest.class,
