@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assume;
 import org.junit.Test;
 
 /**
@@ -356,7 +357,25 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
                 "&sslTrustCertificateKeyStorePassword=123456")) {
                 checkConnection(conn);
             }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
 
+    /**
+     * @throws Exception If failed.
+     *
+     * Note: Disabled cipher suite can be enabled via Java Security property "jdk.tls.disabledAlgorithms" or in
+     * &lt;JAVA_HOME&gt;/conf/security/java.security file.
+     */
+    @Test
+    public void testCompletelyDisabledCustomCipher() throws Exception {
+        setSslCtxFactoryToCli = true;
+        sslCtxFactory = getTestSslContextFactory();
+
+        startGrids(1);
+        try {
             //completely disabled jdk 17+
 
             //DES (56-bit):
@@ -377,7 +396,6 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
 
             assertFalse(Set.of(factory("TLS").getSupportedCipherSuites()).contains(completelyDisabledSuite));
 
-            // Java 17+, the cipher suite TLS_RSA_WITH_NULL_SHA256 is completely disabled by default.
             GridTestUtils.assertThrows(log, () -> {
                 return DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
                     "&sslCipherSuites=" + completelyDisabledSuite +
@@ -762,19 +780,24 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
         return ctx.getSocketFactory();
     }
 
-    /** */
+    /**
+     * @return Cipher suites supported by the JDK, but not enabled by default for the default protocol of the JDBC
+     *      client.
+     * @throws Exception If failed.
+     */
     private Set<String> disabledByDefaultCipherSuites() throws Exception {
-        SSLSocketFactory factory = factory("TLSv1.2");
+        SSLSocketFactory factory = factory(SslContextFactory.DFLT_SSL_PROTOCOL);
 
         Set<String> supportedCiphersSuites = new HashSet<>(Arrays.stream(factory.getSupportedCipherSuites()).toList());
 
-        // Fulter supported, but NOT in the default active list.
+        // Filter supported, but NOT in the default active list.
         supportedCiphersSuites.removeAll(Set.of(factory.getDefaultCipherSuites()));
 
-        // Current TC settings.
-        supportedCiphersSuites.removeIf(s -> s.contains("_anon_"));
+        // Keep only the suites the RSA server key can use: this drops the TLS 1.3, ECDSA and anonymous suites
+        // at once, and the ECDH_RSA suites, which need an EC public key in the server certificate.
+        supportedCiphersSuites.removeIf(s -> !s.contains("_RSA_WITH_") || s.contains("ECDH_RSA"));
 
-        assertFalse("No one disabled by default suite found", supportedCiphersSuites.isEmpty());
+        Assume.assumeTrue("No cipher suite disabled by default found", !supportedCiphersSuites.isEmpty());
 
         return supportedCiphersSuites;
     }

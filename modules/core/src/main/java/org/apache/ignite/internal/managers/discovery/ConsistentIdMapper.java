@@ -23,12 +23,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Class is needed for map UUID to consistent id and vice versa.
+ * Class is needed for map UUID to consistent id.
  */
 public class ConsistentIdMapper {
     /** Optimization for short store full nodes set. */
@@ -68,36 +67,15 @@ public class ConsistentIdMapper {
     }
 
     /**
-     * Maps UUID to compact ID for given baseline topology.
+     * Map primary -> backup node compact ID accordingly to baseline topology.
      *
      * @param topVer Topology version.
-     * @param nodeConstId UUID of node.
-     * @return Compact ID of node for given baseline topology.
-     */
-    public UUID mapToUuid(AffinityTopologyVersion topVer, short nodeConstId) {
-        Map<Short, UUID> map = discoveryMgr.nodeIdMap(topVer);
-
-        if (map == null)
-            return null;
-
-        UUID constId = map.get(nodeConstId);
-
-        if (constId == null)
-            throw new IllegalStateException("Unable to find UUID by constId [nodeId=" + nodeConstId + ", topVer=" + topVer + ']');
-
-        return constId;
-    }
-
-    /**
-     * Map primary -> backup node compact ID accordingly to baseline topology..
-     *
      * @param txNodes Primary -> backup UUID nodes.
      * @return Primary -> backup compact ID nodes.
      */
     public Map<Short, Collection<Short>> mapToCompactIds(
         AffinityTopologyVersion topVer,
-        @Nullable Map<UUID, Collection<UUID>> txNodes,
-        BaselineTopology baselineTop
+        @Nullable Map<UUID, Collection<UUID>> txNodes
     ) {
         if (txNodes == null)
             return null;

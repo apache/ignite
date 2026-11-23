@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.SecurityException;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THIN_CLIENT_ASYNC_REQUESTS_WAIT_TIMEOUT;
+import static org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature.CONNECTION_ID;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.BITMAP_FEATURES;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.PARTITION_AWARENESS;
 
@@ -176,6 +177,9 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
 
         if (protocolCtx.isFeatureSupported(PARTITION_AWARENESS))
             writer.writeUuid(ctx.kernalContext().localNodeId());
+
+        if (protocolCtx.isFeatureSupported(CONNECTION_ID))
+            writer.writeLong(ctx.connectionId());
     }
 
     /** {@inheritDoc} */

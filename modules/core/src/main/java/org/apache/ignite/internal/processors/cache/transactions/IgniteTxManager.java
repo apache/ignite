@@ -54,6 +54,7 @@ import org.apache.ignite.internal.cluster.DistributedTransactionConfiguration;
 import org.apache.ignite.internal.managers.communication.CommunicationMarshalling;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -248,6 +249,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** TX handler. */
     private IgniteTxHandler txHnd;
 
+    /** UUID to consistent ID mapper. */
+    private ConsistentIdMapper consistentIdMapper;
+
     /** Committed local transactions. */
     private final GridBoundedConcurrentOrderedMap<GridCacheVersion, Boolean> completedVersSorted =
         new GridBoundedConcurrentOrderedMap<>(
@@ -318,6 +322,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void start0() {
         txHnd = new IgniteTxHandler(cctx);
+
+        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
         deferredAckMsgSnd = new GridDeferredAckMessageSender<GridCacheVersion>(cctx.time(), cctx.kernalContext().closure()) {
             @Override public int getTimeout() {
@@ -960,9 +966,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Local transaction.
      */
     @Nullable public IgniteTxLocalAdapter localTx() {
-        IgniteTxLocalAdapter tx = tx();
+        IgniteInternalTx tx = tx();
 
-        return tx != null && tx.local() ? tx : null;
+        return tx != null && tx.local() ? (IgniteTxLocalAdapter)tx : null;
     }
 
     /**
@@ -1859,15 +1865,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     assert !entry1.detached() : "Expected non-detached entry for near transaction " +
                         "[locNodeId=" + cctx.localNodeId() + ", entry=" + entry1 + ']';
 
-                    GridCacheVersion serReadVer = txEntry1.entryReadVersion();
-
-                    assert serReadVer == null || (tx.optimistic() && tx.serializable()) : txEntry1;
+                    assert txEntry1.entryReadVersion() == null || (tx.optimistic() && tx.serializable()) : txEntry1;
 
                     boolean read = serOrder != null && txEntry1.op() == READ;
 
                     entry1.unswap();
 
-                    if (!entry1.tmLock(tx, timeout, serOrder, serReadVer, read)) {
+                    if (!entry1.tmLock(tx, timeout, serOrder, read)) {
                         // Unlock locks locked so far.
                         for (IgniteTxEntry txEntry2 : entries) {
                             if (txEntry2 == txEntry1)
@@ -2647,7 +2651,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             || !baselineTop.consistentIds().contains(cctx.localNode().consistentId()))
             return null;
 
-        Map<Short, Collection<Short>> nodes = tx.consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes, baselineTop);
+        Map<Short, Collection<Short>> nodes = consistentIdMapper.mapToCompactIds(tx.topVer, tx.txNodes);
 
         TxRecord record = new TxRecord(tx.state(), tx.nearXidVersion(), tx.writeVersion(), nodes);
 

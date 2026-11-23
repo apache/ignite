@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.IgniteServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -263,6 +264,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridPortProcessor portProc;
+
+    /** */
+    @GridToStringExclude
+    private SslFactoryRegistry sslFactories;
 
     /** */
     @GridToStringInclude
@@ -451,6 +456,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         defragMgr = new IgniteDefragmentationImpl(this);
 
+        sslFactories = new SslFactoryRegistry(this);
+
         try {
             spring = SPRING.create(false);
         }
@@ -603,7 +610,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor
-            || comp instanceof QueryEngine))
+            || comp instanceof QueryEngine
+            || comp instanceof SslFactoryRegistry))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -748,6 +756,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public SslFactoryRegistry ssl() {
+        return sslFactories;
     }
 
     /** {@inheritDoc} */

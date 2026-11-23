@@ -109,7 +109,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     private static final int SEG_BITS = 4;
 
     /** Number of bits required to store segment index. */
-    private static final int SEG_CNT = (1 << SEG_BITS);
+    public static final int SEG_CNT = (1 << SEG_BITS);
 
     /** Number of bits left to store page index. */
     private static final int IDX_BITS = PageIdUtils.PAGE_IDX_SIZE - SEG_BITS;

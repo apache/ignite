@@ -41,7 +41,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -253,9 +252,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Store used flag. */
     private boolean storeEnabled = true;
 
-    /** UUID to consistent id mapper. */
-    protected final ConsistentIdMapper consistentIdMapper;
-
     /** Incremental snapshot ID. */
     private @Nullable UUID incSnpId;
 
@@ -329,8 +325,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
 
-        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
-
         boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
             cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||
             cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_REMOVED);
@@ -385,8 +379,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
-
-        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
 
         boolean needTaskName = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ) ||
                 cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_PUT) ||

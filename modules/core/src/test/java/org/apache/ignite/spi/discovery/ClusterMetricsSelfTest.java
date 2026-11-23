@@ -91,16 +91,14 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         cache.put(1, 1);
 
-        awaitPartitionMapExchange();
-
         int timeout = 5000;
 
         assertTrue(GridTestUtils.waitForCondition(() -> curPMEDuration.value() == 0, timeout));
         assertEquals(0, curBlockingPMEDuration.value());
 
         // There was two blocking exchange: server node start and cache start.
-        assertEquals(2, Arrays.stream(durationHistogram.value()).sum());
-        assertEquals(2, Arrays.stream(blockindDurationHistogram.value()).sum());
+        assertTrue(waitForCondition(() -> Arrays.stream(durationHistogram.value()).sum() == 2, timeout));
+        assertTrue(waitForCondition(() -> Arrays.stream(blockindDurationHistogram.value()).sum() == 2, timeout));
 
         Lock lock = cache.lock(1);
 
@@ -119,7 +117,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         if (client)
             assertEquals(0, curBlockingPMEDuration.value());
         else
-            assertTrue(curBlockingPMEDuration.value() > 0);
+            assertTrue(waitForCondition(() -> curBlockingPMEDuration.value() > 0, timeout));
 
         lock.unlock();
 
@@ -133,13 +131,13 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
         if (client) {
             // There was non-blocking exchange: client node start.
-            assertEquals(3, Arrays.stream(durationHistogram.value()).sum());
-            assertEquals(2, Arrays.stream(blockindDurationHistogram.value()).sum());
+            assertTrue(waitForCondition(() -> Arrays.stream(durationHistogram.value()).sum() == 3, timeout));
+            assertTrue(waitForCondition(() -> Arrays.stream(blockindDurationHistogram.value()).sum() == 2, timeout));
         }
         else {
             // There was two blocking exchange: server node start and rebalance completing.
-            assertEquals(4, Arrays.stream(durationHistogram.value()).sum());
-            assertEquals(4, Arrays.stream(blockindDurationHistogram.value()).sum());
+            assertTrue(waitForCondition(() -> Arrays.stream(durationHistogram.value()).sum() == 4, timeout));
+            assertTrue(waitForCondition(() -> Arrays.stream(blockindDurationHistogram.value()).sum() == 4, timeout));
         }
     }
 }

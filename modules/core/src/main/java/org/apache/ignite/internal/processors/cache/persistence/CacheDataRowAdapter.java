@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
@@ -224,62 +225,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
 
         assert isReady() : "Entry must has the 'ready' state, when the init ends";
-    }
-
-    /**
-     * @param io Data page IO.
-     * @param pageAddr Data page address.
-     * @param itemId Row item Id.
-     * @param grp Cache group.
-     * @param sharedCtx Cache shared context.
-     * @param pageMem Page memory.
-     * @param rowData Required row data.
-     * @param skipVer Whether version read should be skipped.
-     * @throws IgniteCheckedException If failed.
-     */
-    public final void initFromDataPage(
-        DataPageIO io,
-        long pageAddr,
-        int itemId,
-        @Nullable CacheGroupContext grp,
-        GridCacheSharedContext<?, ?> sharedCtx,
-        PageMemory pageMem,
-        RowData rowData,
-        boolean skipVer
-    ) throws IgniteCheckedException {
-        // Group is null if try evict page, with persistence evictions should be disabled.
-        assert grp != null || pageMem instanceof PageMemoryNoStoreImpl;
-
-        CacheObjectContext coctx = grp != null ? grp.cacheObjectContext() : null;
-        boolean readCacheId = grp == null || grp.storeCacheIdInDataPage();
-        int grpId = grp != null ? grp.groupId() : 0;
-        IoStatisticsHolder statHolder = grp != null ? grp.statisticsHolderData() : IoStatisticsHolderNoOp.INSTANCE;
-
-        if (readCacheId)
-            flags |= FLAG_STORE_CACHE_ID;
-
-        IncompleteObject<?> incomplete = readIncomplete(null, sharedCtx, coctx, pageMem.pageSize(),
-            pageMem.realPageSize(grpId), pageAddr, itemId, io, rowData, readCacheId, skipVer);
-
-        if (incomplete != null) {
-            // Initialize the remaining part of the large row from other pages.
-            long nextLink = incomplete.getNextLink();
-
-            if (nextLink != 0L) {
-                doInitFromLink(
-                    nextLink,
-                    sharedCtx,
-                    coctx,
-                    pageMem,
-                    grpId,
-                    statHolder,
-                    readCacheId,
-                    rowData,
-                    incomplete,
-                    skipVer
-                );
-            }
-        }
     }
 
     /**
@@ -957,11 +902,32 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
-        int len = key().valueBytesLength(null);
+        return rowSize(key(), value(), CacheVersionIO.size(version(), false), null, storeCacheId());
+    }
 
-        len += value().valueBytesLength(null) + CacheVersionIO.size(version(), false) + 8;
+    /**
+     * Computes the size a row with the given key and value occupies in page memory.
+     *
+     * @param key Row key.
+     * @param val Row value ({@code null} if unknown — under-reserves safely).
+     * @param verSize Serialized version size (see {@link CacheVersionIO#size(GridCacheVersion, boolean)}).
+     * @param coctx Cache object context to compute key/value bytes lengths.
+     * @param storeCacheId {@code True} if cache ID stored in the data page.
+     * @return Row size in bytes.
+     * @throws IgniteCheckedException If failed to compute key or value bytes length.
+     */
+    public static int rowSize(
+        KeyCacheObject key,
+        @Nullable CacheObject val,
+        int verSize,
+        CacheObjectValueContext coctx,
+        boolean storeCacheId
+    ) throws IgniteCheckedException {
+        int len = key.valueBytesLength(coctx);
 
-        return len + (storeCacheId() ? 4 : 0);
+        len += (val != null ? val.valueBytesLength(coctx) : 0) + verSize + 8;
+
+        return len + (storeCacheId ? 4 : 0);
     }
 
     /**

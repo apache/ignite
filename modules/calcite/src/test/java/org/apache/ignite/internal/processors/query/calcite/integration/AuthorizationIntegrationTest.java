@@ -24,8 +24,11 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -41,10 +44,14 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -57,6 +64,7 @@ import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.MethodSource;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
@@ -140,9 +148,17 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
         IgniteEx grid0 = startGridAllowAll("srv1");
         IgniteEx grid1 = startGridAllowAll("srv2");
 
-        grid0.getOrCreateCache(new CacheConfiguration<>(ALLOWED_CACHE).setIndexedTypes(Integer.class, Integer.class));
-        grid0.getOrCreateCache(new CacheConfiguration<>(ALLOWED_READ_CACHE).setIndexedTypes(Integer.class, Integer.class));
-        grid0.getOrCreateCache(new CacheConfiguration<>(FORBIDDEN_CACHE).setIndexedTypes(Integer.class, Integer.class));
+        grid0.getOrCreateCache(new CacheConfiguration<>(ALLOWED_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        grid0.getOrCreateCache(new CacheConfiguration<>(ALLOWED_READ_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setIndexedTypes(Integer.class, Integer.class));
+
+        grid0.getOrCreateCache(new CacheConfiguration<>(FORBIDDEN_CACHE)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setIndexedTypes(Integer.class, Integer.class));
 
         IgnitePredicate<CacheEvent> lsnrPut = evt -> {
             // Ensure event is triggered with the correct security context.
@@ -235,6 +251,13 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
 
     /** */
     private void check(SqlExecutor sqlExecutor, Class<? extends Exception> errCls, String errMsg) throws Exception {
+        checkDml(sqlExecutor, errCls, errMsg);
+        checkDdl(sqlExecutor, errCls, errMsg);
+        checkKill(sqlExecutor, errCls, errMsg);
+    }
+
+    /** */
+    private void checkDml(SqlExecutor sqlExecutor, Class<? extends Exception> errCls, String errMsg) throws Exception {
         putCnt.set(0);
         removeCnt.set(0);
         int cnt = 10;
@@ -259,7 +282,10 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
 
         sqlExecutor.execute(selectSql(ALLOWED_READ_CACHE));
         assertThrows(sqlExecutor, deleteSql(ALLOWED_READ_CACHE), errCls, errMsg);
+    }
 
+    /** */
+    private void checkDdl(SqlExecutor sqlExecutor, Class<? extends Exception> errCls, String errMsg) throws Exception {
         if (allowDdl) {
             sqlExecutor.execute("CREATE TABLE test(id INT, val VARCHAR)");
             sqlExecutor.execute("CREATE VIEW test_view AS SELECT * FROM test");
@@ -275,6 +301,52 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
 
             assertThrows(sqlExecutor, "DROP VIEW test_view", errCls, errMsg);
             assertThrows(sqlExecutor, "DROP TABLE test", errCls, errMsg);
+        }
+    }
+
+    /** */
+    private void checkKill(SqlExecutor sqlExecutor, Class<? extends Exception> errCls, String errMsg) throws Exception {
+        IgniteEx srv = grid("srv1");
+        IgniteCache<Integer, Integer> allowedCache = srv.cache(ALLOWED_CACHE);
+        IgniteCache<Integer, Integer> allowedReadCache = srv.cache(ALLOWED_READ_CACHE);
+        IgniteCache<Integer, Integer> forbiddenCache = srv.cache(FORBIDDEN_CACHE);
+
+        Lock lock0 = allowedCache.lock(0);
+        Lock lock1 = allowedReadCache.lock(0);
+        Lock lock2 = forbiddenCache.lock(0);
+
+        lock0.lock();
+        lock1.lock();
+        lock2.lock();
+
+        try {
+            SystemView<CacheExplicitLockView> locks = srv.context().systemView().view(CACHE_EXPLICIT_LOCKS_VIEW);
+
+            assertEquals(3, locks.size());
+
+            CacheExplicitLockView view0 = F.find(locks, null, l -> l.cacheId() == CU.cacheId(ALLOWED_CACHE));
+            CacheExplicitLockView view1 = F.find(locks, null, l -> l.cacheId() == CU.cacheId(ALLOWED_READ_CACHE));
+            CacheExplicitLockView view2 = F.find(locks, null, l -> l.cacheId() == CU.cacheId(FORBIDDEN_CACHE));
+
+            sqlExecutor.execute("KILL LOCK '" + view0.xid().toString() + "'");
+
+            sqlExecutor.execute("KILL LOCK '" + view1.xid().toString() + "'");
+
+            assertThrows(sqlExecutor, "KILL LOCK '" + view2.xid().toString() + "'", errCls, errMsg);
+
+            assertEquals(1, locks.size());
+
+            lock0 = null;
+            lock1 = null;
+        }
+        finally {
+            if (lock0 != null)
+                lock0.unlock();
+
+            if (lock1 != null)
+                lock1.unlock();
+
+            lock2.unlock();
         }
     }
 

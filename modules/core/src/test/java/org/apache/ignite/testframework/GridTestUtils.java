@@ -1987,6 +1987,17 @@ public final class GridTestUtils {
     }
 
     /**
+     * Waits until the cached Ignite clock advances beyond its current value.
+     *
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public static void waitForNextClockTick() throws IgniteInterruptedCheckedException {
+        long now = U.currentTimeMillis();
+
+        assertTrue("Ignite clock did not advance", waitForCondition(() -> U.currentTimeMillis() > now, 1_000, 1));
+    }
+
+    /**
      * Waits for condition, polling in busy wait loop.
      *
      * @param cond Condition to wait for.

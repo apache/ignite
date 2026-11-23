@@ -227,49 +227,6 @@ public class GridSpinReadWriteLock {
     }
 
     /**
-     * Acquires write lock without sleeping between unsuccessful attempts.
-     */
-    public void writeLock0() {
-        long threadId = Thread.currentThread().getId();
-
-        if (threadId == writeLockOwner) {
-            assert state == -1;
-
-            writeLockEntryCnt++;
-
-            return;
-        }
-
-        // Increment pending write locks.
-        while (true) {
-            int pendingWLocks0 = pendingWLocks;
-
-            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 + 1))
-                break;
-        }
-
-        for (;;) {
-            if (compareAndSet(STATE_OFFS, 0, -1))
-                break;
-        }
-
-        // Decrement pending write locks.
-        while (true) {
-            int pendingWLocks0 = pendingWLocks;
-
-            assert pendingWLocks0 > 0;
-
-            if (compareAndSet(PENDING_WLOCKS_OFFS, pendingWLocks0, pendingWLocks0 - 1))
-                break;
-        }
-
-        assert writeLockOwner == -1;
-
-        writeLockOwner = threadId;
-        writeLockEntryCnt = 1;
-    }
-
-    /**
      * @return {@code True} if blocked by current thread.
      */
     public boolean writeLockedByCurrentThread() {

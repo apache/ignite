@@ -858,7 +858,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 req.cacheId(),
                 req.futureId(),
                 req.miniId(),
-                req.version(),
                 req.deployInfo() != null);
 
             res.error(req.classError());

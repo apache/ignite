@@ -23,6 +23,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
@@ -35,12 +36,15 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.systemview.view.CacheExplicitLockView;
 import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.ScanQueryView;
@@ -50,6 +54,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.managers.systemview.ScanQuerySystemView.SCAN_QRY_SYS_VIEW;
+import static org.apache.ignite.internal.processors.cache.GridCacheMvccManager.CACHE_EXPLICIT_LOCKS_VIEW;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.CQ_SYS_VIEW;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.SVCS_VIEW;
@@ -253,6 +258,39 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
     /** */
     @Test
+    public void testCancelLock() {
+        for (IgniteEx lockNode : F.asList(client, grid(0))) {
+            for (IgniteEx sqlNode : F.asList(client, grid(0))) {
+                IgniteCache<Object, Object> cache = lockNode.cache(DEFAULT_CACHE_NAME);
+
+                Lock lock = cache.lock(0);
+                lock.lock();
+
+                try {
+                    SystemView<CacheExplicitLockView> locks = lockNode.context().systemView().view(CACHE_EXPLICIT_LOCKS_VIEW);
+                    assertEquals(1, locks.size());
+                    CacheExplicitLockView view = locks.iterator().next();
+
+                    IgniteUuid xid = view.xid();
+
+                    sql(sqlNode, "KILL LOCK '" + xid.toString() + "'");
+
+                    assertEquals(0, locks.size());
+
+                    assertThrowsWithCause(lock::unlock, Exception.class);
+
+                    lock = null;
+                }
+                finally {
+                    if (lock != null)
+                        lock.unlock();
+                }
+            }
+        }
+    }
+
+    /** */
+    @Test
     public void testCancelUnknownScanQuery() {
         sql(client, "KILL SCAN '" + client.localNode().id() + "' 'unknown' 1");
     }
@@ -279,6 +317,12 @@ public class KillCommandDdlIntegrationTest extends AbstractDdlIntegrationTest {
     @Test
     public void testCancelUnknownContinuousQuery() {
         sql(client, "KILL CONTINUOUS '" + grid(0).localNode().id() + "' '" + UUID.randomUUID() + "'");
+    }
+
+    /** */
+    @Test
+    public void testCancelUnknownLock() {
+        sql(client, "KILL LOCK '" + IgniteUuid.randomUuid() + "'");
     }
 
     /** */

@@ -17,11 +17,18 @@
 
 package org.apache.ignite.ssl;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Enumeration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
@@ -39,6 +46,9 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
+    /** Default lead time for certificate hot reload: 7 days. */
+    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
+
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
 
@@ -50,6 +60,68 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
 
     /** Cached instance of an {@link SSLContext}. */
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
+
+    /** */
+    private boolean hotReloadEnabled;
+
+    /** */
+    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+
+    /** */
+    private transient volatile long earliestExpiry;
+
+    /** */
+    private transient long pendingExpiry;
+
+    /**
+     * Automatic hot reload takes its date from the key store that the factory passes to
+     * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])}.
+     *
+     * @return Whether automatic certificate hot reload is enabled. Defaults to {@code false}.
+     */
+    public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
+    }
+
+    /**
+     * @param enabled Whether automatic certificate hot reload is enabled. Changes require a node restart.
+     */
+    public void setHotReloadEnabled(boolean enabled) {
+        hotReloadEnabled = enabled;
+    }
+
+    /**
+     * @return How long before the certificates expire hot reload becomes due, in milliseconds.
+     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+     */
+    public long getHotReloadBeforeExpiryMs() {
+        return hotReloadBeforeExpiryMs;
+    }
+
+    /**
+     * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
+     */
+    public void setHotReloadBeforeExpiryMs(long millis) {
+        A.ensure(millis > 0, "millis > 0");
+
+        hotReloadBeforeExpiryMs = millis;
+    }
+
+    /**
+     * The hot reload time is calculated from the key store passed to
+     * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during the last successful load.
+     * It comes {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry among the chains of the private keys.
+     * A chain expires when any certificate in it expires.
+     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
+     *
+     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
+     *     or the last successful load supplied no key store or no private key with an X.509 chain.
+     */
+    public long getHotReloadTime() {
+        long expiry = earliestExpiry;
+
+        return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;
+    }
 
     /**
      * Gets protocol for secure transport.
@@ -116,6 +188,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     private SSLContext createSslContext() throws SSLException {
         checkParameters();
 
+        pendingExpiry = 0;
+
         KeyManager[] keyMgrs = createKeyManagers();
 
         TrustManager[] trustMgrs = createTrustManagers();
@@ -136,6 +210,8 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
             }
 
             ctx.init(keyMgrs, trustMgrs, null);
+
+            earliestExpiry = pendingExpiry;
 
             return ctx;
         }
@@ -171,6 +247,67 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     protected abstract KeyManager[] createKeyManagers() throws SSLException;
 
     /**
+     * Creates key managers from the key store. For the hot reload date, call it once per load with the key store that
+     * supplies the key managers.
+     *
+     * @param keyMgrFactory Key manager factory.
+     * @param store Key store with the private keys and their certificate chains.
+     * @param pwd Password of the private keys.
+     * @return Key managers of the key store.
+     * @throws GeneralSecurityException If the key managers cannot be created.
+     */
+    protected final synchronized KeyManager[] createKeyManagers(KeyManagerFactory keyMgrFactory, KeyStore store, char[] pwd)
+        throws GeneralSecurityException {
+        keyMgrFactory.init(store, pwd);
+
+        pendingExpiry = keyChainsExpiry(store);
+
+        return keyMgrFactory.getKeyManagers();
+    }
+
+    /**
+     * @param store Loaded key store.
+     * @return Earliest certificate expiry in the private key chains, or {@code 0} if the store has no private key
+     *     with an X.509 certificate chain.
+     * @throws GeneralSecurityException If the key store cannot be read.
+     */
+    private static long keyChainsExpiry(KeyStore store) throws GeneralSecurityException {
+        long earliest = Long.MAX_VALUE;
+
+        for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
+            String alias = aliases.nextElement();
+
+            if (!store.isKeyEntry(alias))
+                continue;
+
+            earliest = Math.min(earliest, chainExpiry(store.getCertificateChain(alias)));
+        }
+
+        return earliest == Long.MAX_VALUE ? 0 : earliest;
+    }
+
+    /**
+     * @param chain Certificate chain of a key entry, or {@code null} if the entry has none.
+     * @return Earliest expiry in the chain, or {@link Long#MAX_VALUE} if there is no chain or it holds a certificate other
+     *     than X.509, as TLS ignores such keys.
+     */
+    private static long chainExpiry(Certificate[] chain) {
+        long expiry = Long.MAX_VALUE;
+
+        if (chain == null)
+            return expiry;
+
+        for (Certificate cert : chain) {
+            if (!(cert instanceof X509Certificate x509))
+                return Long.MAX_VALUE;
+
+            expiry = Math.min(expiry, x509.getNotAfter().getTime());
+        }
+
+        return expiry;
+    }
+
+    /**
      * @return Created Trust Managers.
      * @throws SSLException If Trust Managers could not be created.
      */
@@ -182,7 +319,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      *
      * @throws IgniteException If the context cannot be initialized.
      */
-    protected final void init() {
+    public final synchronized void init() {
         try {
             sslCtx.set(createSslContext());
         }
@@ -195,18 +332,14 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
     @Override public SSLContext create() {
         SSLContext ctx = sslCtx.get();
 
-        if (ctx == null) {
-            try {
-                ctx = createSslContext();
+        if (ctx != null)
+            return ctx;
 
-                if (!sslCtx.compareAndSet(null, ctx))
-                    ctx = sslCtx.get();
-            }
-            catch (SSLException e) {
-                throw new IgniteException(e);
-            }
+        synchronized (this) {
+            if (sslCtx.get() == null)
+                init();
+
+            return sslCtx.get();
         }
-
-        return ctx;
     }
 }

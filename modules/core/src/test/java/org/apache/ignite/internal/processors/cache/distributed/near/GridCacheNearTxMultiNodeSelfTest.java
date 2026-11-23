@@ -28,6 +28,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -57,6 +59,9 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
     /** Number of backups for partitioned tests. */
     protected int backups = 1;
 
+    /** */
+    private final TestFailureHandler failureHnd = new TestFailureHandler(false);
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -74,6 +79,11 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheCfg);
 
         return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return failureHnd;
     }
 
     /** {@inheritDoc} */
@@ -151,6 +161,8 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             finally {
                 tx.close();
             }
+
+            assertNull(failureHnd.failureContext());
 
             stopGrid(priIgnite.name(), true);
             stopGrid(backupIgnite.name(), true);

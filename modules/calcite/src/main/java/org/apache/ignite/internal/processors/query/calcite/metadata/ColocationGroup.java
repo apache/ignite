@@ -307,7 +307,8 @@ public class ColocationGroup extends AbstractMessage {
      * @return Partitions to scan on the given node.
      */
     public int[] partitions(UUID nodeId) {
-        if (F.isEmpty(assignments))
+        // All primary partitions: the scan reserves them as a group.
+        if (F.isEmpty(assignments) || primaryAssignment)
             return null;
 
         GridIntList parts = new GridIntList(assignments.size());

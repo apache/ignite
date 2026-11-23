@@ -275,7 +275,7 @@ public class SnapshotRestoreProcess {
 
             DiscoveryDataClusterState clusterState = ctx.state().clusterState();
 
-            if (clusterState.state() != ClusterState.ACTIVE || clusterState.transition())
+            if (clusterState.state() != ClusterState.ACTIVE)
                 throw new IgniteException(OP_REJECT_MSG + "The cluster should be active.");
 
             if (!clusterState.hasBaselineTopology())

@@ -1087,6 +1087,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 startProcessor(new GridTaskProcessor(ctx));
                 startProcessor((GridProcessor)SCHEDULE.createOptional(ctx));
                 startProcessor(createComponent(IgniteRestProcessor.class, ctx));
+                startProcessor(ctx.ssl());
                 startProcessor(new DataStreamProcessor(ctx));
                 startProcessor(new GridContinuousProcessor(ctx));
                 startProcessor(new DataStructuresProcessor(ctx));
@@ -1972,32 +1973,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             checkClusterState();
 
             return ctx.checkpoint().removeCheckpoint(key);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean eventUserRecordable(int type) {
-        guard();
-
-        try {
-            return ctx.event().isUserRecordable(type);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allEventsUserRecordable(int[] types) {
-        A.notNull(types, "types");
-
-        guard();
-
-        try {
-            return ctx.event().isAllUserRecordable(types);
         }
         finally {
             unguard();

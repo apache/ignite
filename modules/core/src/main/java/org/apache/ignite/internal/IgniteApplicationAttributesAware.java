@@ -238,16 +238,6 @@ public class IgniteApplicationAttributesAware implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean eventUserRecordable(int type) {
-        return delegate.eventUserRecordable(type);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allEventsUserRecordable(int[] types) {
-        return delegate.allEventsUserRecordable(types);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isJmxRemoteEnabled() {
         return delegate.isJmxRemoteEnabled();
     }

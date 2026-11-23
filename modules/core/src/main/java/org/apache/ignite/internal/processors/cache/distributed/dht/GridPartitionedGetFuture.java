@@ -653,7 +653,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 cctx.cacheId(),
                 rootFutId,
                 futId,
-                null,
                 keys,
                 readThrough,
                 topVer,
