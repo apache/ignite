@@ -539,14 +539,17 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         prepareForClear();
 
         // Temporary mode state can remain if the CDC application failed while saving it.
-        File tmpModeState = grid(0).context().pdsFolderResolver().fileTree().tmpCdcModeState().toFile();
+        File tmpModeState = fileTree(0).tmpCdcModeState().toFile();
 
         assertTrue(tmpModeState.createNewFile());
 
+        File[] links0 = cdcLinks(0);
+        File[] links1 = cdcLinks(1);
+
         assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
 
-        checkCdcCleared(0, true);
-        checkCdcCleared(1, true);
+        checkCdcCleared(0, links0, true);
+        checkCdcCleared(1, links1, true);
     }
 
     /** */
@@ -556,11 +559,17 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         prepareForClear();
 
+        File[] links0 = cdcLinks(0);
+        File[] links1 = cdcLinks(1);
+
         assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, NODE_ID, grid(1).localNode().id().toString()),
             "CDC directories were successfully cleared.");
 
+        for (File link : links0)
+            assertTrue("Segment link is deleted: " + link, link.exists());
+
         checkCdcNotCleared(0, 2);
-        checkCdcCleared(1, true);
+        checkCdcCleared(1, links1, true);
     }
 
     /** */
@@ -570,7 +579,8 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         IgniteEx client = startClientGrid("client");
 
-        assertContains(log, executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CDC, CLEAR, NODE_ID, client.localNode().id().toString()),
+        assertContains(log,
+            executeCommand(EXIT_CODE_INVALID_ARGUMENTS, CDC, CLEAR, NODE_ID, client.localNode().id().toString()),
             "Client nodes do not support CDC clear command.");
     }
 
@@ -581,26 +591,14 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         prepareForClear();
 
-        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, RESET_MODE), "CDC directories were successfully cleared.");
+        File[] links0 = cdcLinks(0);
+        File[] links1 = cdcLinks(1);
 
-        checkCdcCleared(0, false);
-        checkCdcCleared(1, false);
-    }
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, RESET_MODE),
+            "CDC directories were successfully cleared.");
 
-    /** */
-    @Test
-    public void testCdcClearWithDistributedProperty() throws Exception {
-        injectTestSystemOut();
-
-        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR), "CDC was not disabled.");
-
-        cdcDisabled.propagate(true);
-
-        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
-
-        cdcDisabled.propagate(false);
-
-        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR), "CDC was not disabled.");
+        checkCdcCleared(0, links0, false);
+        checkCdcCleared(1, links1, false);
     }
 
     /** */
@@ -614,40 +612,49 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         waitForCdcState(0);
 
-        cdcDisabled.propagate(true);
+        File[] links1 = cdcLinks(1);
+
+        assertTrue(links1.length > 0);
 
         assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR),
             "Unable to acquire lock to the CDC folder. Make sure a CDC app is shut down");
 
         checkCdcNotCleared(0, 1);
-        checkCdcCleared(1, false);
+        checkCdcCleared(1, links1, true);
 
         stopThreads(log);
 
+        File[] links0 = cdcLinks(0);
+
+        links1 = cdcLinks(1);
+
         assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
 
-        checkCdcCleared(0, true);
-        checkCdcCleared(1, false);
+        checkCdcCleared(0, links0, true);
+        checkCdcCleared(1, links1, true);
     }
 
-    /** Checks that the CDC application captures changes after the CDC directory is cleared. */
+    /**
+     * Checks that the CDC application captures changes after the CDC directory is cleared. The CDC application is not
+     * started on the second node before clear, so its CDC mode is not saved.
+     */
     @Test
     public void testCdcCapturesChangesAfterClear() throws Exception {
         injectTestSystemOut();
 
-        prepareForClear();
+        prepareForClear(false);
+
+        assertFalse(fileTree(1).cdcModeState().toFile().exists());
 
         assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR), "CDC directories were successfully cleared.");
 
-        cdcDisabled.propagate(false);
+        UserCdcConsumer cnsmr0 = runCdc(grid(0));
+        UserCdcConsumer cnsmr1 = runCdc(grid(1));
 
-        UserCdcConsumer cnsmr0 = runCdc(srv0);
-        UserCdcConsumer cnsmr1 = runCdc(srv1);
+        addData(grid(0).cache(DEFAULT_CACHE_NAME), KEYS_CNT, 2 * KEYS_CNT);
 
-        addData(srv0.cache(DEFAULT_CACHE_NAME), KEYS_CNT, 2 * KEYS_CNT);
-
-        checkPrimaryKeysCaptured(srv0, cnsmr0, KEYS_CNT, 2 * KEYS_CNT);
-        checkPrimaryKeysCaptured(srv1, cnsmr1, KEYS_CNT, 2 * KEYS_CNT);
+        checkPrimaryKeysCaptured(grid(0), cnsmr0, KEYS_CNT, 2 * KEYS_CNT);
+        checkPrimaryKeysCaptured(grid(1), cnsmr1, KEYS_CNT, 2 * KEYS_CNT);
     }
 
     /**
@@ -672,16 +679,29 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /** */
     private void prepareForClear() throws Exception {
-        checkCdcCleared(0, false);
-        checkCdcCleared(1, false);
+        prepareForClear(true);
+    }
+
+    /** @param runCdcOnSecondNode Whether to run the CDC application on the second node. */
+    private void prepareForClear(boolean runCdcOnSecondNode) throws Exception {
+        for (int i = 0; i < 2; i++) {
+            NodeFileTree ft = fileTree(i);
+
+            assertEquals(0, ft.walCdcSegments().length);
+            assertFalse(ft.cdcState().toFile().exists());
+        }
 
         runCdc(grid(0));
-        runCdc(grid(1));
+
+        if (runCdcOnSecondNode)
+            runCdc(grid(1));
 
         archiveSegment();
 
         waitForCdcState(0);
-        waitForCdcState(1);
+
+        if (runCdcOnSecondNode)
+            waitForCdcState(1);
 
         stopThreads(log);
 
@@ -689,15 +709,15 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         archiveSegment();
         archiveSegment();
 
-        cdcDisabled.propagate(true);
-
         checkCdcNotCleared(0, 2);
-        checkCdcNotCleared(1, 2);
+
+        if (runCdcOnSecondNode)
+            checkCdcNotCleared(1, 2);
     }
 
     /** @param idx Node index. */
     private void waitForCdcState(int idx) throws Exception {
-        NodeFileTree ft = grid(idx).context().pdsFolderResolver().fileTree();
+        NodeFileTree ft = fileTree(idx);
 
         assertTrue(waitForCondition(() -> ft.cdcWalState().toFile().exists(), getTestTimeout()));
     }
@@ -707,7 +727,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
      * @param minSegCnt Minimal expected count of segment links.
      */
     private void checkCdcNotCleared(int idx, int minSegCnt) throws Exception {
-        NodeFileTree ft = grid(idx).context().pdsFolderResolver().fileTree();
+        NodeFileTree ft = fileTree(idx);
 
         assertTrue(waitForCondition(() -> ft.walCdcSegments().length >= minSegCnt, getTestTimeout()));
         assertTrue(ft.cdcWalState().toFile().exists());
@@ -716,12 +736,33 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
     /**
      * @param idx Node index.
+     * @return CDC segment links of the node.
+     */
+    private File[] cdcLinks(int idx) {
+        return fileTree(idx).walCdcSegments();
+    }
+
+    /**
+     * @param idx Node index.
+     * @return File tree of the node.
+     */
+    private NodeFileTree fileTree(int idx) {
+        return grid(idx).context().pdsFolderResolver().fileTree();
+    }
+
+    /**
+     * Checks that the CDC directory is cleared. Links created after clearing are kept, because CDC is enabled and
+     * segments can be archived by timeout.
+     *
+     * @param idx Node index.
+     * @param links Segment links existed before clearing.
      * @param modeExists Whether CDC mode state is expected to exist.
      */
-    private void checkCdcCleared(int idx, boolean modeExists) {
-        NodeFileTree ft = grid(idx).context().pdsFolderResolver().fileTree();
+    private void checkCdcCleared(int idx, File[] links, boolean modeExists) {
+        NodeFileTree ft = fileTree(idx);
 
-        assertEquals(0, ft.walCdcSegments().length);
+        for (File link : links)
+            assertFalse("Segment link is not deleted: " + link, link.exists());
 
         assertEquals(modeExists, ft.cdcState().toFile().exists());
 

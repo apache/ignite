@@ -51,7 +51,8 @@ public class CdcClearCommand implements ComputeCommand<CdcClearCommandArg, Void>
         List<ClusterNode> node = node(arg.nodeId(), nodes);
 
         if (node.get(0).isClient())
-            throw new IllegalArgumentException("You specified a client node id. Client nodes do not support CDC clear command.");
+            throw new IllegalArgumentException("You specified a client node id. " +
+                "Client nodes do not support CDC clear command.");
 
         return node;
     }
@@ -65,16 +66,15 @@ public class CdcClearCommand implements ComputeCommand<CdcClearCommandArg, Void>
     @Override public String confirmationPrompt(CdcClearCommandArg arg) {
         String prompt = """
             Warning: The command will delete all WAL segment links and CDC application state from the CDC directory.
-            CDC must be disabled by the 'cdc.disabled' distributed property and the CDC application must be shut down.
+            The CDC application must be shut down.
             All changes in deleted segment links will be lost!
-            To synchronize data after clearing, enable CDC first, and then use the '--cdc resend' command, \
-            a snapshot or other methods.""";
+            To synchronize data after clearing, use the '--cdc resend' command, a snapshot or other methods.""";
 
         if (arg.resetMode()) {
             prompt += """
 
                 CDC mode state will be deleted too. The CDC application will not capture changes \
-                until CDC is enabled and Ignite nodes are restarted.""";
+                until Ignite nodes are restarted.""";
         }
 
         return prompt;

@@ -38,7 +38,7 @@ public class CdcClearCommandArg extends IgniteDataTransferObject {
     /** */
     @Order(1)
     @Argument(optional = true, description = "Also delete the CDC mode state. The CDC application will not " +
-        "capture changes until CDC is enabled and Ignite nodes are restarted")
+        "capture changes until Ignite nodes are restarted")
     boolean resetMode;
 
     /** */
