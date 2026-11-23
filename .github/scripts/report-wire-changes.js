@@ -32,22 +32,15 @@ module.exports = async function reportWireChanges({github, context, core}) {
     const repo = context.repo;
     const {actions, issues, pulls} = github.rest;
     const jobs = await github.paginate(actions.listJobsForWorkflowRun, {
-        ...repo, run_id: run.id, filter: 'all', per_page: 100,
+        ...repo, run_id: run.id, filter: 'latest', per_page: 100,
     });
 
     if (jobs.some(job => job.run_attempt > run.run_attempt))
         return core.info('A newer attempt has started.');
 
-    // Rerunning failed jobs reuses completed jobs from earlier attempts of the same run.
-    function latestJob(name) {
-        const matches = jobs.filter(job => job.name === name);
-        const attempt = Math.max(...matches.map(job => job.run_attempt));
-
-        return only(matches.filter(job => job.run_attempt === attempt && job.head_sha === run.head_sha));
-    }
-
-    const wire = latestJob('Compare wire format descriptions');
-    const java = latestJob('Check java code on JDK 17');
+    const headJobs = jobs.filter(job => job.head_sha === run.head_sha);
+    const wire = only(headJobs.filter(job => job.name === 'Compare wire format descriptions'));
+    const java = only(headJobs.filter(job => job.name === 'Check java code on JDK 17'));
     const upload = stepResult(wire, 'Upload wire diff');
 
     if (wire?.conclusion !== 'success' || stepResult(wire, 'Compare descriptions and publish summary') !== 'success'
@@ -67,12 +60,7 @@ module.exports = async function reportWireChanges({github, context, core}) {
     const issue = {...repo, issue_number: Number(number)};
     const comments = await github.paginate(issues.listComments, {...issue, per_page: 100});
     const comment = comments.find(c => c.user?.login === bot && c.body?.startsWith(marker));
-    const changed = upload === 'success';
-    let lastLabelEvent;
-    if (!changed) {
-        const events = await github.paginate(issues.listEvents, {...issue, per_page: 100});
-        lastLabelEvent = events.findLast(e => e.label?.name === label && ['labeled', 'unlabeled'].includes(e.event));
-    }
+    const events = upload === 'skipped' ? await github.paginate(issues.listEvents, {...issue, per_page: 100}) : [];
 
     const {data: pr} = await pulls.get({...repo, pull_number: issue.issue_number});
     if (pr.state !== 'open' || pr.head.repo?.id !== run.head_repository.id || pr.head.ref !== run.head_branch
@@ -80,23 +68,23 @@ module.exports = async function reportWireChanges({github, context, core}) {
         return core.info('The PR has closed or changed since the comparison.');
 
     const labeled = pr.labels.some(l => l.name === label);
-    if (changed) {
-        if (!labeled)
-            await issues.addLabels({...issue, labels: [label]});
-
-        const url = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${run.id}/attempts/${wire.run_attempt}#summary-${wire.id}`;
-        const body = `${marker}\nWire format changed. Review the [wire diff in Job Summary](${url}) for rolling upgrade compatibility.`;
-
-        if (!comment)
-            await issues.createComment({...issue, body});
-        else if (comment.body !== body)
-            await issues.updateComment({...repo, comment_id: comment.id, body});
-    }
-    else {
-        if (labeled && lastLabelEvent?.event === 'labeled' && lastLabelEvent.actor?.login === bot)
+    if (upload === 'skipped') {
+        const last = events.findLast(e => e.label?.name === label && ['labeled', 'unlabeled'].includes(e.event));
+        if (labeled && last?.event === 'labeled' && last.actor?.login === bot)
             await issues.removeLabel({...issue, name: label});
 
         if (comment)
             await issues.deleteComment({...repo, comment_id: comment.id});
+        return;
     }
+
+    if (!labeled)
+        await issues.addLabels({...issue, labels: [label]});
+
+    const url = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${run.id}/attempts/${wire.run_attempt}#summary-${wire.id}`;
+    const body = `${marker}\nWire format changed. Review the [wire diff in Job Summary](${url}) for rolling upgrade compatibility.`;
+    if (!comment)
+        await issues.createComment({...issue, body});
+    else if (comment.body !== body)
+        await issues.updateComment({...repo, comment_id: comment.id, body});
 };
