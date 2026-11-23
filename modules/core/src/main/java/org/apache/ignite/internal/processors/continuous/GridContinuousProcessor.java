@@ -174,6 +174,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Whether Discovery SPI uses immutable custom messages. */
     private boolean immutableDiscoCustomMsg;
 
+    /** Local node is segmented: it does not rejoin, and nobody acknowledges the routine stops it sends. */
+    private volatile boolean segmented;
+
     /**
      * @param ctx Kernal context.
      */
@@ -202,6 +205,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
+                segmented = true;
+
                 cancelFutures(new IgniteCheckedException("Topology segmented"));
             }
         }, EVT_NODE_SEGMENTED);
@@ -1048,6 +1053,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 // Finish if routine is not found (wrong ID is provided).
                 if (!stop) {
+                    stopFuts.remove(routineId);
+
+                    fut.onDone();
+
+                    return fut;
+                }
+
+                // A segmented node never rejoins, and the stop request cannot reach the other nodes (they drop the
+                // auto-unsubscribe routines of a failed node themselves): the local unregistration above is all
+                // that is left to do.
+                if (segmented) {
                     stopFuts.remove(routineId);
 
                     fut.onDone();

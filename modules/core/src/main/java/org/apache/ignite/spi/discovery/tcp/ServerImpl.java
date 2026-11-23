@@ -1068,6 +1068,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
+        TcpDiscoverySpiState state = spiStateCopy();
+
+        // After disconnect() (segmentation with SegmentationPolicy.NOOP) the ring message worker is stopped:
+        // a message added to its queue would never be sent, and its sender would wait forever.
+        if (state == DISCONNECTING || state == DISCONNECTED)
+            throw new IgniteSpiException("Failed to send custom message: discovery SPI is " +
+                state.name().toLowerCase() + '.');
+
         TcpDiscoveryCustomEventMessage msg;
 
         DiscoverySpiCustomMessage customMsg = U.unwrapCustomMessage(evt);

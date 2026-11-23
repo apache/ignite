@@ -41,6 +41,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMetricsWarnLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNoopSegmentationTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryMdcReversedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySelfTest;
@@ -85,6 +86,7 @@ import org.junit.runners.Suite;
     TcpDiscoveryConcurrentStartTest.class,
     TcpDiscoveryWithAddressFilterTest.class,
     TcpDiscoveryNetworkIssuesTest.class,
+    TcpDiscoveryNoopSegmentationTest.class,
     TestMetricUpdateFailure.class,
     IgniteClientConnectSslTest.class,
     IgniteClientReconnectMassiveShutdownTest.class,
