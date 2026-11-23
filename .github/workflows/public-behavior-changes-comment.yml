@@ -38,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: read
+      contents: read
       pull-requests: write
     steps:
       - name: Checkout check scripts
