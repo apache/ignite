@@ -77,7 +77,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         } : null);
     }
 
-    /** */
+    /** Registers the TLS factory of a transport that does not use an Ignite SSL context factory, such as HTTP REST. */
     public void register(String transport, ReloadableSslFactory factory) {
         add(transport, factory, factory);
     }
@@ -88,7 +88,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             RegisteredFactory registered = factories.get(i);
 
             if (registered.factory == factory) {
-                factories.set(i, new RegisteredFactory(factory, reloadable, registered.transports + ", " + transport));
+                factories.set(i, new RegisteredFactory(factory, registered.reloadable, registered.transports + ", " + transport));
 
                 return;
             }

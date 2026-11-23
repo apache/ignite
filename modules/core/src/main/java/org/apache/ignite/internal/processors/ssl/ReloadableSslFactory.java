@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
-/** TLS factory of a transport that does not use an Ignite SSL context factory, such as HTTP REST with Jetty. */
+/** Operations that the SSL factory registry uses to reload a TLS factory on request and before its certificates expire. */
 public interface ReloadableSslFactory {
     /**
      * Loads the keys and trust settings again for new connections. If loading fails, new connections keep the previous ones.
@@ -27,7 +27,7 @@ public interface ReloadableSslFactory {
     public void reload();
 
     /**
-     * @return Time when the certificates of the last successful load are due for hot reload, as calculated by
+     * @return Time when the certificates that new connections use are due for hot reload, as calculated by
      *     {@link HotReloadTime#of}, or {@code 0} if they give none.
      */
     public long hotReloadTime();

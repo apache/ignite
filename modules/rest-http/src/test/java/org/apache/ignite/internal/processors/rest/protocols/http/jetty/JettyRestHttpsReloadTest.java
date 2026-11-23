@@ -62,7 +62,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * TLS reload of the HTTP REST connector configured in Jetty XML. The standard Jetty factory reads its key store from a file
  * and requires an SNI host name ({@code jetty/https.xml}). The custom factory ({@code jetty/https-source.xml}) takes its
- * key stores from {@link SourceSslContextFactory}.
+ * key stores from {@link SourceSslContextFactory}. The connectors in these files set no port, so the tests set
+ * {@code IGNITE_JETTY_PORT}; otherwise the node would publish port 0.
  */
 @WithSystemProperty(key = IGNITE_JETTY_PORT, value = DFLT_JETTY_PORT)
 public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
@@ -218,9 +219,11 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     public void testFailedTrustStoreLoadKeepsLastWorkingKeys() throws Exception {
         KeyStore a = fresh();
         Path trust = tmp.newFile("trust.jks").toPath();
-        SslContextFactory.Server jettyFactory = keyStoreFactory(a);
+        SslContextFactory.Server jettyFactory = new SslContextFactory.Server();
 
         save(ca.trustStore(), trust);
+        jettyFactory.setKeyStore(a);
+        jettyFactory.setKeyStorePassword(new String(PASSWORD));
         jettyFactory.setTrustStorePath(trust.toString());
         jettyFactory.setTrustStoreType("JKS");
         jettyFactory.setTrustStorePassword(new String(PASSWORD));
@@ -267,16 +270,6 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         finally {
             jettyFactory.stop();
         }
-    }
-
-    /** @return Standard Jetty factory with the key store set on it directly. */
-    private static SslContextFactory.Server keyStoreFactory(KeyStore keys) {
-        SslContextFactory.Server factory = new SslContextFactory.Server();
-
-        factory.setKeyStore(keys);
-        factory.setKeyStorePassword(new String(PASSWORD));
-
-        return factory;
     }
 
     /** @return Key store with a server certificate valid for 30 days, which is not due for hot reload. */
