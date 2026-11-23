@@ -28,7 +28,8 @@ const { execFileSync } = require('child_process');
 
 const MARKER = '<!-- ignite-public-behavior-changes';
 const RFC_NAME = /^rfcs\/IGNITE-\d+-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/;
-const RFC_LINK = /https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/([^/\s]+)\/(rfcs\/[A-Za-z0-9._-]*[A-Za-z0-9_-])/g;
+const LINK = /https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/[^\s<>"'()\[\]]+/g;
+const RFC_LINK = /^https:\/\/github\.com\/apache\/ignite\/(?:blob|tree)\/([^/]+)\/(rfcs\/.+)$/;
 const BLOB = /^[0-9a-f]{40,64}$/;
 const TEMPLATE = 'rfcs/TEMPLATE.md';
 const RFC_EXAMPLE = 'rfcs/IGNITE-12345-cache-timeout.md';
@@ -62,15 +63,18 @@ function parse(text) {
 
 /**
  * @return Keys of the declarations whose rename group only changed its name: the group left the target branch, another group
- *      came in the PR, and their declarations are the same apart from the group name.
+ *      came in the PR, and their declarations are the same apart from the group name. A group is identified by its name and
+ *      the part of the key before the name, such as the class of a constant: two enums may have constants with the same name.
  */
 function renamedKeys(base, merge) {
+    const groupId = d => d.area + '\t' + d.key.slice(0, d.key.indexOf(d.group)) + '\t' + d.group;
+
     const groups = (decls, other) => {
-        const present = new Set([...other.values()].filter(d => d.group).map(d => d.area + '\t' + d.group));
+        const present = new Set([...other.values()].filter(d => d.group).map(groupId));
         const res = new Map();
 
         for (const [id, d] of decls) {
-            const gid = d.area + '\t' + d.group;
+            const gid = groupId(d);
 
             if (!d.group || present.has(gid))
                 continue;
@@ -159,8 +163,8 @@ function rfcFiles(nameStatus) {
 }
 
 /**
- * Finds direct links to RFC files in the PR description. A link counts if its file is on the target branch and the link itself
- * leads to that file.
+ * Finds direct links to RFC files in the PR description. A link counts if its whole path is an RFC file on the target branch
+ * and the link itself leads to that file. A file counts if any of its links counts.
  *
  * @param body PR description.
  * @param baseRef Name of the target branch.
@@ -169,20 +173,25 @@ function rfcFiles(nameStatus) {
  */
 async function rfcLinks(body, baseRef, onTarget, atRef) {
     const linked = [];
-    const badLinks = [];
+    const problems = new Map();
 
-    for (const [, ref, file] of (body || '').matchAll(RFC_LINK)) {
-        if (linked.includes(file) || badLinks.some(l => l.path === file))
+    for (const [url] of (body || '').matchAll(LINK)) {
+        const m = RFC_LINK.exec(url.replace(/[.,;:!]+$/, '').replace(/[?#].*$/, ''));
+
+        if (!m)
             continue;
 
+        const [, ref, file] = m;
         const problem = !RFC_NAME.test(file) ? 'name' : !onTarget(file) ? 'missing'
             : ref !== baseRef && !(await atRef(ref, file)) ? 'url' : null;
 
-        if (problem)
-            badLinks.push({ path: file, reason: problem });
-        else
+        if (!problem && !linked.includes(file))
             linked.push(file);
+        else if (problem && !problems.has(file))
+            problems.set(file, problem);
     }
+
+    const badLinks = [...problems].filter(([file]) => !linked.includes(file)).map(([file, reason]) => ({ path: file, reason }));
 
     return { linked, badLinks };
 }
@@ -534,8 +543,9 @@ async function findPr(github, owner, repo, run) {
 }
 
 /**
- * Runs in the workflow_run job: replaces the bot comment when the result changes. A newer run for the same commit, started for
- * example by an edit of the PR description, publishes instead of this one.
+ * Runs in the workflow_run job: replaces the bot comment when the result changes. A newer run for the same commit of the same
+ * PR branch, started for example by an edit of the PR description, publishes instead of this one. A run of another PR with the
+ * same commit does not count.
  */
 async function publish({ github, context, core, resultFile }) {
     const { owner, repo } = context.repo;
@@ -549,10 +559,11 @@ async function publish({ github, context, core, resultFile }) {
     }
 
     const { data: runs } = await github.rest.actions.listWorkflowRuns({
-        owner, repo, workflow_id: run.workflow_id, head_sha: run.head_sha, per_page: 100,
+        owner, repo, workflow_id: run.workflow_id, head_sha: run.head_sha, event: 'pull_request', per_page: 100,
     });
+    const samePr = r => r.head_branch === run.head_branch && r.head_repository?.full_name === run.head_repository.full_name;
 
-    if (runs.workflow_runs.some(r => r.run_number > run.run_number)) {
+    if (runs.workflow_runs.some(r => samePr(r) && r.run_number > run.run_number)) {
         core.info(`A newer run checks ${run.head_sha}; it publishes the result.`);
 
         return;

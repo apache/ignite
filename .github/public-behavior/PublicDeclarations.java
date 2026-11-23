@@ -38,8 +38,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -597,12 +598,11 @@ public class PublicDeclarations {
 
         describeMembers(cls, cls, vars, members);
 
-        Set<Class<?>> internalSupers = new LinkedHashSet<>();
+        Map<Class<?>, Map<TypeVariable<?>, String>> internalSupers = new LinkedHashMap<>();
 
-        collectInternalSupertypes(cls, internalSupers);
+        collectInternalSupertypes(cls, vars, internalSupers);
 
-        for (Class<?> sup : internalSupers)
-            describeMembers(sup, cls, vars, members);
+        internalSupers.forEach((sup, supVars) -> describeMembers(sup, cls, supVars, members));
 
         members.forEach((key, m) -> {
             boolean own = m.elem.isAnnotationPresent(Deprecated.class);
@@ -663,26 +663,53 @@ public class PublicDeclarations {
             direct.add(cls.getGenericSuperclass());
 
         for (Type t : direct) {
-            Class<?> raw = t instanceof ParameterizedType ? (Class<?>)((ParameterizedType)t).getRawType() : (Class<?>)t;
+            Class<?> raw = rawClass(t);
 
             if (internalType(raw))
-                collectSupertypes(raw, vars, res);
+                collectSupertypes(raw, passedVars(t, vars), res);
             else if (raw != java.lang.annotation.Annotation.class)
                 res.add(typeText(t, vars));
         }
     }
 
-    /** Collects Ignite internal supertypes whose members users reach through the public type. */
-    private static void collectInternalSupertypes(Class<?> cls, Set<Class<?>> res) {
-        List<Class<?>> direct = new ArrayList<>(Arrays.asList(cls.getInterfaces()));
+    /**
+     * Collects Ignite internal supertypes whose members users reach through the public type, each with the type arguments
+     * that the public type passes to it: renaming a type parameter of an internal class changes nothing for users.
+     */
+    private static void collectInternalSupertypes(Class<?> cls, Map<TypeVariable<?>, String> vars,
+        Map<Class<?>, Map<TypeVariable<?>, String>> res) {
+        List<Type> direct = new ArrayList<>(Arrays.asList(cls.getGenericInterfaces()));
 
-        if (cls.getSuperclass() != null)
-            direct.add(cls.getSuperclass());
+        if (cls.getGenericSuperclass() != null)
+            direct.add(cls.getGenericSuperclass());
 
-        for (Class<?> sup : direct) {
-            if (internalType(sup) && res.add(sup))
-                collectInternalSupertypes(sup, res);
+        for (Type t : direct) {
+            Class<?> sup = rawClass(t);
+
+            if (internalType(sup) && !res.containsKey(sup)) {
+                Map<TypeVariable<?>, String> supVars = passedVars(t, vars);
+
+                res.put(sup, supVars);
+                collectInternalSupertypes(sup, supVars, res);
+            }
         }
+    }
+
+    /** @return Class of a class or parameterized type. */
+    private static Class<?> rawClass(Type t) {
+        return t instanceof ParameterizedType ? (Class<?>)((ParameterizedType)t).getRawType() : (Class<?>)t;
+    }
+
+    /** @return Type parameters of a supertype mapped to the type arguments that a subtype passes in {@code t}. */
+    private static Map<TypeVariable<?>, String> passedVars(Type t, Map<TypeVariable<?>, String> vars) {
+        TypeVariable<?>[] params = rawClass(t).getTypeParameters();
+        Type[] args = t instanceof ParameterizedType ? ((ParameterizedType)t).getActualTypeArguments() : new Type[0];
+        Map<TypeVariable<?>, String> res = new HashMap<>();
+
+        for (int i = 0; i < params.length; i++)
+            res.put(params[i], i < args.length ? typeText(args[i], vars) : params[i].getName());
+
+        return res;
     }
 
     /** Describes the members of {@code src} as members of the public type {@code api}, keeping members described earlier. */
@@ -892,8 +919,10 @@ public class PublicDeclarations {
     }
 
     /**
-     * Describes a command and its subcommands. {@code control.sh} refuses experimental commands unless
-     * {@code --enable-experimental} is given, so the experimental mark is part of the command.
+     * Describes a command and its subcommands. {@code control.sh} refuses a command marked experimental unless
+     * {@code --enable-experimental} is given, and it checks the mark of the command itself, not of its parents. So that mark is
+     * part of the command. A command is deprecated if it or a parent is: removing the parent removes the command. The
+     * deprecation hint of the command and its parameters points at that annotation.
      */
     private static void command(Command<?, ?> cmd, List<Command<?, ?>> parents) {
         CommandHandler.CommandName name = new CommandHandler.CommandName();
@@ -903,31 +932,45 @@ public class PublicDeclarations {
 
         String path = "control.sh" + commandName(name);
         boolean experimental = cmd.getClass().isAnnotationPresent(IgniteExperimental.class);
-        boolean deprecated = cmd.getClass().isAnnotationPresent(Deprecated.class)
-            || parents.stream().anyMatch(p -> p.getClass().isAnnotationPresent(Deprecated.class));
-        String flags = flags(deprecated, experimental || parents.stream().anyMatch(p -> p.getClass().isAnnotationPresent(IgniteExperimental.class)));
+        List<Command<?, ?>> chain = new ArrayList<>(parents);
+
+        chain.add(cmd);
+        Collections.reverse(chain);
+
+        Class<?> deprecatedBy = chain.stream().map(Object::getClass).filter(c -> c.isAnnotationPresent(Deprecated.class))
+            .findFirst().orElse(null);
+        String flags = flags(deprecatedBy != null, experimental);
+        String deprecation = deprecatedBy == null ? null : where(deprecatedBy, null, -1, true);
 
         if (CommandUtils.executable(cmd)) {
-            add("CLI", path, "command" + (experimental ? ", experimental" : "") + (deprecated ? ", deprecated" : ""),
-                flags, where(cmd.getClass(), null, -1, deprecated));
+            add("CLI", path, "command" + (experimental ? ", experimental" : "") + (deprecatedBy != null ? ", deprecated" : ""),
+                flags, deprecation != null ? deprecation : where(cmd.getClass(), null, -1, false));
 
             int[] pos = {0};
 
             CommandUtils.visitCommandParams(cmd.argClass(),
-                fld -> parameter(path, fld, ++pos[0], false, flags),
-                fld -> parameter(path, fld, 0, false, flags),
+                fld -> parameter(path, fld, ++pos[0], false, flags, deprecation),
+                fld -> parameter(path, fld, 0, false, flags, deprecation),
                 (grp, flds) -> {
-                    List<String> names = new ArrayList<>();
+                    List<String> positional = new ArrayList<>();
+                    Set<String> named = new TreeSet<>();
 
                     for (Field fld : flds) {
-                        boolean positional = fld.isAnnotationPresent(Positional.class);
-
-                        names.add(positional ? "<arg " + (pos[0] + 1) + '>' : CommandUtils.toFormattedFieldName(fld));
-                        parameter(path, fld, positional ? ++pos[0] : 0, true, flags);
+                        if (fld.isAnnotationPresent(Positional.class)) {
+                            positional.add("<arg " + (pos[0] + 1) + '>');
+                            parameter(path, fld, ++pos[0], true, flags, deprecation);
+                        }
+                        else {
+                            named.add(CommandUtils.toFormattedFieldName(fld));
+                            parameter(path, fld, 0, true, flags, deprecation);
+                        }
                     }
 
-                    add("CLI", path + ' ' + String.join("|", names), "group, " + (grp.optional() ? "optional" : "required")
-                        + (grp.onlyOneOf() ? ", only one of" : ""), flags, where(cmd.argClass(), null, -1, false));
+                    positional.addAll(named);
+
+                    add("CLI", path + ' ' + String.join("|", positional), "group, " + (grp.optional() ? "optional" : "required")
+                        + (grp.onlyOneOf() ? ", only one of" : ""), flags,
+                        deprecation != null ? deprecation : where(cmd.argClass(), null, -1, false));
                 });
         }
 
@@ -957,9 +1000,11 @@ public class PublicDeclarations {
     /**
      * Describes a command parameter. Positional parameters are identified by position, named ones by name. The parser treats
      * a named parameter of a group as optional and checks the group instead, so such a parameter is described as part of
-     * its group.
+     * its group. The group lists its named parameters in alphabetical order, because their order does not matter to the parser.
+     *
+     * @param deprecation Location of the deprecation of the command, or {@code null}.
      */
-    private static void parameter(String path, Field fld, int pos, boolean grouped, String flags) {
+    private static void parameter(String path, Field fld, int pos, boolean grouped, String flags, String deprecation) {
         Argument arg = fld.getAnnotation(Argument.class);
         Class<?> type = fld.getType().isArray() ? fld.getType().getComponentType() : fld.getType();
 
@@ -970,12 +1015,13 @@ public class PublicDeclarations {
 
         add("CLI", path + ' ' + (pos > 0 ? "<arg " + pos + '>' : CommandUtils.toFormattedFieldName(fld)),
             required + fld.getType().getTypeName() + values + (arg != null && arg.sensitive() ? ", sensitive" : ""), flags,
-            where(fld.getDeclaringClass(), fld.getName(), -1, false));
+            deprecation != null ? deprecation : where(fld.getDeclaringClass(), fld.getName(), -1, false));
     }
 
     /**
      * Describes protocol, storage and error constants declared in internal classes. The name of a constant is a rename group:
-     * users see only its value.
+     * users see only its value. The class stays in the key, so a constant renamed within its class is matched with itself,
+     * not with a constant of another class that has the same value.
      */
     private static void constants() throws ReflectiveOperationException {
         for (String[] c : CONSTANTS) {
@@ -994,7 +1040,7 @@ public class PublicDeclarations {
                 String key = cls.getSimpleName() + '.' + f.getName();
                 Object val = staticValue(f);
 
-                add(c[0], key, valueText(val), flags(deprecated, false), where(cls, f.getName(), -1, deprecated), key);
+                add(c[0], key, valueText(val), flags(deprecated, false), where(cls, f.getName(), -1, deprecated), f.getName());
 
                 if (cls == IgniteQueryErrorCode.class && type == int.class) {
                     add(c[0], "SQLSTATE of query error code " + val, IgniteQueryErrorCode.codeToSqlState((Integer)val), "",
@@ -1017,14 +1063,15 @@ public class PublicDeclarations {
                 boolean deprecated = cls.getField(name).isAnnotationPresent(Deprecated.class);
                 String key = cls.getSimpleName() + '.' + name;
 
-                add(c[0], key, String.valueOf(code.invoke(e)), flags(deprecated, false), where(cls, name, -1, deprecated), key);
+                add(c[0], key, String.valueOf(code.invoke(e)), flags(deprecated, false), where(cls, name, -1, deprecated), name);
             }
         }
     }
 
     /**
-     * Describes the keywords of the Calcite SQL parser and the operators and functions of the Calcite engine. Each allowed
-     * signature is part of the key, so the forms of an overloaded function are compared separately.
+     * Describes the keywords of the Calcite SQL parser and the operators and functions of the Calcite engine. The kind and the
+     * allowed signatures of an operator are part of the key, so the forms of an overloaded function are compared separately.
+     * Forms that still share a key are counted, so removing one of them is a change.
      */
     private static void sql() {
         SqlAbstractParserImpl parser = IgniteSqlParserImpl.FACTORY.getParser(new StringReader(""));
@@ -1033,6 +1080,9 @@ public class PublicDeclarations {
             add("SQL keywords", "Calcite " + token, parser.getMetadata().isReservedWord(token) ? "reserved" : "non-reserved", "",
                 where(IgniteSqlParserImpl.class, null, -1, false));
         }
+
+        Map<String, Integer> forms = new TreeMap<>();
+        Map<String, String> locations = new HashMap<>();
 
         for (ReflectiveSqlOperatorTable t : List.of(IgniteStdSqlOperatorTable.INSTANCE, IgniteOwnSqlOperatorTable.instance())) {
             for (SqlOperator op : t.getOperatorList()) {
@@ -1048,10 +1098,14 @@ public class PublicDeclarations {
                     signatures = "";
                 }
 
-                add("SQL functions", op.getName() + ' ' + op.getSyntax() + ' ' + signatures, "", "",
-                    where(t.getClass(), null, -1, false));
+                String key = oneLine(op.getName() + ' ' + op.getSyntax() + ' ' + op.getKind() + ' ' + signatures);
+
+                forms.merge(key, 1, Integer::sum);
+                locations.putIfAbsent(key, where(t.getClass(), null, -1, false));
             }
         }
+
+        forms.forEach((key, n) -> add("SQL functions", key, n > 1 ? n + " registrations" : "", "", locations.get(key)));
     }
 
     /** Describes runtime requirements and packages declared in build and launch files. */

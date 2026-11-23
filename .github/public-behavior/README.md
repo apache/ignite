@@ -26,6 +26,8 @@ call, pass or read, and then compares the two lists. A change is reported only w
 has a different shape. Help texts, descriptions and examples are not compared, and moving a declaration within the
 sources is not a change. Renaming an internal constant or the class of a system view row is not a change either, because
 users see only its value or the view columns. If two codes swap values under the same names, the check reports it.
+A rename is matched only within the same class, so a removed operation code is not taken for a new status code with
+the same value.
 
 ## Results
 
@@ -55,7 +57,7 @@ covers the changes, reviews compatibility and verifies any required vote on the 
 | Programming APIs, plugins and SPIs | Public and protected types and members of the packages published in javadoc, in the modules listed in `ignite-bom`: signatures, supertypes, constant values, enum order, annotation defaults, where an annotation may be used and how long it is kept, `@Deprecated` and `@IgniteExperimental`. Members inherited from internal classes count as members of the public type. Names of type parameters are not compared. | Whether internal types used in public signatures are part of the public API. Source and binary compatibility. When callbacks run. The .NET and C++ APIs. |
 | SQL | Keywords of the Calcite parser and of the native DDL parser. Operators and functions of the Calcite engine with their allowed signatures. | Data types, functions of the H2 engine, and which queries succeed and what they return. |
 | REST | Command names accepted in the `cmd` parameter. | Routes, parameters and the response format. |
-| CLI | `control.sh` commands and subcommands, including whether a command is experimental or deprecated, named and positional parameters with their types, accepted enum values and whether they are required, groups of parameters, common options and exit codes. | Custom validation, whether a command asks for confirmation, and the command output. |
+| CLI | `control.sh` commands and subcommands, including whether a command is experimental (its own mark, which `control.sh` checks) or deprecated (its own or a parent's mark), named and positional parameters with their types, accepted enum values and whether they are required, groups of parameters, common options and exit codes. | Custom validation, whether a command asks for confirmation, and the command output. |
 | Configuration | Configuration classes through the Java API, including default value constants. System properties printed by `ignite.sh -systemProps`: name, type, default value and deprecation. | Distributed properties, environment variables of the scripts, and defaults computed at runtime. |
 | Monitoring | Name, type and position of each system view column. JMX interfaces and event types through the Java API. | Metric names and units, system view names, and when events fire. Ignite registers these at runtime. |
 | Client protocols and external formats | Thin client operation codes, status codes, protocol versions and feature IDs. JDBC and ODBC request types and protocol versions. Binary format constants. | Message layout, version negotiation, and supported client/server combinations. |

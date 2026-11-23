@@ -30,8 +30,8 @@ const check = require('./check.js');
 /** @return Declaration line in the format of PublicDeclarations.java. */
 const line = (area, key, value, flags = '', location = 'A.java:1', group = '') => [area, key, value, flags, location, group].join('\t');
 
-/** @return Line of an internal constant, whose name is a rename group. */
-const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key);
+/** @return Line of an internal constant {@code Class.NAME}, whose name is a rename group. */
+const constant = (area, key, value) => line(area, key, value, '', 'A.java:1', key.split('.').pop());
 
 /** @return Line of a system view column, whose row class is a rename group. */
 const column = (view, name, value) => line('Monitoring', `system view ${view} column ${name}`, value, '', 'A.java:1', view);
@@ -87,6 +87,24 @@ test('two operations that swap their codes are reported, and so is a renamed vie
         ['Parser.OP_GET', '1000', '1001'],
         ['Parser.OP_PUT', '1001', '1000'],
     ]);
+});
+
+test('a removed operation and a new error code with the same value are both reported', () => {
+    const base = constant('Thin client protocol', 'ClientMessageParser.OP_CACHE_GET_ALL', '1003');
+    const merge = constant('Thin client protocol', 'ClientStatus.CACHE_LOCKED', '1003');
+
+    assert.deepStrictEqual(check.compare(base, merge).map(f => [f.key, f.before, f.after]), [
+        ['ClientMessageParser.OP_CACHE_GET_ALL', '1003', null],
+        ['ClientStatus.CACHE_LOCKED', null, '1003'],
+    ]);
+});
+
+test('a constant renamed in one enum is a rename when another enum has a constant with the old name', () => {
+    const server = constant('Thin client protocol', 'ClientBitmaskFeature.EXECUTE_TASK_BY_NAME', '1');
+    const client = constant('Thin client protocol', 'ProtocolBitmaskFeature.EXECUTE_TASK_BY_NAME', '1');
+    const renamed = constant('Thin client protocol', 'ClientBitmaskFeature.EXECUTE_TASK', '1');
+
+    assert.deepStrictEqual(check.compare([server, client].join('\n'), [renamed, client].join('\n')), []);
 });
 
 test('removing a deprecated declaration and changing experimental API are left to the reviewer', () => {
@@ -152,6 +170,18 @@ test('a link counts only if its file is on the target branch and the link leads 
         ],
     });
     assert.deepStrictEqual(checked, ['mastr:rfcs/IGNITE-9-typo.md', '1a2b3c:rfcs/IGNITE-10-permalink.md']);
+});
+
+test('a broken link does not hide a working link to the same file, and a path past the file is not a link to it', async () => {
+    const body = 'https://github.com/apache/ignite/blob/mastr/rfcs/IGNITE-7-y.md and then ' +
+        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-7-y.md, also ' +
+        'https://github.com/apache/ignite/blob/master/rfcs/IGNITE-8-z.md/extra';
+    const onTarget = f => ['rfcs/IGNITE-7-y.md', 'rfcs/IGNITE-8-z.md'].includes(f);
+
+    assert.deepStrictEqual(await check.rfcLinks(body, 'master', onTarget, async () => false), {
+        linked: ['rfcs/IGNITE-7-y.md'],
+        badLinks: [{ path: 'rfcs/IGNITE-8-z.md/extra', reason: 'name' }],
+    });
 });
 
 test('a PR without contract changes passes before the RFC check', () => {
@@ -224,15 +254,21 @@ test('long reports are cut to stay within the GitHub comment limit', () => {
  *
  * @param headSha Head commit of the open PR.
  * @param comments Comments that the PR already has.
- * @param runNumbers Numbers of the check runs for the head commit.
+ * @param runs Check runs for the head commit: number and PR branch.
  */
-function github({ headSha = 'abc', comments = [], runNumbers = [1] } = {}) {
+function github({ headSha = 'abc', comments = [], runs = [{ number: 1, branch: 'ignite-1' }] } = {}) {
     const calls = [];
     let id = 100;
 
     const rest = {
         pulls: { list: 'pulls.list', get: async () => ({ data: { number: 7, head: { sha: headSha }, base: { ref: 'master' } } }) },
-        actions: { listWorkflowRuns: async () => ({ data: { workflow_runs: runNumbers.map(n => ({ run_number: n })) } }) },
+        actions: {
+            listWorkflowRuns: async () => ({
+                data: {
+                    workflow_runs: runs.map(r => ({ run_number: r.number, head_branch: r.branch, head_repository: { full_name: 'fork/ignite' } })),
+                },
+            }),
+        },
         issues: {
             listComments: 'issues.listComments',
             deleteComment: async ({ comment_id }) => {
@@ -263,7 +299,8 @@ async function publish(gh, res) {
         payload: {
             workflow_run: {
                 head_sha: 'abc', head_branch: 'ignite-1', pull_requests: [], html_url: 'https://github.com/apache/ignite/actions/runs/1',
-                head_repository: { owner: { login: 'fork' }, html_url: 'https://github.com/fork/ignite' }, workflow_id: 5, run_number: 1,
+                head_repository: { owner: { login: 'fork' }, full_name: 'fork/ignite', html_url: 'https://github.com/fork/ignite' },
+                workflow_id: 5, run_number: 1,
             },
         },
     };
@@ -329,12 +366,20 @@ test('a result for an outdated PR head is ignored', async () => {
     assert.deepStrictEqual(gh.calls, []);
 });
 
-test('a result is ignored when a newer run checks the same commit', async () => {
-    const gh = github({ runNumbers: [1, 2] });
+test('a result is ignored when a newer run checks the same commit of the same PR', async () => {
+    const gh = github({ runs: [{ number: 1, branch: 'ignite-1' }, { number: 2, branch: 'ignite-1' }] });
 
     await publish(gh, check.decide([CONTRACT], NO_RFC));
 
     assert.deepStrictEqual(gh.calls, []);
+});
+
+test('a newer run of another PR with the same commit does not suppress the result', async () => {
+    const gh = github({ runs: [{ number: 1, branch: 'ignite-1' }, { number: 2, branch: 'ignite-1-copy' }] });
+
+    await publish(gh, check.decide([CONTRACT], NO_RFC));
+
+    assert.deepStrictEqual(gh.calls, ['create']);
 });
 
 test('a missing or forged result is reported as a check that could not finish', async () => {
