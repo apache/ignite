@@ -65,7 +65,8 @@ public class NearCacheUpdates extends AbstractMessage {
     }
 
     /**
-     * Adds value to be put in near cache on originating node.
+     * Adds value to be put in near cache on originating node. The values must be added in ascending order of the key
+     * index, because the originating node reads them in this order.
      *
      * @param keyIdx Key index.
      * @param val Value.
@@ -88,7 +89,8 @@ public class NearCacheUpdates extends AbstractMessage {
     }
 
     /**
-     * Stores the TTL and the expire time at the index of the key, so the keys can be added in any order.
+     * Stores the TTL and the expire time at the index of the key. The originating node reads them by this index,
+     * so unlike the near values they can be added in any order.
      *
      * @param keyIdx Key index.
      * @param ttl TTL for near cache update.
