@@ -459,11 +459,6 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     }
 
     /** {@inheritDoc} */
-    @Override public void onOutboundExchangeStarted(UUID nodeId, long exchangeId) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void onOutboundExchangeFinished(long exchangeId) {
         // No-op.
     }
