@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry.RegisteredFactory;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -179,8 +180,13 @@ public class SslFactoryRegistryTest {
         registry.register("client connector", clientConnector);
         registry.register("discovery", factory);
 
-        assertEquals(List.of(Map.entry(factory, "communication, discovery"),
-            Map.entry(clientConnector, "client connector")), registry.factories());
+        List<Map.Entry<Object, String>> registered = new ArrayList<>();
+
+        for (RegisteredFactory f : registry.factories())
+            registered.add(Map.entry(f.factory(), f.transports()));
+
+        assertEquals(List.of(Map.entry(factory, "communication, discovery"), Map.entry(clientConnector, "client connector")),
+            registered);
     }
 
     /**
@@ -211,7 +217,7 @@ public class SslFactoryRegistryTest {
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
         check.run();
-        registry.reload(rest);
+        reload(rest);
 
         verify(rest, times(2)).reload();
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
@@ -263,7 +269,7 @@ public class SslFactoryRegistryTest {
         long prevTime = communication.getHotReloadTime();
 
         writeFreshCertificates(keys);
-        registry.reload(clientConnector);
+        reload(clientConnector);
 
         assertTrue(clientConnector.getHotReloadTime() > prevTime);
         assertEquals(prevTime, communication.getHotReloadTime());
@@ -291,7 +297,7 @@ public class SslFactoryRegistryTest {
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
-        registry.reload(communication);
+        reload(communication);
 
         assertEquals("TLS hot reload due [transports=communication, hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']',
             logged.get(logged.size() - 1));
@@ -479,7 +485,7 @@ public class SslFactoryRegistryTest {
         long prevTime = communication.getHotReloadTime();
 
         writeFreshCertificates(keys);
-        registry.reload(communication);
+        reload(communication);
 
         assertTrue(communication.getHotReloadTime() > prevTime);
     }
@@ -496,13 +502,13 @@ public class SslFactoryRegistryTest {
         writeFreshCertificates(keys);
         registerTransport("communication", communication);
         registry.onKernalStart(true);
-        registry.reload(communication);
+        reload(communication);
 
         assertEquals(1, metric("ManualReloadAttempts"));
 
         Files.delete(keys);
 
-        assertThrows(IgniteException.class, () -> registry.reload(communication));
+        assertThrows(IgniteException.class, () -> reload(communication));
         assertEquals(2, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
     }
@@ -554,7 +560,7 @@ public class SslFactoryRegistryTest {
         registry.onKernalStart(true);
 
         custom.setKeys(null, null);
-        registry.reload(custom);
+        reload(custom);
         check.run();
 
         assertEquals(0, custom.getHotReloadTime());
@@ -572,7 +578,7 @@ public class SslFactoryRegistryTest {
 
         registry.register("client connector", factory);
         registry.onKernalStart(true);
-        registry.reload(factory);
+        reload(factory);
 
         verify(factory).init();
     }
@@ -592,7 +598,7 @@ public class SslFactoryRegistryTest {
         Files.delete(keys);
         check.run();
 
-        IgniteException err = assertThrows(IgniteException.class, () -> registry.reload(communication));
+        IgniteException err = assertThrows(IgniteException.class, () -> reload(communication));
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
@@ -626,7 +632,7 @@ public class SslFactoryRegistryTest {
         });
 
         GridTestThread attempt = new GridTestThread(check);
-        GridTestThread manualReload = new GridTestThread(() -> registry.reload(communication));
+        GridTestThread manualReload = new GridTestThread(() -> reload(communication));
 
         attempt.start();
 
@@ -677,7 +683,7 @@ public class SslFactoryRegistryTest {
         assertEquals(1, failures());
 
         writeDueCertificates(keys);
-        registry.reload(communication);
+        reload(communication);
 
         assertEquals(1, failures());
 
@@ -686,7 +692,7 @@ public class SslFactoryRegistryTest {
         assertEquals(3, failures());
 
         writeFreshCertificates(clientKeys);
-        registry.reload(clientConnector);
+        reload(clientConnector);
 
         assertEquals(1, failures());
     }
@@ -817,6 +823,14 @@ public class SslFactoryRegistryTest {
         registry = new SslFactoryRegistry(ctx);
 
         return logged;
+    }
+
+    /** Reloads the registered factory, as the reload command does. */
+    private void reload(Object factory) {
+        for (RegisteredFactory registered : registry.factories()) {
+            if (registered.factory() == factory)
+                registered.reload();
+        }
     }
 
     /** Loads a file-backed factory before registration, as the TCP transports do during startup. */
