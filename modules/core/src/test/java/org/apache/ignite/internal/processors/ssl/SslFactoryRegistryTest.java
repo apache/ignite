@@ -681,7 +681,7 @@ public class SslFactoryRegistryTest {
     public void testLoadWithoutKeyStoreClearsHotReloadDate() throws Exception {
         SourceSslContextFactory custom = new SourceSslContextFactory();
 
-        custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
+        custom.setKeys(authority.keyStore("node", at(-30), at(10)), PASSWORD);
         custom.create();
 
         assertTrue(custom.getHotReloadTime() > 0);

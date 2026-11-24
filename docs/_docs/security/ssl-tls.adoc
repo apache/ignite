@@ -242,7 +242,6 @@ To confirm a replacement, open a new TLS connection to each affected endpoint an
 === Check Failures and Recover
 
 If loading the stores or creating the TLS context fails, Ignite keeps the current certificates and retries on the next check, even after they expire.
-The HTTP REST endpoint keeps its current keys and trust settings in the same way.
 Keeping expired certificates does not extend their validity, so new connections may fail until a valid replacement is available.
 If the replacements appear after hot reload is due, the next retry loads them.
 
