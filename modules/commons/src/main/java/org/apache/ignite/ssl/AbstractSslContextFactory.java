@@ -22,7 +22,6 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -38,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  * {@link #create()} returns the last one that it loaded, loading one on the first call. The hot reload time comes from
  * the key store that the factory passes to {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])}.
  */
-public abstract class AbstractSslContextFactory implements Factory<SSLContext>, ReloadableSslFactory {
+public abstract class AbstractSslContextFactory implements ReloadableSslFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
