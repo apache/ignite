@@ -30,10 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -42,7 +40,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -727,9 +724,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi<
 
             GridSpiTestContext ctx = initSpiContext();
 
-            ctx.messageFactory(new IgniteMessageFactoryImpl(
-                new MessageFactoryProvider[] {new CoreMessagesProvider(), GRID_TEST_MESSAGE_FACTORY})
-            );
+            ctx.messageFactory(createExtendedMessageFactory(GRID_TEST_MESSAGE_FACTORY));
 
             ctx.setLocalNode(node);
 

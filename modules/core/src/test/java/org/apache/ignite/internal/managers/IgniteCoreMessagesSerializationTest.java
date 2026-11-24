@@ -25,6 +25,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
@@ -32,7 +34,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 public class IgniteCoreMessagesSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new CoreMessagesProvider();
+        return new CoreMessagesProvider(new GridTestKernalContext(new GridTestLog4jLogger()));
     }
 
     /** {@inheritDoc} */

@@ -17,23 +17,16 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade.feature;
 
-import java.util.concurrent.Callable;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.TestManagementVisorOneNodeTask;
-import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 /** */
-public class ManagementApiVersionValidationTest extends AbstractRollingUpgradeTest {
+public class ManagementApiVersionValidationTest extends AbstractRollingUpgradeManagementApiTest {
     /** */
     public static final LogListener DESERIALIZATION_FAILED_LSNR = LogListener.builder().andMatches(
         "Failed to deserialize the Ignite Management API command argument"
@@ -50,28 +43,24 @@ public class ManagementApiVersionValidationTest extends AbstractRollingUpgradeTe
 
     /** */
     @Test
-    public void testVersionValidation() throws Exception {
-        withCoreVersion("2.21.0", () -> {
-            startGrid(0);
+    public void testCommandAcceptedOnlyFromCompatibleClientVersions() throws Exception {
+        startGrid(0, "2.21.0");
 
-            checkCommandArgumentDeserializationFailed(0, "2.21.1");
-            checkCommandArgumentDeserializationFailed(0, "2.19.0");
+        checkCommandArgumentDeserializationFailed("2.21.1");
+        checkCommandArgumentDeserializationFailed("2.19.0");
 
-            executeCommand(createCommandArgument(0, "2.21.0"));
-            executeCommand(createCommandArgument(0, "2.20.0"));
-
-            return null;
-        });
+        executeCommand("2.21.0");
+        executeCommand("2.20.0");
     }
 
     /** */
-    private void checkCommandArgumentDeserializationFailed(int destNodeIdx, String ver) throws Exception {
+    private void checkCommandArgumentDeserializationFailed(String cliVer) throws Exception {
         DESERIALIZATION_FAILED_LSNR.reset();
 
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> {
-                executeCommand(createCommandArgument(destNodeIdx, ver));
+                executeCommand(cliVer);
 
                 return null;
             },
@@ -82,27 +71,7 @@ public class ManagementApiVersionValidationTest extends AbstractRollingUpgradeTe
     }
 
     /** */
-    private void executeCommand(VisorTaskArgument<Object> arg) throws Exception {
-        try (IgniteClient cli = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
-            cli.compute().execute(TestManagementVisorOneNodeTask.class.getName(), arg);
-        }
-    }
-
-    /** */
-    private VisorTaskArgument<Object> createCommandArgument(int destNodeIdx, String ver) throws Exception {
-        return withCoreVersion(ver, () -> new VisorTaskArgument<>(nodeId(destNodeIdx), "", false));
-    }
-
-    /** */
-    private static <R> R withCoreVersion(String ver, Callable<R> action) throws Exception {
-        IgniteCoreFeatureSet prev = IgniteCoreFeatureSet.INSTANCE;
-        IgniteCoreFeatureSet.INSTANCE = createCoreFeatureSet(ver);
-
-        try {
-            return action.call();
-        }
-        finally {
-            IgniteCoreFeatureSet.INSTANCE = prev;
-        }
+    private void executeCommand(String cliVer) throws Exception {
+        executeCommandFromClient(0, 0, cliVer, TestManagementVisorOneNodeTask.class, "");
     }
 }

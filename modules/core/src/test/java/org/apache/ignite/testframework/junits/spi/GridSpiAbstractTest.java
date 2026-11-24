@@ -296,6 +296,8 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     protected GridSpiTestContext initSpiContext() throws Exception {
         GridSpiTestContext spiCtx = new GridSpiTestContext();
 
+        spiCtx.messageFactory(createExtendedMessageFactory());
+
         if (getTestData().getDiscoverySpi() != null) {
             spiCtx.setLocalNode(getTestData().getDiscoverySpi().getLocalNode());
 

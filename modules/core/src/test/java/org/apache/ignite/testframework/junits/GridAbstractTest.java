@@ -76,6 +76,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.internal.CoreMessagesProvider;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -84,10 +85,12 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.systemview.JmxSystemViewExporterSpi;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
@@ -110,6 +113,8 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -452,6 +457,17 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      */
     protected void error(String msg, Throwable t) {
         log().error(msg, t);
+    }
+
+    /** */
+    protected static IgniteMessageFactoryImpl<Message, GridCacheMessage> createExtendedMessageFactory(MessageFactoryProvider... providers) {
+        MessageFactoryProvider[] all = new MessageFactoryProvider[providers.length + 1];
+
+        all[0] = new CoreMessagesProvider(new GridTestKernalContext(new GridTestLog4jLogger()));
+
+        System.arraycopy(providers, 0, all, 1, providers.length);
+
+        return new IgniteMessageFactoryImpl<>(all);
     }
 
     /**
