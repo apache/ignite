@@ -32,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -216,24 +215,27 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: HTTP REST registers a factory that is not an Ignite SSL context factory, with certificates due for hot reload.
-     * When: the periodic check runs, and then a manual reload runs.
-     * Then: the registry reloads the factory each time and counts one automatic and one manual attempt.
+     * When: the periodic check runs and loads certificates that are not due, and then a manual reload runs.
+     * Then: the automatic attempt succeeds, the registry reloads the factory each time and counts one automatic
+     *     and one manual attempt.
      */
     @Test
     public void testReloadableFactoryIsHotReloadedAndReloadedManually() {
         ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
 
-        when(rest.getHotReloadTime()).thenReturn(due(), due(), at(DAYS.toHours(30)));
+        when(rest.getHotReloadTime()).thenReturn(due(), at(DAYS.toHours(30)));
 
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
         runChecks();
+
+        assertEquals(0, failures());
+
         reload(rest);
 
         verify(rest, times(2)).init();
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
         assertEquals(1, metric("ManualReloadAttempts"));
-        assertEquals(0, failures());
     }
 
     /**
@@ -389,29 +391,22 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: the certificates of a factory become due for hot reload a second after the registry starts, and each read
-     *     of their hot reload time takes 600 ms, as it does while a reload outside the registry holds the factory.
+     * Given: the check reads a hot reload time that comes in 30 minutes, and any later read finds that the time has come,
+     *     as when the clock passes the hot reload time while the check runs.
      * When: the check at start runs.
-     * Then: the factory is hot reloaded no later than its hot reload time: the check either reloads it or schedules
-     *     the next check within that second.
+     * Then: the next check comes in 30 minutes, at the hot reload time that the check read, not after the full hour.
      */
     @Test
     public void testCheckRightBeforeHotReloadTimeDoesNotDeferHotReload() {
         ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
-        AtomicLong hotReloadTime = new AtomicLong(at(DAYS.toHours(30)));
 
-        when(rest.getHotReloadTime()).thenAnswer(call -> {
-            Thread.sleep(600);
-
-            return hotReloadTime.get();
-        });
+        when(rest.getHotReloadTime()).thenReturn(System.currentTimeMillis() + MINUTES.toMillis(30), due());
 
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
-        hotReloadTime.set(System.currentTimeMillis() + 1000);
         runChecks();
 
-        assertTrue(scheduled.toString(), metric("AutomaticHotReloadAttempts") == 1 || nextCheckDelay() <= 1000);
+        assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
     }
 
     /**

@@ -62,7 +62,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * TLS reload of the HTTP REST connector configured in Jetty XML. The standard Jetty factory reads its key store from a file
- * and requires an SNI host name ({@code jetty/https.xml}). The custom factory ({@code jetty/https-source.xml}) takes its
+ * and requires an SNI host name ({@code jetty/https.xml}); {@code jetty/https-detector.xml} reads the same file through
+ * a connector that accepts HTTP and HTTPS on one port. The custom factory ({@code jetty/https-source.xml}) takes its
  * key stores from {@link SourceSslContextFactory}. The connectors in these files set no port, so the tests set
  * {@code IGNITE_JETTY_PORT}; otherwise the node would publish port 0.
  */
@@ -114,6 +115,29 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         Path keys = keyStoreFile(a);
 
         IgniteEx node = startGrid(jettyConfig("jetty/https.xml"));
+
+        assertEquals(a.getCertificate(HOST), serverCertificate(node));
+
+        save(b, keys);
+
+        assertTrue(reload(node).contains(": HTTP REST: reloaded"));
+        assertEquals(b.getCertificate(HOST), serverCertificate(node));
+    }
+
+    /**
+     * Given: the Jetty connector accepts HTTP and HTTPS on one port, so its TLS factory sits inside
+     *     a {@code DetectorConnectionFactory}, and HTTPS serves certificate A from a key store file.
+     * When: the file gets certificate B, and the operator runs the reload command.
+     * Then: the command reports HTTP REST as reloaded, and a new client sees B.
+     */
+    @Test
+    @WithSystemProperty(key = KEY_STORE_PATH, value = "")
+    public void testReloadCommandFindsTlsFactoryInsideDetector() throws Exception {
+        KeyStore a = fresh();
+        KeyStore b = fresh();
+        Path keys = keyStoreFile(a);
+
+        IgniteEx node = startGrid(jettyConfig("jetty/https-detector.xml"));
 
         assertEquals(a.getCertificate(HOST), serverCertificate(node));
 

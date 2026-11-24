@@ -109,7 +109,8 @@ public class SslContextFactoryHotReloadTest {
 
     /**
      * Given: key stores in which the certificate due first was issued 30 hours ago and expires in 15 hours.
-     *     In one of them, that certificate is the issuer of a key certificate that is due later.
+     *     In one of them, that certificate is the issuer of a key certificate that expires sooner, in 5 hours, but is
+     *     due later, in 3 hours, a third of its 6-hour lifetime before it expires.
      *     Other entries are a chain that is due later, a secret key and a key with a certificate chain that is not X.509.
      * When: the factory loads each key store.
      * Then: hot reload is due now, a third of the 45-hour lifetime before that certificate expires.
@@ -127,7 +128,7 @@ public class SslContextFactoryHotReloadTest {
             new Certificate[] {new OtherCertificate(node.getCertificate("node").getPublicKey())});
 
         assertHotReloadTime(now, node);
-        assertHotReloadTime(now, shortIssuer.keyStore("node", at(-60), at(100)));
+        assertHotReloadTime(now, shortIssuer.keyStore("node", at(-1), at(5)));
         assertHotReloadTime(now, merge(authority.keyStore("first", at(-30), at(15)), authority.keyStore("second", at(-100), at(200))));
         assertHotReloadTime(now, merge(authority.keyStore("first", at(-100), at(200)), authority.keyStore("second", at(-30), at(15))));
         assertHotReloadTime(now, withUnusableKeys);
