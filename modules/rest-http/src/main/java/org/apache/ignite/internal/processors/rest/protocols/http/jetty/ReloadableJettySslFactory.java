@@ -30,28 +30,32 @@ import org.jetbrains.annotations.Nullable;
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
  * <p>
- * Jetty clears its active context before loading the replacement. Holding its lock through reload and recovery lets
- * new connections use the previous context if loading fails. Jetty uses the accompanying key store for SNI.
- * If reinstalling the previous context fails too, the factory has no context until the next successful reload, and the
- * reload error carries that failure as a suppressed exception.
+ * Jetty's factory guards its TLS state with an internal lock: it loads the state under this lock, and new connections
+ * take the state under it too. Before loading a replacement, Jetty clears the state. So that new connections never see
+ * a factory without keys, the reload and, if loading fails, the restore of the previous state run under this lock.
+ * Jetty lets callers hold the lock only inside {@link SslContextFactory#unload(Consumer)} and
+ * {@link SslContextFactory#reload(Consumer)}, so the work runs inside {@code unload(...)} and ends with {@link SkipUnload}.
+ * Jetty selects certificates for SNI host names from the key store of the state, so the restore keeps SNI selection.
+ * If the restore fails too, the factory has no state until the next successful reload, and the reload error carries
+ * that failure as a suppressed exception.
  */
 class ReloadableJettySslFactory implements ReloadableSslFactory {
-    /** The adapter is serializable only because {@link Factory} is, and is never serialized. */
+    /** The adapter is serializable only because {@link Factory} is. Serializing it fails, as Jetty's factory is not serializable. */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final transient SslContextFactory factory;
+    private final SslContextFactory factory;
 
-    /** Objects supplied directly to Jetty. A null store lets the factory read its configured source. */
-    private final transient TlsMaterial configured;
+    /** State set in {@code jetty.xml}. The factory loads a {@code null} part from its configured source. */
+    private final TlsState configured;
 
-    /** @param factory TLS factory of the HTTPS connector before startup, when its getters expose the configured objects. */
+    /** @param factory TLS factory of the HTTPS connector before startup, when its getters return the state set in {@code jetty.xml}. */
     ReloadableJettySslFactory(SslContextFactory factory) {
         assert !factory.isStarted();
 
         this.factory = factory;
 
-        configured = new TlsMaterial(factory);
+        configured = new TlsState(factory);
     }
 
     /** {@inheritDoc} */
@@ -62,11 +66,11 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** {@inheritDoc} */
     @Override public void init() {
         try {
-            factory.unload(this::reloadLocked);
+            factory.unload(ignored -> reloadOrRestore());
         }
-        catch (ReloadDone done) {
-            if (done.err != null)
-                throw new IgniteException(done.err);
+        catch (SkipUnload skip) {
+            if (skip.loadErr != null)
+                throw new IgniteException(skip.loadErr);
         }
     }
 
@@ -83,45 +87,45 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /**
-     * Reloads the factory while {@link SslContextFactory#unload(Consumer)} holds its lock.
-     * Always throws {@link ReloadDone}, so that {@code unload(...)} does not unload the factory.
+     * Reloads the factory and, if loading fails, restores the state that new connections used before. Runs under the
+     * factory lock inside {@code unload(...)}, and always throws {@link SkipUnload}.
      */
-    private void reloadLocked(SslContextFactory f) {
-        TlsMaterial prev = new TlsMaterial(f);
+    private void reloadOrRestore() {
+        TlsState prev = new TlsState(factory);
 
         try {
-            f.reload(ignored -> {});
+            factory.reload(ignored -> {});
         }
         catch (Exception e) {
-            restore(f, prev, e);
+            restore(prev, e);
 
-            throw new ReloadDone(e);
+            throw new SkipUnload(e);
         }
 
-        throw new ReloadDone(null);
+        throw new SkipUnload(null);
     }
 
-    /** Reinstalls the working context, then restores the settings Jetty will use on the next reload. */
-    private void restore(SslContextFactory f, TlsMaterial prev, Exception err) {
+    /** Makes the factory load the previous state, then sets back the state from {@code jetty.xml} for the next reload. */
+    private void restore(TlsState prev, Exception loadErr) {
         try {
-            f.reload(prev::applyTo);
+            factory.reload(prev::applyTo);
         }
         catch (Exception e) {
-            err.addSuppressed(e);
+            loadErr.addSuppressed(e);
         }
         finally {
-            configured.applyTo(f);
+            configured.applyTo(factory);
         }
     }
 
-    /** The context and stores Jetty uses together for new connections. */
-    private record TlsMaterial(SSLContext ctx, KeyStore keyStore, KeyStore trustStore) {
+    /** Context and stores that Jetty uses together for new connections. */
+    private record TlsState(SSLContext ctx, KeyStore keyStore, KeyStore trustStore) {
         /** */
-        TlsMaterial(SslContextFactory factory) {
+        TlsState(SslContextFactory factory) {
             this(factory.getSslContext(), factory.getKeyStore(), factory.getTrustStore());
         }
 
-        /** */
+        /** Sets this state on the factory, which loads it on the next reload. */
         private void applyTo(SslContextFactory factory) {
             factory.setSslContext(ctx);
             factory.setKeyStore(keyStore);
@@ -129,19 +133,19 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         }
     }
 
-    /** Ends {@code unload(...)} without unloading the factory. */
-    private static class ReloadDone extends RuntimeException {
+    /** Ends {@code unload(...)} before it unloads the factory. */
+    private static class SkipUnload extends RuntimeException {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Load failure, or {@code null} if the factory has the replacement. */
-        @Nullable private final Exception err;
+        @Nullable private final Exception loadErr;
 
         /** */
-        private ReloadDone(@Nullable Exception err) {
+        private SkipUnload(@Nullable Exception loadErr) {
             super(null, null, false, false);
 
-            this.err = err;
+            this.loadErr = loadErr;
         }
     }
 }
