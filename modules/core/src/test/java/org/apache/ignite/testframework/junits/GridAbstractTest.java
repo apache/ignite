@@ -646,6 +646,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected GridTestKernalContext newContext() throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
+        cfg.setNodeId(UUID.randomUUID());
         cfg.setClientMode(false);
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
             @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
@@ -658,8 +659,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
             }
         });
 
-        GridTestKernalContext ctx = new GridTestKernalContext(log(), cfg);
-        return ctx;
+        return new GridTestKernalContext(log(), cfg);
     }
 
     /**

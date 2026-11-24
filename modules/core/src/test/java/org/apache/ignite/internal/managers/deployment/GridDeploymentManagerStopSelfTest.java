@@ -17,15 +17,9 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.util.Map;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.spi.IgniteSpiContext;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.deployment.DeploymentListener;
-import org.apache.ignite.spi.deployment.DeploymentResource;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -41,11 +35,9 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testOnKernalStop() throws Exception {
-        DeploymentSpi spi = new GridTestDeploymentSpi();
-
         GridTestKernalContext ctx = newContext();
 
-        ctx.config().setDeploymentSpi(spi);
+        ctx.config().setDeploymentSpi(new LocalDeploymentSpi());
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);
         resProc.setSpringContext(null);
@@ -62,58 +54,5 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
             assert false : "Unexpected exception " + e;
         }
-    }
-
-    /**
-     * Test deployment SPI implementation.
-     */
-    private static class GridTestDeploymentSpi implements DeploymentSpi {
-        /** {@inheritDoc} */
-        @Override public void onContextDestroyed() {
-            /* No-op. */
-        }
-
-        /** {@inheritDoc} */
-        @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
-
-        /** {@inheritDoc} */
-        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException { /* No-op. */ }
-
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException { /* No-op. */ }
-
-        /** {@inheritDoc} */
-        @Override public void setListener(DeploymentListener lsnr) { /* No-op. */ }
-
-        /** {@inheritDoc} */
-        @Override public String getName() {
-            return getClass().getSimpleName();
-        }
-
-        /** {@inheritDoc} */
-        @Override public DeploymentResource findResource(String rsrcName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean unregister(String rsrcName) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onClientDisconnected(IgniteFuture<?> reconnectFut) { /* No-op. */ }
-
-        /** {@inheritDoc} */
-        @Override public void onClientReconnected(boolean clusterRestarted) { /* No-op. */ }
     }
 }
