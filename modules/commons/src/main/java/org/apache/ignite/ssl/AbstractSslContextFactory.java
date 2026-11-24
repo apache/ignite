@@ -35,7 +35,9 @@ import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Base class for SSL context factories that cache their {@link SSLContext}.
+ * Base class for SSL context factories that cache their {@link SSLContext}. {@link #init()} loads a new context, and
+ * {@link #create()} returns the last one that it loaded, loading one on the first call. The hot reload time comes from
+ * the key store that the factory passes to {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])}.
  */
 public abstract class AbstractSslContextFactory implements Factory<SSLContext>, ReloadableSslFactory {
     /** */
@@ -62,16 +64,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext>, 
     /** */
     private transient long pendingHotReloadTime;
 
-    /**
-     * The hot reload time is calculated from the key store passed to
-     * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during the last successful load.
-     * Each certificate in the chains of the private keys is due before it expires by a third of its lifetime,
-     * but by no more than 7 days. The factory is due when its first certificate is due.
-     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
-     *
-     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
-     *     or the last successful load supplied no key store or no private key with an X.509 chain.
-     */
+    /** {@inheritDoc} */
     @Override public long getHotReloadTime() {
         return hotReloadTime;
     }
@@ -224,12 +217,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext>, 
      */
     protected abstract TrustManager[] createTrustManagers() throws SSLException;
 
-    /**
-     * Loads a new SSL context and caches it for the base implementation of {@link #create()}.
-     * If loading fails, the previously cached context is kept.
-     *
-     * @throws IgniteException If the context cannot be initialized.
-     */
+    /** {@inheritDoc} */
     @Override public final synchronized void init() {
         try {
             sslCtx.set(createSslContext());

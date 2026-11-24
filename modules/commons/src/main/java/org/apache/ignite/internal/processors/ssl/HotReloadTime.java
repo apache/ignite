@@ -36,9 +36,7 @@ public final class HotReloadTime {
     }
 
     /**
-     * A certificate is due before it expires by a third of its lifetime, but by no more than 7 days.
-     * The key store is due when the first certificate in its private key chains is due, including issuing certificates.
-     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
+     * Calculates the hot reload time that {@link ReloadableSslFactory#getHotReloadTime()} describes.
      *
      * @param store Loaded key store.
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the store has no private key

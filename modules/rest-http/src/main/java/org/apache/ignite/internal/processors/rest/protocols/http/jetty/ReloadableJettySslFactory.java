@@ -32,6 +32,8 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Jetty clears its active context before loading the replacement. Holding its lock through reload and recovery lets
  * new connections use the previous context if loading fails. Jetty uses the accompanying key store for SNI.
+ * If reinstalling the previous context fails too, the factory has no context until the next successful reload, and the
+ * reload error carries that failure as a suppressed exception.
  */
 class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** */
@@ -58,15 +60,15 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         }
     }
 
-    /** Reads the date from the keys that new connections use, including keys that the factory loaded without Ignite. */
+    /** {@inheritDoc} */
     @Override public long getHotReloadTime() {
-        KeyStore store = factory.getKeyStore();
-
         try {
+            KeyStore store = factory.getKeyStore();
+
             return store == null ? 0 : HotReloadTime.of(store);
         }
-        catch (GeneralSecurityException e) {
-            throw new IgniteException(e);
+        catch (IllegalStateException | GeneralSecurityException e) {
+            throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);
         }
     }
 

@@ -29,8 +29,14 @@ public interface ReloadableSslFactory {
     public void init();
 
     /**
-     * @return Time when the certificates that new connections use are due for hot reload, as calculated by
-     *     {@link HotReloadTime#of}, or {@code 0} if they give none.
+     * The hot reload time comes from the certificate chains of the private keys that new connections use.
+     * Each certificate in these chains is due before it expires by a third of its lifetime, but by no more than 7 days.
+     * The factory is due when its first certificate is due. Keys without an X.509 certificate chain are ignored,
+     * as TLS cannot use them.
+     *
+     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the factory gives no private key with
+     *     an X.509 certificate chain.
+     * @throws IgniteException If the factory cannot give the certificates that new connections use.
      */
     public long getHotReloadTime();
 }
