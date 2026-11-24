@@ -207,6 +207,24 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
             stream(cfg.getMetricExporterSpi()).noneMatch(spi -> spi instanceof JmxMetricExporterSpi));
     }
 
+    /** Log counters are registered at node startup and exported for all logger categories. */
+    @Test
+    public void testLogCountMetrics() throws Exception {
+        IgniteEx ignite = startGrid(0);
+
+        DynamicMBean bean = metricRegistry(ignite.name(), "log", "count");
+
+        for (String level : new String[] {"trace", "debug", "info", "warning", "error"})
+            assertTrue(level, bean.getAttribute(level) instanceof Long);
+
+        long before = (Long)bean.getAttribute("error");
+
+        ignite.log().error("Test log count from node logger");
+        ignite.log().getLogger("log-count-test").error("Test log count from category logger");
+
+        assertTrue((Long)bean.getAttribute("error") >= before + 2);
+    }
+
     /** */
     @Test
     public void testSysJmxMetrics() throws Exception {

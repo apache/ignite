@@ -21,19 +21,24 @@ import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.management.DynamicMBean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.MetricExporterSpi;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi;
 import org.apache.ignite.testframework.CallbackExecutorLogListener;
@@ -42,8 +47,13 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.Test;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cluster.ClusterState.ACTIVE;
+import static org.apache.ignite.internal.cdc.CdcMain.cdcInstanceName;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT_RANGE;
+import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class CdcPushMetricsExporterTest extends AbstractCdcTest {
@@ -104,7 +114,71 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
         lsnrLog = new ListeningTestLogger(log);
+    }
+
+    /** CDC exports its own log counters independently from the source node in the same JVM. */
+    @Test
+    public void testLogCountMetrics() throws Exception {
+        IgniteConfiguration cfg = getSrcClusterCfg("ignite-0")
+            .setConsistentId("ignite-0");
+
+        IgniteEx ignite = startGrid(cfg);
+
+        ignite.cluster().state(ACTIVE);
+
+        CountDownLatch consumerStarted = new CountDownLatch(1);
+
+        CdcMain cdc = createCdc(new UserCdcConsumer() {
+            @Override public void start(MetricRegistry mreg) {
+                super.start(mreg);
+
+                consumerStarted.countDown();
+            }
+        }, cfg);
+
+        IgniteInternalFuture<?> fut = runCdcAsync(cdc, consumerStarted);
+
+        try {
+            assertTrue(consumerStarted.await(getTestTimeout(), MILLISECONDS));
+            assertTrue(waitForCondition(() -> Boolean.TRUE.equals(getFieldValue(cdc, "started")) || fut.isDone(),
+                getTestTimeout()));
+            assertTrue("CDC failed to start", Boolean.TRUE.equals(getFieldValue(cdc, "started")));
+
+            DynamicMBean nodeBean = metricRegistry(ignite.name(), "log", "count");
+            DynamicMBean cdcBean = metricRegistry(cdcInstanceName(cfg.getIgniteInstanceName()), "log", "count");
+
+            for (String level : new String[] {"trace", "debug", "info", "warning", "error"})
+                assertTrue(level, cdcBean.getAttribute(level) instanceof Long);
+
+            StandaloneGridKernalContext cdcCtx = getFieldValue(cdc, "kctx");
+            LongMetric nodeError = ignite.context().metric().registry("log.count").findMetric("error");
+            LongMetric cdcError = cdcCtx.metric().registry("log.count").findMetric("error");
+
+            long nodeBefore = nodeError.value();
+            long cdcBefore = cdcError.value();
+
+            IgniteLogger cdcLog = getFieldValue(cdc, "log");
+
+            cdcLog.error("Test CDC log counter");
+
+            assertEquals(cdcBefore + 1, cdcError.value());
+            assertEquals(nodeBefore, nodeError.value());
+            assertEquals(cdcError.value(), cdcBean.getAttribute("error"));
+
+            ignite.log().error("Test Ignite log counter");
+
+            assertEquals(nodeBefore + 1, nodeError.value());
+            assertEquals(cdcBefore + 1, cdcError.value());
+            assertEquals(nodeError.value(), nodeBean.getAttribute("error"));
+        }
+        finally {
+            cdc.stop();
+
+            fut.cancel();
+        }
     }
 
     /** Test checks that metrics are exported via exporter based on the push metrics exporter adapter. */
