@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -339,6 +340,31 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: two factories, and reading the hot reload time of the first one fails, as it does for a Jetty factory that
+     *     a failed reload outside the registry has left without keys.
+     * When: the registry starts and its checks run.
+     * Then: the start completes, the check of the first factory fails and is retried in an hour, and the second factory
+     *     gets its next check at its hot reload time.
+     */
+    @Test
+    public void testFailedReadOfHotReloadTimeIsRetriedWithoutFailingStart() throws Exception {
+        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
+
+        when(rest.getHotReloadTime()).thenThrow(new IgniteException("Failed to read the certificates of the HTTPS connector"));
+        writeCertificatesDueIn30Minutes(keys);
+        registry.register("HTTP REST", rest);
+        registerTransport("communication", factory(keys));
+        registry.onKernalStart(true);
+        runChecks();
+
+        List<Long> delays = List.copyOf(scheduled.values());
+
+        assertEquals(1, failures());
+        assertEquals(HOURS.toMillis(1), (long)delays.get(0));
+        assertTrue(delays.toString(), isAbout30Minutes(delays.get(1)));
+    }
+
+    /**
      * Given: communication has certificates that are due for hot reload in 30 minutes, and the client connector has
      *     certificates that are due in 23 days.
      * When: the checks at start run.
@@ -360,6 +386,32 @@ public class SslFactoryRegistryTest {
 
         assertTrue(delays.toString(), isAbout30Minutes(delays.get(0)));
         assertEquals(HOURS.toMillis(1), (long)delays.get(1));
+    }
+
+    /**
+     * Given: the certificates of a factory become due for hot reload a second after the registry starts, and each read
+     *     of their hot reload time takes 600 ms, as it does while a reload outside the registry holds the factory.
+     * When: the check at start runs.
+     * Then: the factory is hot reloaded no later than its hot reload time: the check either reloads it or schedules
+     *     the next check within that second.
+     */
+    @Test
+    public void testCheckRightBeforeHotReloadTimeSchedulesCheckAtThatTime() {
+        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
+        AtomicLong hotReloadTime = new AtomicLong(at(DAYS.toHours(30)));
+
+        when(rest.getHotReloadTime()).thenAnswer(call -> {
+            Thread.sleep(600);
+
+            return hotReloadTime.get();
+        });
+
+        registry.register("HTTP REST", rest);
+        registry.onKernalStart(true);
+        hotReloadTime.set(System.currentTimeMillis() + 1000);
+        runChecks();
+
+        assertTrue(scheduled.toString(), metric("AutomaticHotReloadAttempts") == 1 || nextCheckDelay() <= 1000);
     }
 
     /**

@@ -101,7 +101,6 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             if (executor == null)
                 executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-            registered.logHotReloadTime(registered.reloadable.getHotReloadTime());
             registered.scheduleCheck(0);
         }
     }
@@ -138,6 +137,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
         /** */
         @Nullable private ScheduledFuture<?> nextCheck;
+
+        /** Hot reload time that the registry logged last, or {@code -1} before the first log. */
+        private long loggedHotReloadTime = -1;
 
         /** */
         private RegisteredFactory(Factory<SSLContext> factory, String transports) {
@@ -177,9 +179,16 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             long nextCheckDelay;
 
             try {
-                reloadIfDue();
+                long hotReloadTime = reloadable.getHotReloadTime();
 
-                nextCheckDelay = nextCheckDelay();
+                logHotReloadTime(hotReloadTime);
+
+                nextCheckDelay = nextCheckDelay(hotReloadTime);
+
+                if (nextCheckDelay == 0)
+                    nextCheckDelay = hotReload();
+                else
+                    failures.set(0);
             }
             catch (Throwable e) {
                 if (executor.isShutdown()) {
@@ -201,17 +210,12 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
 
         /**
-         * Reloads the factory if its hot reload time has come, and ends the failure streak if it has not.
+         * Reloads the factory, whose hot reload time has come, and ends the failure streak.
          *
+         * @return Delay of the next check.
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
-        private void reloadIfDue() {
-            if (!due(reloadable.getHotReloadTime())) {
-                failures.set(0);
-
-                return;
-            }
-
+        private long hotReload() {
             automaticHotReloadAttempts.incrementAndGet();
 
             if (log.isInfoEnabled())
@@ -220,8 +224,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             reloadable.init();
 
             long hotReloadTime = reloadable.getHotReloadTime();
+            long nextCheckDelay = nextCheckDelay(hotReloadTime);
 
-            if (due(hotReloadTime)) {
+            if (nextCheckDelay == 0) {
                 throw new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
                     + new Date(hotReloadTime) + ']');
             }
@@ -232,16 +237,20 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
                 log.info("TLS hot reload succeeded [transports=" + transports + ']');
 
             logHotReloadTime(hotReloadTime);
+
+            return nextCheckDelay;
         }
 
         /**
-         * @return Delay until the hot reload time, but no longer than {@link #CHECK_PERIOD}. Certificates without a hot
-         *     reload time, or that are already due, are checked again after the full period.
+         * @param hotReloadTime Hot reload time of the loaded certificates, or {@code 0} if they have none.
+         * @return Delay until the hot reload time, but no longer than {@link #CHECK_PERIOD}, or {@code 0} if the time has
+         *     come. Certificates without a hot reload time are checked again after the full period.
          */
-        private long nextCheckDelay() {
-            long delay = reloadable.getHotReloadTime() - System.currentTimeMillis();
+        private static long nextCheckDelay(long hotReloadTime) {
+            if (hotReloadTime == 0)
+                return CHECK_PERIOD;
 
-            return delay > 0 ? Math.min(delay, CHECK_PERIOD) : CHECK_PERIOD;
+            return Math.max(0, Math.min(hotReloadTime - System.currentTimeMillis(), CHECK_PERIOD));
         }
 
         /** Replaces the scheduled check of the factory with one after the given delay, once the registry has started. */
@@ -260,14 +269,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             }
         }
 
-        /** @return Whether the loaded certificates have a hot reload time, and it has come. */
-        private static boolean due(long hotReloadTime) {
-            return hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis();
-        }
-
         /**
          * Reloads a factory that supports reload. Waits for its running check, resets its failure count and schedules
-         * its next check for the loaded certificates.
+         * its next check for the loaded certificates. If they are already due, the next check comes after
+         * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source.
          */
         public synchronized void reload() {
             manualReloadAttempts.incrementAndGet();
@@ -276,13 +281,22 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             failures.set(0);
 
-            logHotReloadTime(reloadable.getHotReloadTime());
+            long hotReloadTime = reloadable.getHotReloadTime();
 
-            scheduleCheck(nextCheckDelay());
+            logHotReloadTime(hotReloadTime);
+
+            long nextCheckDelay = nextCheckDelay(hotReloadTime);
+
+            scheduleCheck(nextCheckDelay == 0 ? CHECK_PERIOD : nextCheckDelay);
         }
 
-        /** */
+        /** Logs the hot reload time of the loaded certificates if it differs from the one logged last. */
         private void logHotReloadTime(long hotReloadTime) {
+            if (hotReloadTime == loggedHotReloadTime)
+                return;
+
+            loggedHotReloadTime = hotReloadTime;
+
             if (hotReloadTime == 0) {
                 log.warning("TLS hot reload will not run: no private key with an X.509 certificate chain was found [transports="
                     + transports + ']');
