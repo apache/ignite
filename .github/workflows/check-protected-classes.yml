@@ -24,7 +24,7 @@ permissions: {}
 
 jobs:
   report:
-    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.path == '.github/workflows/commit-check.yml'
+    if: github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     concurrency:
       group: wire-report-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
@@ -40,20 +40,14 @@ jobs:
             const marker = '<!-- ignite-rolling-upgrade-check -->';
             const label = 'compatibility';
 
-            function only(items) {
-              return items.length === 1 ? items[0] : undefined;
-            }
-
-            function stepResult(job, name) {
-              return only(job?.steps?.filter(step => step.name === name && step.status === 'completed') ?? [])?.conclusion;
-            }
-
             const run = context.payload.workflow_run;
             const repo = context.repo;
             const {actions, issues, pulls} = github.rest;
+            const only = items => items.length === 1 ? items[0] : undefined;
+            const list = (method, params) => github.paginate(method, {...repo, ...params, per_page: 100});
 
-            function jobsFor(source, filter) {
-              return github.paginate(actions.listJobsForWorkflowRun, {...repo, run_id: source.id, filter, per_page: 100});
+            function stepResult(job, name) {
+              return only(job?.steps?.filter(step => step.name === name && step.status === 'completed') ?? [])?.conclusion;
             }
 
             function comparison(jobs, attempt) {
@@ -79,7 +73,7 @@ jobs:
 
               // Fork runs can omit pull_requests. Match the source branch to a single PR open at run creation.
               const head = `${run.head_repository.owner.login}:${run.head_branch}`;
-              const candidates = await github.paginate(pulls.list, {...repo, head, state: 'all', per_page: 100});
+              const candidates = await list(pulls.list, {head, state: 'all'});
               const target = only(candidates.filter(pr => pr.head.repo?.id === run.head_repository.id
                 && pr.created_at <= run.created_at && (!pr.closed_at || pr.closed_at >= run.created_at)));
               if (!target || target.state !== 'open' || target.head.sha !== run.head_sha) return;
@@ -89,29 +83,25 @@ jobs:
                   timelineItems(first: 1, since: $since, itemTypes: [BASE_REF_CHANGED_EVENT]) { nodes { __typename } }
                 } }
               }`, {id: target.node_id, since: run.created_at});
-              if (!node || node.timelineItems.nodes.length) return;
-              return target;
+              if (node?.timelineItems.nodes.length === 0) return target;
             }
 
-            const jobs = await jobsFor(run, 'latest');
+            const jobs = await list(actions.listJobsForWorkflowRun, {run_id: run.id, filter: 'latest'});
             if (jobs.some(job => job.run_attempt > run.run_attempt))
               return core.info('A newer attempt has started.');
 
-            const result = comparison(jobs, run.run_attempt);
-            if (!result)
+            const {wire, upload} = comparison(jobs, run.run_attempt) ?? {};
+            if (!wire)
               return core.info('The wire comparison or completeness check could not be verified.');
 
-            const {wire, upload} = result;
             const target = await targetOf(run);
             if (!target)
               return core.info('Could not identify the PR and its target branch.');
 
-            const {number: pullNumber, base: {ref: baseRef}} = target;
-
             // An empty report leaves no comment. Check CI history for newer verified results on this PR and base.
-            const runs = await github.paginate(actions.listWorkflowRuns, {
-              ...repo, workflow_id: run.workflow_id, event: 'pull_request', branch: run.head_branch,
-              head_sha: run.head_sha, created: `>=${run.created_at}`, per_page: 100,
+            const runs = await list(actions.listWorkflowRuns, {
+              workflow_id: run.workflow_id, event: 'pull_request', branch: run.head_branch,
+              head_sha: run.head_sha, created: `>=${run.created_at}`,
             });
             for (const newer of runs) {
               if (newer.run_number <= run.run_number || newer.head_repository?.id !== run.head_repository.id) continue;
@@ -119,22 +109,22 @@ jobs:
               if (!lastCompletedAttempt) continue;
 
               const newerTarget = await targetOf(newer);
-              if (newerTarget?.number !== pullNumber || newerTarget.base.ref !== baseRef) continue;
+              if (newerTarget?.number !== target.number || newerTarget.base.ref !== target.base.ref) continue;
 
-              const history = await jobsFor(newer, 'all');
+              const history = await list(actions.listJobsForWorkflowRun, {run_id: newer.id, filter: 'all'});
               for (let attempt = lastCompletedAttempt; attempt >= 1; attempt--) {
                 if (comparison(history, attempt))
                   return core.info(`Newer run ${newer.id} already has a verified wire comparison.`);
               }
             }
 
-            const issue = {...repo, issue_number: pullNumber};
-            const comments = await github.paginate(issues.listComments, {...issue, per_page: 100});
+            const issue = {...repo, issue_number: target.number};
+            const comments = await list(issues.listComments, issue);
             const comment = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker));
 
-            const {data: pr} = await pulls.get({...repo, pull_number: pullNumber});
+            const {data: pr} = await pulls.get({...repo, pull_number: target.number});
             if (pr.state !== 'open' || pr.head.repo?.id !== run.head_repository.id || pr.head.ref !== run.head_branch
-              || pr.head.sha !== run.head_sha || pr.base.ref !== baseRef)
+              || pr.head.sha !== run.head_sha || pr.base.ref !== target.base.ref)
               return core.info('The PR has closed or changed since the comparison.');
 
             const labeled = pr.labels.some(l => l.name === label);
