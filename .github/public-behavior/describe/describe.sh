@@ -40,4 +40,20 @@ trap 'rm -rf "$classes"' EXIT
 
 javac -proc:none -nowarn -d "$classes" -cp "$cp" "$here"/src/*.java "$here"/src/framework/*.java "$here"/src/collectors/*.java >&2
 
-java "${opts[@]}" -cp "$classes:$cp" PublicDeclarations .
+# The API of another platform is described only when the workflow asks for it, and then for both builds: a PR that does not
+# change the platform does not pay for describing it.
+platforms="$classes/platforms"
+mkdir "$platforms"
+
+if [ "${DESCRIBE_CPP:-false}" = true ]; then
+    python3 "$here/platforms/cpp.py" > "$platforms/cpp.tsv"
+fi
+
+if [ "${DESCRIBE_DOTNET:-false}" = true ]; then
+    # The describer is built outside the tree, so its build files do not land in the checkout.
+    cp -R "$here/platforms/dotnet" "$classes/dotnet-src"
+    dotnet build "$classes/dotnet-src/Describe.csproj" -c Release -nologo -v q -o "$classes/dotnet" >&2
+    dotnet "$classes/dotnet/Describe.dll" > "$platforms/dotnet.tsv"
+fi
+
+PUBLIC_BEHAVIOR_PLATFORMS="$platforms" java "${opts[@]}" -cp "$classes:$cp" PublicDeclarations .

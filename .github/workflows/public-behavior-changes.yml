@@ -56,6 +56,17 @@ jobs:
           else
             echo "build=true" >> "$GITHUB_OUTPUT"
           fi
+          # The API of another platform is described only if the PR changes the platform or its describer.
+          if git diff --quiet HEAD^1 HEAD -- modules/platforms/cpp .github/public-behavior/describe/platforms/cpp.py; then
+            echo "cpp=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "cpp=true" >> "$GITHUB_OUTPUT"
+          fi
+          if git diff --quiet HEAD^1 HEAD -- modules/platforms/dotnet .github/public-behavior/describe/platforms/dotnet; then
+            echo "dotnet=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "dotnet=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Test the check
         id: tests
@@ -77,6 +88,9 @@ jobs:
         id: base
         if: steps.prepare.outputs.build == 'true'
         working-directory: base
+        env:
+          DESCRIBE_CPP: ${{ steps.prepare.outputs.cpp }}
+          DESCRIBE_DOTNET: ${{ steps.prepare.outputs.dotnet }}
         run: |
           describe=.github/public-behavior/describe/describe.sh
           if ! bash "$describe" > ../base.txt; then
@@ -88,6 +102,9 @@ jobs:
         id: merge
         if: steps.prepare.outputs.build == 'true'
         working-directory: merge
+        env:
+          DESCRIBE_CPP: ${{ steps.prepare.outputs.cpp }}
+          DESCRIBE_DOTNET: ${{ steps.prepare.outputs.dotnet }}
         run: bash .github/public-behavior/describe/describe.sh > ../merge.txt
 
       - name: Report
