@@ -51,30 +51,36 @@ jobs:
             const run = context.payload.workflow_run;
             const repo = context.repo;
             const {actions, issues, pulls} = github.rest;
-            const jobs = await github.paginate(actions.listJobsForWorkflowRun, {
-              ...repo, run_id: run.id, filter: 'latest', per_page: 100,
-            });
 
-            if (jobs.some(job => job.run_attempt > run.run_attempt))
-              return core.info('A newer attempt has started.');
+            function jobsFor(source, filter) {
+              return github.paginate(actions.listJobsForWorkflowRun, {...repo, run_id: source.id, filter, per_page: 100});
+            }
 
-            const headJobs = jobs.filter(job => job.head_sha === run.head_sha);
-            const wire = only(headJobs.filter(job => job.name === 'Compare wire format descriptions'));
-            const java = only(headJobs.filter(job => job.name === 'Check java code on JDK 17'));
-            const upload = stepResult(wire, 'Upload wire diff');
+            function comparison(jobs, attempt) {
+              // A partial rerun keeps the jobs that were not rerun from earlier attempts.
+              function latestJob(name) {
+                const matches = jobs.filter(job => job.name === name && job.head_sha === run.head_sha && job.run_attempt <= attempt);
+                const latest = Math.max(...matches.map(job => job.run_attempt));
+                return only(matches.filter(job => job.run_attempt === latest));
+              }
 
-            if (wire?.conclusion !== 'success' || stepResult(wire, 'Compare descriptions and publish summary') !== 'success'
-              || stepResult(java, 'Check all wire format descriptions are collected') !== 'success'
-              || !['success', 'skipped'].includes(upload))
-              return core.info('The wire comparison or completeness check could not be verified.');
+              const wire = latestJob('Compare wire format descriptions');
+              const java = latestJob('Check java code on JDK 17');
+              const upload = stepResult(wire, 'Upload wire diff');
+              if (wire?.conclusion === 'success' && stepResult(wire, 'Compare descriptions and publish summary') === 'success'
+                && stepResult(java, 'Check all wire format descriptions are collected') === 'success'
+                && ['success', 'skipped'].includes(upload))
+                return {wire, upload};
+            }
 
-            if (!run.head_repository) return;
-            let target = only(run.pull_requests ?? []);
-            if (!run.pull_requests?.length) {
+            async function targetOf(run) {
+              if (!run.head_repository) return;
+              if (run.pull_requests?.length) return only(run.pull_requests);
+
               // Fork runs can omit pull_requests. Match the source branch to a single PR open at run creation.
               const head = `${run.head_repository.owner.login}:${run.head_branch}`;
               const candidates = await github.paginate(pulls.list, {...repo, head, state: 'all', per_page: 100});
-              target = only(candidates.filter(pr => pr.head.repo?.id === run.head_repository.id
+              const target = only(candidates.filter(pr => pr.head.repo?.id === run.head_repository.id
                 && pr.created_at <= run.created_at && (!pr.closed_at || pr.closed_at >= run.created_at)));
               if (!target || target.state !== 'open' || target.head.sha !== run.head_sha) return;
 
@@ -84,11 +90,44 @@ jobs:
                 } }
               }`, {id: target.node_id, since: run.created_at});
               if (!node || node.timelineItems.nodes.length) return;
+              return target;
             }
+
+            const jobs = await jobsFor(run, 'latest');
+            if (jobs.some(job => job.run_attempt > run.run_attempt))
+              return core.info('A newer attempt has started.');
+
+            const result = comparison(jobs, run.run_attempt);
+            if (!result)
+              return core.info('The wire comparison or completeness check could not be verified.');
+
+            const {wire, upload} = result;
+            const target = await targetOf(run);
             if (!target)
               return core.info('Could not identify the PR and its target branch.');
 
             const {number: pullNumber, base: {ref: baseRef}} = target;
+
+            // An empty report leaves no comment. Check CI history for newer verified results on this PR and base.
+            const runs = await github.paginate(actions.listWorkflowRuns, {
+              ...repo, workflow_id: run.workflow_id, event: 'pull_request', branch: run.head_branch,
+              head_sha: run.head_sha, created: `>=${run.created_at}`, per_page: 100,
+            });
+            for (const newer of runs) {
+              if (newer.run_number <= run.run_number || newer.head_repository?.id !== run.head_repository.id) continue;
+              const lastCompletedAttempt = newer.status === 'completed' ? newer.run_attempt : newer.run_attempt - 1;
+              if (!lastCompletedAttempt) continue;
+
+              const newerTarget = await targetOf(newer);
+              if (newerTarget?.number !== pullNumber || newerTarget.base.ref !== baseRef) continue;
+
+              const history = await jobsFor(newer, 'all');
+              for (let attempt = lastCompletedAttempt; attempt >= 1; attempt--) {
+                if (comparison(history, attempt))
+                  return core.info(`Newer run ${newer.id} already has a verified wire comparison.`);
+              }
+            }
+
             const issue = {...repo, issue_number: pullNumber};
             const comments = await github.paginate(issues.listComments, {...issue, per_page: 100});
             const comment = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker));
