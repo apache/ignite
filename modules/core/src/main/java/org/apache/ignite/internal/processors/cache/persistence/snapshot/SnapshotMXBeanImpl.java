@@ -36,6 +36,9 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.S
  * Snapshot MBean features.
  */
 public class SnapshotMXBeanImpl implements SnapshotMXBean {
+    /** */
+    public static final String NO_CREATE_OR_RESTORE_IN_PROGRESS_MSG = "There is no create or restore snapshot operation in progress.";
+
     /** Instance of snapshot cache shared manager. */
     private final IgniteSnapshotManager mgr;
 
@@ -138,6 +141,6 @@ public class SnapshotMXBeanImpl implements SnapshotMXBean {
                 (incremental ? ", incrementIndex=" + incIdx : "") + ", id=" + id + ']';
         }
 
-        return "There is no create or restore snapshot operation in progress.";
+        return NO_CREATE_OR_RESTORE_IN_PROGRESS_MSG;
     }
 }

@@ -126,4 +126,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that deprecates {@code GridDhtTxFinishRequest#nearNodeId}. */
     public static final IgniteFeature DHT_TX_FINISH_NEAR_NODE_ID_DEPRECATED_FEATURE = new IgniteCoreFeature(8);
+
+    /** Feature that introduces statuses of the snapshot check operations. */
+    public static final IgniteFeature SNAPSHOT_CHECK_STATUS_FEATURE = new IgniteCoreFeature(9);
 }

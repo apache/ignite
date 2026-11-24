@@ -328,7 +328,7 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
             String status = bean.status();
 
             if (!isCreating && !isRestoring) {
-                assertContains(log, status, "There is no create or restore snapshot operation in progress");
+                assertContains(log, status, SnapshotMXBeanImpl.NO_CREATE_OR_RESTORE_IN_PROGRESS_MSG);
 
                 continue;
             }
