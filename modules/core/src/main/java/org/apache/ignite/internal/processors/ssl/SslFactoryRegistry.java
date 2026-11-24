@@ -176,46 +176,44 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("TLS hot reload check started [transports=" + transports + ']');
 
-            long nextCheckDelay;
+            long nextCheckDelay = CHECK_PERIOD;
 
             try {
-                long hotReloadTime = reloadable.getHotReloadTime();
-
-                logHotReloadTime(hotReloadTime);
-
-                nextCheckDelay = nextCheckDelay(hotReloadTime);
-
-                if (nextCheckDelay == 0)
-                    nextCheckDelay = hotReload();
-                else
-                    failures.set(0);
+                nextCheckDelay = reloadIfDue();
             }
             catch (Throwable e) {
-                if (executor.isShutdown()) {
-                    if (log.isDebugEnabled())
-                        log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
+                if (!executor.isShutdown()) {
+                    failures.incrementAndGet();
 
-                    return;
+                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                        + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
                 }
-
-                failures.incrementAndGet();
-
-                nextCheckDelay = CHECK_PERIOD;
-
-                log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
-                    + new Date(System.currentTimeMillis() + nextCheckDelay) + ']', e);
+                else if (log.isDebugEnabled())
+                    log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
             }
 
             scheduleCheck(nextCheckDelay);
         }
 
         /**
-         * Reloads the factory, whose hot reload time has come, and ends the failure streak.
+         * Reloads the factory if its hot reload time has come, and ends the failure streak if it has not.
          *
          * @return Delay of the next check.
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
-        private long hotReload() {
+        private long reloadIfDue() {
+            long hotReloadTime = reloadable.getHotReloadTime();
+
+            logHotReloadTime(hotReloadTime);
+
+            long nextCheckDelay = nextCheckDelay(hotReloadTime);
+
+            if (nextCheckDelay != 0) {
+                failures.set(0);
+
+                return nextCheckDelay;
+            }
+
             automaticHotReloadAttempts.incrementAndGet();
 
             if (log.isInfoEnabled())
@@ -223,8 +221,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            long hotReloadTime = reloadable.getHotReloadTime();
-            long nextCheckDelay = nextCheckDelay(hotReloadTime);
+            hotReloadTime = reloadable.getHotReloadTime();
+            nextCheckDelay = nextCheckDelay(hotReloadTime);
 
             if (nextCheckDelay == 0) {
                 throw new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
