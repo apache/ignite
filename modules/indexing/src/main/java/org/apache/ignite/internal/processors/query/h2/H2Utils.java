@@ -298,10 +298,10 @@ public class H2Utils {
     }
 
     /**
-     * Add quotes around the name. A quote inside the name is doubled so it stays inside that identifier.
+     * Quotes an identifier, doubling quotes inside it.
      *
-     * @param str Name.
-     * @return Quoted name.
+     * @param str Identifier.
+     * @return Quoted identifier.
      */
     public static String withQuotes(String str) {
         return StringUtils.quoteIdentifier(str);

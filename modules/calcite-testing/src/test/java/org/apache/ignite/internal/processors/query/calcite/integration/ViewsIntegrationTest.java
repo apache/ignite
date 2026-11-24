@@ -387,10 +387,7 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
         assertThrows("DROP VIEW IF EXISTS sys.views", IgniteSQLException.class, msg);
     }
 
-    /**
-     * Tests that a view name with a quote does not run a second statement in the H2 database,
-     * and the view is created and dropped in H2.
-     */
+    /** Tests a view whose name contains a quote. */
     @Test
     public void testViewNameWithQuote() throws Exception {
         assumeTrue(CalciteQueryEngineConfiguration.ENGINE_NAME.equals(engine),
