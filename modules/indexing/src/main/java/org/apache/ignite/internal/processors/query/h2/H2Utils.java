@@ -253,7 +253,7 @@ public class H2Utils {
 
     /**
      * Generate {@code CREATE INDEX} SQL statement for given params.
-     * @param schemaName <b>Quoted</b> schema name.
+     * @param schemaName Schema name.
      * @param idxName Index name.
      * @param ifExists Quietly skip index drop if it exists.
      * @return Statement string.
