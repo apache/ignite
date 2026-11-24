@@ -37,7 +37,6 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const marker = '<!-- ignite-rolling-upgrade-check -->';
             const label = 'compatibility';
 
             const run = context.payload.workflow_run;
@@ -87,9 +86,6 @@ jobs:
               return core.info('Could not identify the PR and its target branch.');
 
             const issue = {...repo, issue_number: target.number};
-            const comments = await list(issues.listComments, issue);
-            const comment = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker));
-
             const {data: pr} = await pulls.get({...repo, pull_number: target.number});
             if (pr.state !== 'open' || pr.head.repo?.id !== run.head_repository.id || pr.head.ref !== run.head_branch
               || pr.head.sha !== run.head_sha || pr.base.ref !== target.base.ref)
@@ -100,8 +96,6 @@ jobs:
               if (labeled)
                 await issues.removeLabel({...issue, name: label});
 
-              if (comment)
-                await issues.deleteComment({...repo, comment_id: comment.id});
               return;
             }
 
@@ -109,8 +103,5 @@ jobs:
               await issues.addLabels({...issue, labels: [label]});
 
             const url = `${run.html_url}/attempts/${wire.run_attempt}#summary-${wire.id}`;
-            const body = `${marker}\nWire format changed. Review the [wire diff in Job Summary](${url}) for rolling upgrade compatibility.`;
-            if (!comment)
-              await issues.createComment({...issue, body});
-            else if (comment.body !== body)
-              await issues.updateComment({...repo, comment_id: comment.id, body});
+            const body = `Wire format changed. Review the [wire diff in Job Summary](${url}) for rolling upgrade compatibility.`;
+            await issues.createComment({...issue, body});
