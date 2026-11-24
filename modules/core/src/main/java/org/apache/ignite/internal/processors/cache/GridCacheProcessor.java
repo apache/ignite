@@ -3512,14 +3512,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param storedCacheDataList Collection of stored cache data.
      * @param failIfExists Fail if exists flag.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @param restartId Restart requester id.
+     * @param snpRestoreId Request ID of the snapshot restore operation.
      * @return Future that will be completed when all caches are deployed.
      */
     public IgniteInternalFuture<Boolean> dynamicStartCachesByStoredConf(
         Collection<StoredCacheData> storedCacheDataList,
         boolean failIfExists,
         boolean checkThreadTx,
-        IgniteUuid restartId
+        IgniteUuid snpRestoreId
     ) {
         if (checkThreadTx) {
             sharedCtx.tm().checkEmptyTransactions(() -> {
@@ -3553,7 +3553,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.sql(),
                     failIfExists,
                     true,
-                    restartId,
+                    snpRestoreId,
                     ccfg.queryEntities(),
                     encrKey != null ? encrKey.key() : null,
                     encrKey != null ? encrKey.id() : null,
@@ -4769,7 +4769,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param sql Whether the cache needs to be created as the result of SQL {@code CREATE TABLE} command.
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
-     * @param restartId Restart requester id.
+     * @param snpRestoreId Request ID of the snapshot restore operation.
      * @param qryEntities Query entities.
      * @param encKey Encryption key.
      * @param encKeyId Id of the encryption key.
@@ -4786,7 +4786,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean sql,
         boolean failIfExists,
         boolean failIfNotStarted,
-        IgniteUuid restartId,
+        IgniteUuid snpRestoreId,
         @Nullable Collection<QueryEntity> qryEntities,
         @Nullable byte[] encKey,
         @Nullable Integer encKeyId,
@@ -4808,7 +4808,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         req.encryptionKeyId(encKeyId == null ? -1 : encKeyId);
 
-        req.restartId(restartId);
+        req.snpRestoreId(snpRestoreId);
 
         if (ccfg != null) {
             CU.validateCacheGroupName(ccfg.getGroupName());
@@ -4867,7 +4867,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 cfg = splitCfg.get1();
 
-                if (restartId != null)
+                if (snpRestoreId != null)
                     req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));
                 else
                     req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(ctx.recoveryMode(), qryEntities, cfg)

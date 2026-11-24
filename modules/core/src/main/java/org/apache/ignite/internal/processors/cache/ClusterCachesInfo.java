@@ -618,12 +618,12 @@ public class ClusterCachesInfo {
         DiscoveryDataClusterState state = ctx.state().clusterState();
 
         if (state.state().active() && !state.transition()) {
-            Set<IgniteUuid> restartIds = new HashSet<>(F.viewReadOnly(
-                batch.requests(), DynamicCacheChangeRequest::restartId, req -> req.start() && req.restartId() != null));
+            Set<IgniteUuid> snpRestoreIds = new HashSet<>(F.viewReadOnly(
+                batch.requests(), DynamicCacheChangeRequest::snpRestoreId, req -> req.start() && req.snpRestoreId() != null));
 
-            assert restartIds.size() <= 1 : batch.requests();
+            assert snpRestoreIds.size() <= 1 : batch.requests();
 
-            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(F.first(restartIds));
+            Collection<UUID> nodes = ctx.cache().context().snapshotMgr().cacheStartRequiredAliveNodes(F.first(snpRestoreIds));
 
             for (UUID nodeId : nodes) {
                 ClusterNode node = ctx.discovery().node(nodeId);
@@ -1097,7 +1097,7 @@ public class ClusterCachesInfo {
             }
         }
 
-        if (err == null && req.restartId() == null) {
+        if (err == null && req.snpRestoreId() == null) {
             IgniteSnapshotManager snapshotMgr = ctx.cache().context().snapshotMgr();
 
             if (snapshotMgr.isRestoring(ccfg)) {
