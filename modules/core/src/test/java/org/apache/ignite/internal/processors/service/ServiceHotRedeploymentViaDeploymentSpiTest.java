@@ -36,7 +36,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
@@ -44,7 +44,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /**
- * Tests services hot redeployment via {@link DeploymentSpi}.
+ * Tests services hot redeployment via {@link LocalDeploymentSpi}.
  *
  * <b>NOTE:</b> to run test via Maven Surefire Plugin, the property "forkCount' should be set great than '0' or profile
  * 'surefire-fork-count-1' enabled.
@@ -81,7 +81,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         try {
             IgniteEx ignite = startGrid(0);
 
-            DeploymentSpi depSpi = GridTestUtils.<DeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
+            LocalDeploymentSpi depSpi = GridTestUtils.<LocalDeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
 
             depSpi.register(clsLdr, cls);
 
@@ -96,7 +96,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
             IgniteEx ignite1 = startGrid(1);
 
-            depSpi = GridTestUtils.<DeploymentSpi[]>getFieldValue(ignite1.context().deploy(), "spis")[0];
+            depSpi = GridTestUtils.<LocalDeploymentSpi[]>getFieldValue(ignite1.context().deploy(), "spis")[0];
 
             depSpi.register(clsLdr, cls);
 
@@ -146,7 +146,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         try {
             IgniteEx ignite = startGrid(0);
 
-            final DeploymentSpi depSpi = GridTestUtils.<DeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
+            final LocalDeploymentSpi depSpi = GridTestUtils.<LocalDeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
 
             depSpi.register(clsLdr, srvc.getClass());
 

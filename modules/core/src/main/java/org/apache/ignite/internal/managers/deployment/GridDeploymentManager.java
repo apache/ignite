@@ -38,8 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
-import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +49,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 /**
  * Deployment manager.
  */
-public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
+public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi> {
     /** Local deployment storage. */
     private GridDeploymentStore locStore;
 
@@ -74,19 +72,12 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
         super(ctx, new LocalDeploymentSpi());
 
         if (!ctx.config().isPeerClassLoadingEnabled()) {
-            DeploymentSpi spi = getSpi();
-
-            IgnoreIfPeerClassLoadingDisabled ann = U.getAnnotation(spi.getClass(),
-                IgnoreIfPeerClassLoadingDisabled.class);
-
-            locDep = ann != null ?
-                new LocalDeployment(
+            locDep = new LocalDeployment(
                     ctx.config().getDeploymentMode(),
                     ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                     IgniteUuid.fromUuid(ctx.localNodeId()),
                     ctx.userVersion(U.gridClassLoader()),
-                    String.class.getName()) :
-                null;
+                    String.class.getName());
         }
         else
             locDep = null;

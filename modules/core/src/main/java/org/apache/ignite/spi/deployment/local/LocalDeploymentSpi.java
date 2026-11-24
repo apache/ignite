@@ -41,8 +41,6 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.spi.deployment.DeploymentResourceAdapter;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
-import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -62,14 +60,12 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
  * configuration parameters.
- * @see org.apache.ignite.spi.deployment.DeploymentSpi
  * @deprecated Will be replaced with the
  * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
 @IgniteSpiMultipleInstancesSupport(true)
-@IgnoreIfPeerClassLoadingDisabled
 @Deprecated
-public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi {
+public class LocalDeploymentSpi extends IgniteSpiAdapter {
     /** Enables additional check for resource name on resources removal. */
     @SystemProperty(value = "Enables an additional check of a resource name on resources removal")
     public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
@@ -116,7 +112,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
      * @param rsrcName Class name or class alias to find class loader for.
      * @return Deployed class loader, or {@code null} if not deployed.
      */
-    @Nullable @Override public DeploymentResource findResource(String rsrcName) {
+    @Nullable public DeploymentResource findResource(String rsrcName) {
         for (Entry<ClassLoader, ConcurrentMap<String, String>> e : ldrRsrcs.descendingEntrySet()) {
             ClassLoader ldr = e.getKey();
             ConcurrentMap<String, String> rsrcs = e.getValue();
@@ -186,8 +182,25 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         return rsrcName;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
+    /**
+     * Registers a class loader with this SPI. This method exists
+     * to be able to add external class loaders to deployment SPI.
+     * Deployment SPI may also have its own class loaders. For example,
+     * in case of GAR deployment, every GAR file is loaded and deployed
+     * with a separate class loader maintained internally by the SPI.
+     * <p>
+     * The array of classes passed in should be checked for presence of
+     * {@link org.apache.ignite.compute.ComputeTaskName} annotations. The classes that have this annotation
+     * should be accessible by this name from {@link #findResource(String)} method.
+     *
+     * @param ldr Class loader to register.
+     * @param rsrc Class that should be checked for aliases.
+     *      Currently the only alias in the system is {@link org.apache.ignite.compute.ComputeTaskName} for
+     *      task classes; in future, there may be others.
+     * @return {@code True} if resource was registered.
+     * @throws org.apache.ignite.spi.IgniteSpiException If registration failed.
+     */
+    public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
         assert ldr != null;
         assert rsrc != null;
 
@@ -222,8 +235,15 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
         return !F.isEmpty(newRsrcs);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean unregister(String rsrcName) {
+    /**
+     * Unregisters all class loaders that have a class with given name or have
+     * a class with give {@link org.apache.ignite.compute.ComputeTaskName} value.
+     *
+     * @param rsrcName Either class name or {@link org.apache.ignite.compute.ComputeTaskName} value for a class
+     *      whose class loader needs to be unregistered.
+     * @return {@code True} if resource was unregistered.
+     */
+    public boolean unregister(String rsrcName) {
         Collection<ClassLoader> rmvClsLdrs = new LinkedList<>();
 
         Map<String, String> rsrcs = U.newHashMap(1);
@@ -420,8 +440,13 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
             tmp.onUnregistered(clsLdr);
     }
 
-    /** {@inheritDoc} */
-    @Override public void setListener(DeploymentListener lsnr) {
+    /**
+     * Sets or unsets deployment event listener. Grid implementation will use this listener
+     * to properly add and remove various deployments.
+     *
+     * @param lsnr Listener for deployment events. {@code null} to unset the listener.
+     */
+    public void setListener(DeploymentListener lsnr) {
         this.lsnr = lsnr;
     }
 

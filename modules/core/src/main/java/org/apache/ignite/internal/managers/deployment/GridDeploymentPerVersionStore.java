@@ -50,7 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -96,7 +96,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentPerVersionStore(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentPerVersionStore(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(spi, ctx, comm);
 
         missedRsrcCacheSize = ctx.config().getPeerClassLoadingMissedResourcesCacheSize();

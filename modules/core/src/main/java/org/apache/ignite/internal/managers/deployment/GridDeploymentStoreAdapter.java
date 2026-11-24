@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,7 +35,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     protected final IgniteLogger log;
 
     /** Deployment SPI. */
-    protected final DeploymentSpi spi;
+    protected final LocalDeploymentSpi spi;
 
     /** Kernal context. */
     protected final GridKernalContext ctx;
@@ -48,7 +48,7 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentStoreAdapter(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentStoreAdapter(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
         assert spi != null;
         assert ctx != null;
         assert comm != null;

@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.AbstractMarshaller;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_CLASS_UNDEPLOYED;
@@ -73,7 +73,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentPerLoaderStore(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentPerLoaderStore(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(spi, ctx, comm);
     }
 

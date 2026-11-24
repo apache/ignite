@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -68,9 +67,9 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     ) throws Exception {
         IgniteEx node = (IgniteEx)super.startGrid(igniteInstanceName, cfg, ctx);
 
-        DeploymentSpi[] spis0 = GridTestUtils.getFieldValue(node.context().deploy(), "spis");
+        LocalDeploymentSpi[] spis0 = GridTestUtils.getFieldValue(node.context().deploy(), "spis");
 
-        spis.put(igniteInstanceName, (LocalDeploymentSpi)spis0[0]);
+        spis.put(igniteInstanceName, spis0[0]);
 
         return node;
     }

@@ -31,10 +31,6 @@ In all cases, other than singleton service deployment, Ignite automatically make
 Fault tolerance::
 Ignite always guarantees that services are continuously available, and are deployed according to the specified configuration, regardless of any topology changes or node crashes.
 
-Hot Redeployment::
-You can use Ignite's `DeploymentSpi` configuration to re-deploy services without restarting the cluster. See <<Re-deploying Services>>.
-
-
 Ignite services can be used as a backbone of a micro-services based solution or application. Learn more about this use case from the following series of articles:
 
 * link:https://dzone.com/articles/running-microservices-on-top-of-in-memory-data-gri[Microservices on Top of Apache Ignite - Part I^]
