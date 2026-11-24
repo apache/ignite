@@ -89,5 +89,8 @@ jobs:
               await issues.addLabels({...issue, labels: [label]});
 
             const url = `${run.html_url}/attempts/${wire.run_attempt}#summary-${wire.id}`;
-            const body = `Wire format changed. Review the [wire diff in Job Summary](${url}) for rolling upgrade compatibility.`;
+            const body = `> [!IMPORTANT]
+            > **Wire format changed**
+            >
+            > [Review the wire diff in Job Summary](${url}) before approving this PR. Check that the change is compatible with rolling upgrades.`;
             await issues.createComment({...issue, body});
