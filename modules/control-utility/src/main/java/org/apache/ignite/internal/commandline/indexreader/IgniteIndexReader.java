@@ -542,8 +542,6 @@ public class IgniteIndexReader implements AutoCloseable {
 
                 ScanContext.addToStats(io, stats, 1, nodeAddr, idxStore.getPageSize());
 
-                ScanContext.addToStats(readPage(idxStore, currPageId, pageBuf), stats, 1, pageAddr, idxStore.getPageSize());
-
                 res += io.getCount(nodeAddr);
 
                 for (int i = 0; i < io.getCount(nodeAddr); i++) {
