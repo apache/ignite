@@ -151,16 +151,27 @@ jobs:
               || !['success', 'skipped'].includes(upload))
               return core.info('The wire comparison or completeness check could not be verified.');
 
-            // Fork runs can have no associated pull_requests. Read the original PR number and base ref
-            // recorded by check-wire, then verify them against the live PR before making any changes.
-            const checkout = only(wire.steps.filter(step => step.conclusion === 'success'
-              && step.name.startsWith('Check out target commit for PR #')));
-            const target = checkout?.name.match(/^Check out target commit for PR #([1-9]\d*) into (.+)$/u);
-            if (!target || !run.head_repository)
+            if (!run.head_repository) return;
+            let target = only(run.pull_requests ?? []);
+            if (!run.pull_requests?.length) {
+              // Fork runs can omit pull_requests. Match the source branch to a single PR open at run creation.
+              const head = `${run.head_repository.owner.login}:${run.head_branch}`;
+              const candidates = await github.paginate(pulls.list, {...repo, head, state: 'all', per_page: 100});
+              target = only(candidates.filter(pr => pr.head.repo?.id === run.head_repository.id
+                && pr.created_at <= run.created_at && (!pr.closed_at || pr.closed_at >= run.created_at)));
+              if (!target || target.state !== 'open' || target.head.sha !== run.head_sha) return;
+
+              const {node} = await github.graphql(`query($id: ID!, $since: DateTime!) {
+                node(id: $id) { ... on PullRequest {
+                  timelineItems(first: 1, since: $since, itemTypes: [BASE_REF_CHANGED_EVENT]) { nodes { __typename } }
+                } }
+              }`, {id: target.node_id, since: run.created_at});
+              if (!node || node.timelineItems.nodes.length) return;
+            }
+            if (!target)
               return core.info('Could not identify the PR and its target branch.');
 
-            const [, number, baseRef] = target;
-            const pullNumber = Number(number);
+            const {number: pullNumber, base: {ref: baseRef}} = target;
             const issue = {...repo, issue_number: pullNumber};
             const comments = await github.paginate(issues.listComments, {...issue, per_page: 100});
             const comment = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker));

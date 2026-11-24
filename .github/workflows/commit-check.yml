@@ -157,7 +157,7 @@ jobs:
           path: merge
           fetch-depth: 2
           persist-credentials: false
-      - name: 'Check out target commit for PR #${{ github.event.pull_request.number }} into ${{ github.base_ref }}'
+      - name: Check out target commit
         run: git -C merge worktree add ../base HEAD^1
       - uses: actions/setup-java@v4
         with:
