@@ -65,7 +65,10 @@ public class ColocationGroup extends AbstractMessage {
      */
     private boolean primaryAssignment;
 
-    /** Partitions the assignments are filtered by. */
+    /** The single partition the assignments are filtered by, {@code -1} if none. */
+    private int partFilter = -1;
+
+    /** Partitions the assignments are filtered by, unless it is a single partition. */
     private @Nullable int[] partsFilter;
 
     /** Marshalled assignments serialization call holder. */
@@ -276,6 +279,9 @@ public class ColocationGroup extends AbstractMessage {
         if (F.isEmpty(assignments) || parts == null)
             return this;
 
+        if (parts.length == 1)
+            return filterByPartition(parts[0]);
+
         Set<UUID> nodes = new HashSet<>();
 
         for (int part : parts) {
@@ -302,6 +308,29 @@ public class ColocationGroup extends AbstractMessage {
     }
 
     /** */
+    private ColocationGroup filterByPartition(int part) {
+        int size = assignments.size();
+
+        List<UUID> assignment = part < size ? assignments.get(part) : Collections.emptyList();
+
+        List<UUID> nodes = F.isEmpty(assignment) ? Collections.emptyList() : Collections.singletonList(assignment.get(0));
+
+        ColocationGroup res = new ColocationGroup(srcIds, nodes, new AbstractList<>() {
+            @Override public List<UUID> get(int idx) {
+                return idx == part ? assignment : Collections.emptyList();
+            }
+
+            @Override public int size() {
+                return size;
+            }
+        });
+
+        res.partFilter = part;
+
+        return res;
+    }
+
+    /** */
     public ColocationGroup mapToNodes(List<UUID> nodeIds) {
         return !F.isEmpty(this.nodeIds) ? this : new ColocationGroup(srcIds, nodeIds, null);
     }
@@ -317,10 +346,18 @@ public class ColocationGroup extends AbstractMessage {
         if (F.isEmpty(assignments) || primaryAssignment)
             return null;
 
+        if (partFilter >= 0)
+            return Objects.equals(nodeId, F.first(assignments.get(partFilter))) ? new int[] {partFilter} : U.EMPTY_INTS;
+
         if (partsFilter != null) {
-            return Arrays.stream(partsFilter)
-                .filter(p -> p < assignments.size() && Objects.equals(nodeId, F.first(assignments.get(p))))
-                .toArray();
+            GridIntList parts = new GridIntList(partsFilter.length);
+
+            for (int p : partsFilter) {
+                if (p < assignments.size() && Objects.equals(nodeId, F.first(assignments.get(p))))
+                    parts.add(p);
+            }
+
+            return parts.arrayCopy();
         }
 
         GridIntList parts = new GridIntList(assignments.size());

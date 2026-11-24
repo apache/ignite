@@ -265,7 +265,7 @@ public abstract class DistributionFunction {
             AffinityAdapter<Row> aff = new AffinityAdapter<>(val -> U.safeAbs(SqlValueUtils.deepHashCode(val)),
                 k.toIntArray(), ctx.rowHandler());
 
-            return new Partitioned<>(assignments, aff);
+            return new Partitioned<>(assignments, m.nodeIds(), aff);
         }
     }
 
@@ -315,7 +315,7 @@ public abstract class DistributionFunction {
 
             AffinityAdapter<Row> aff = new AffinityAdapter<>(affSrvc.affinity(cacheId), k.toIntArray(), ctx.rowHandler());
 
-            return new Partitioned<>(assignments, aff);
+            return new Partitioned<>(assignments, m.nodeIds(), aff);
         }
 
         /** {@inheritDoc} */
