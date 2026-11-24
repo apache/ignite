@@ -26,10 +26,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,9 +66,11 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg,
         GridSpringResourceContext ctx
     ) throws Exception {
-        Ignite node = super.startGrid(igniteInstanceName, cfg, ctx);
+        IgniteEx node = (IgniteEx)super.startGrid(igniteInstanceName, cfg, ctx);
 
-        spis.put(igniteInstanceName, (LocalDeploymentSpi)node.configuration().getDeploymentSpi());
+        DeploymentSpi[] spis0 = GridTestUtils.getFieldValue(node.context().deploy(), "spis");
+
+        spis.put(igniteInstanceName, (LocalDeploymentSpi)spis0[0]);
 
         return node;
     }

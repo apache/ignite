@@ -32,10 +32,12 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -77,9 +79,11 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         assertEquals(1, srvc.version());
 
         try {
-            Ignite ignite = startGrid(0);
+            IgniteEx ignite = startGrid(0);
 
-            ignite.configuration().getDeploymentSpi().register(clsLdr, cls);
+            DeploymentSpi depSpi = GridTestUtils.<DeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
+
+            depSpi.register(clsLdr, cls);
 
             ignite.services().deployClusterSingleton(SERVICE_NAME, srvc);
 
@@ -90,9 +94,11 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
             assertEquals(1, ignite.services().serviceProxy(SERVICE_NAME, MyRenewService.class, false)
                 .version());
 
-            Ignite ignite1 = startGrid(1);
+            IgniteEx ignite1 = startGrid(1);
 
-            ignite1.configuration().getDeploymentSpi().register(clsLdr, cls);
+            depSpi = GridTestUtils.<DeploymentSpi[]>getFieldValue(ignite1.context().deploy(), "spis")[0];
+
+            depSpi.register(clsLdr, cls);
 
             srvcCls = serviceClass(ignite1, SERVICE_NAME);
 
@@ -138,9 +144,9 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         assertEquals(1, srvc.version());
 
         try {
-            Ignite ignite = startGrid(0);
+            IgniteEx ignite = startGrid(0);
 
-            final DeploymentSpi depSpi = ignite.configuration().getDeploymentSpi();
+            final DeploymentSpi depSpi = GridTestUtils.<DeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
 
             depSpi.register(clsLdr, srvc.getClass());
 

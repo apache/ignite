@@ -1659,7 +1659,6 @@ public class IgnitionEx {
 
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
-                ensureMultiInstanceSupport(cfg.getDeploymentSpi());
                 ensureMultiInstanceSupport(cfg.getCommunicationSpi());
                 ensureMultiInstanceSupport(cfg.getDiscoverySpi());
                 ensureMultiInstanceSupport(cfg.getCheckpointSpi());
