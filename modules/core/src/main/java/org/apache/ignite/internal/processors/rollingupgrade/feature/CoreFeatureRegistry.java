@@ -126,4 +126,10 @@ public class CoreFeatureRegistry {
 
     /** Feature that deprecates {@code GridDhtTxFinishRequest#nearNodeId}. */
     public static final IgniteFeature DHT_TX_FINISH_NEAR_NODE_ID_DEPRECATED_FEATURE = new IgniteCoreFeature(8);
+
+    /** Feature that deprecates {@code DynamicCacheChangeRequest#restart}. */
+    public static final IgniteFeature CACHE_RESTART_FLAG_DEPRECATED_FEATURE = new IgniteCoreFeature(9);
+
+    /** Feature that deprecates {@code DynamicCacheChangeRequest#disabledAfterStart}. */
+    public static final IgniteFeature CACHE_DISABLED_AFTER_START_DEPRECATED_FEATURE = new IgniteCoreFeature(10);
 }

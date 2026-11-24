@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-
 /**
  * Provides callback for marking object as removed.
  */
@@ -34,15 +32,4 @@ public interface GridCacheRemovable {
      *
      */
     public void needCheckNotRemoved();
-
-    /**
-     * Would suspend calls for this object.
-     */
-    public void suspend();
-
-    /**
-     * Would return this object work to normal.
-     * @param cache To update with.
-     */
-    public void restart(IgniteInternalCache cache);
 }

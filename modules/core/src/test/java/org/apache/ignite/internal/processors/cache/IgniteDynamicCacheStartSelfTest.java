@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -50,10 +49,8 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -178,7 +175,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, false, true, false, null));
+                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, false, true));
 
                 return null;
             }
@@ -247,7 +244,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
             @Override public Object call() throws Exception {
                 IgniteEx kernal = grid(ThreadLocalRandom.current().nextInt(nodeCount()));
 
-                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, false, true, false, null));
+                futs.add(kernal.context().cache().dynamicDestroyCache(DYNAMIC_CACHE_NAME, false, true));
 
                 return null;
             }
@@ -1338,69 +1335,5 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         }, nodeCount(), "start-stop-cache");
 
         fut.get();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testCacheRestartIsAllowedOnlyToItsInititator() throws Exception {
-        IgniteEx kernal = grid(ThreadLocalRandom.current().nextInt(nodeCount()));
-
-        CacheConfiguration ccfg = new CacheConfiguration("testCacheRestartIsAllowedOnlyToItsInititator");
-
-        kernal.createCache(ccfg);
-
-        IgniteUuid restartId = IgniteUuid.randomUuid();
-
-        kernal.context().cache().dynamicDestroyCache(ccfg.getName(), false, true, true, restartId)
-                .get(getTestTimeout(), TimeUnit.MILLISECONDS);
-
-        try {
-            kernal.createCache(ccfg);
-
-            fail();
-        }
-        catch (Exception e) {
-            assertTrue(X.hasCause(e, CacheExistsException.class));
-
-            System.out.println("User couldn't start new cache with the same name");
-        }
-
-        try {
-            kernal.context().cache().dynamicStartCache(ccfg, ccfg.getName(), null, true, false, true).get();
-
-            fail();
-        }
-        catch (Exception e) {
-            assertTrue(X.hasCause(e, CacheExistsException.class));
-
-            System.out.println("We couldn't start new cache with private API");
-        }
-
-        StoredCacheData storedCacheData = new StoredCacheData(ccfg);
-
-        try {
-            kernal.context().cache().dynamicStartCachesByStoredConf(
-                Collections.singleton(storedCacheData),
-                true,
-                true,
-                false,
-                IgniteUuid.randomUuid()
-            ).get();
-
-            fail();
-        }
-        catch (Exception e) {
-            assertTrue(X.hasCause(e, CacheExistsException.class));
-
-            System.out.println("We couldn't start new cache with wrong restart id.");
-        }
-
-        kernal.context().cache().dynamicStartCachesByStoredConf(Collections.singleton(storedCacheData), true, true, false, restartId).get();
-
-        System.out.println("We successfully restarted cache with initial restartId.");
-
-        kernal.destroyCache(ccfg.getName());
     }
 }
