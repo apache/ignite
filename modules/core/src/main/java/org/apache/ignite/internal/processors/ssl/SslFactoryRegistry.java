@@ -94,24 +94,15 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic hot reload attempts.");
 
-        boolean hotReload = false;
-
         for (RegisteredFactory registered : factories) {
-            if (registered.supportsReload()) {
-                registered.logHotReloadTime(registered.reloadable.getHotReloadTime());
+            if (!registered.supportsReload())
+                continue;
 
-                hotReload = true;
-            }
-        }
+            if (executor == null)
+                executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        if (!hotReload)
-            return;
-
-        executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
-
-        for (RegisteredFactory registered : factories) {
-            if (registered.supportsReload())
-                registered.scheduleCheck(0);
+            registered.logHotReloadTime(registered.reloadable.getHotReloadTime());
+            registered.scheduleCheck(0);
         }
     }
 
@@ -274,7 +265,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             return hotReloadTime != 0 && hotReloadTime <= System.currentTimeMillis();
         }
 
-        /** Reloads a factory that supports reload. Waits for its running check and resets its failure count. */
+        /**
+         * Reloads a factory that supports reload. Waits for its running check, resets its failure count and schedules
+         * its next check for the loaded certificates.
+         */
         public synchronized void reload() {
             manualReloadAttempts.incrementAndGet();
 
