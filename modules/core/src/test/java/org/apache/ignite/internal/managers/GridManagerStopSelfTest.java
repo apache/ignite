@@ -39,8 +39,6 @@ import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
@@ -149,12 +147,6 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testStopDeploymentManager() throws Exception {
-        DeploymentSpi spi = new LocalDeploymentSpi();
-
-        injectLogger(spi);
-
-        ctx.config().setDeploymentSpi(spi);
-
         GridDeploymentManager mgr = new GridDeploymentManager(ctx);
 
         mgr.stop(true);

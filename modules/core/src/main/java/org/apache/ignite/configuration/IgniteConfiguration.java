@@ -2127,22 +2127,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     }
 
     /**
-     * Sets fully configured instance of {@link DeploymentSpi}.
-     *
-     * @param deploySpi Fully configured instance of {@link DeploymentSpi}.
-     * @see IgniteConfiguration#getDeploymentSpi()
-     * @return {@code this} for chaining.
-     * @deprecated Will be replaced with the
-     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
-     */
-    @Deprecated
-    public IgniteConfiguration setDeploymentSpi(DeploymentSpi deploySpi) {
-        this.deploySpi = deploySpi;
-
-        return this;
-    }
-
-    /**
      * Should return fully configured checkpoint SPI implementation. If not provided,
      * {@link NoopCheckpointSpi} will be used.
      *

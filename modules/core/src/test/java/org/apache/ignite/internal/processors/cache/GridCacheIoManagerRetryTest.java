@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -145,7 +144,6 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
 
         // Necessary to init GridKernalContext.
         ctx.config().setPeerClassLoadingEnabled(true);
-        ctx.config().setDeploymentSpi(new LocalDeploymentSpi());
         ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
 
         ctx.config().setNetworkSendRetryCount(retryCnt);

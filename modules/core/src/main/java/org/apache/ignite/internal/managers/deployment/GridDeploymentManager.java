@@ -40,6 +40,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.IgnoreIfPeerClassLoadingDisabled;
+import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
@@ -70,10 +71,10 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
      * @param ctx Grid kernal context.
      */
     public GridDeploymentManager(GridKernalContext ctx) {
-        super(ctx, ctx.config().getDeploymentSpi());
+        super(ctx, new LocalDeploymentSpi());
 
         if (!ctx.config().isPeerClassLoadingEnabled()) {
-            DeploymentSpi spi = ctx.config().getDeploymentSpi();
+            DeploymentSpi spi = getSpi();
 
             IgnoreIfPeerClassLoadingDisabled ann = U.getAnnotation(spi.getClass(),
                 IgnoreIfPeerClassLoadingDisabled.class);

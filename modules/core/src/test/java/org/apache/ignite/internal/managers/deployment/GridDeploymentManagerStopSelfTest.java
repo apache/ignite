@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -36,8 +35,6 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
     @Test
     public void testOnKernalStop() throws Exception {
         GridTestKernalContext ctx = newContext();
-
-        ctx.config().setDeploymentSpi(new LocalDeploymentSpi());
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);
         resProc.setSpringContext(null);
