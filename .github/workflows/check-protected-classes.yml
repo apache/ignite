@@ -50,23 +50,6 @@ jobs:
               return only(job?.steps?.filter(step => step.name === name && step.status === 'completed') ?? [])?.conclusion;
             }
 
-            function comparison(jobs, attempt) {
-              // A partial rerun keeps the jobs that were not rerun from earlier attempts.
-              function latestJob(name) {
-                const matches = jobs.filter(job => job.name === name && job.head_sha === run.head_sha && job.run_attempt <= attempt);
-                const latest = Math.max(...matches.map(job => job.run_attempt));
-                return only(matches.filter(job => job.run_attempt === latest));
-              }
-
-              const wire = latestJob('Compare wire format descriptions');
-              const java = latestJob('Check java code on JDK 17');
-              const upload = stepResult(wire, 'Upload wire diff');
-              if (wire?.conclusion === 'success' && stepResult(wire, 'Compare descriptions and publish summary') === 'success'
-                && stepResult(java, 'Check all wire format descriptions are collected') === 'success'
-                && ['success', 'skipped'].includes(upload))
-                return {wire, upload};
-            }
-
             async function targetOf(run) {
               if (!run.head_repository) return;
               if (run.pull_requests?.length) return only(run.pull_requests);
@@ -90,33 +73,18 @@ jobs:
             if (jobs.some(job => job.run_attempt > run.run_attempt))
               return core.info('A newer attempt has started.');
 
-            const {wire, upload} = comparison(jobs, run.run_attempt) ?? {};
-            if (!wire)
+            const headJobs = jobs.filter(job => job.head_sha === run.head_sha);
+            const wire = only(headJobs.filter(job => job.name === 'Compare wire format descriptions'));
+            const java = only(headJobs.filter(job => job.name === 'Check java code on JDK 17'));
+            const upload = stepResult(wire, 'Upload wire diff');
+            if (wire?.conclusion !== 'success' || stepResult(wire, 'Compare descriptions and publish summary') !== 'success'
+              || stepResult(java, 'Check all wire format descriptions are collected') !== 'success'
+              || !['success', 'skipped'].includes(upload))
               return core.info('The wire comparison or completeness check could not be verified.');
 
             const target = await targetOf(run);
             if (!target)
               return core.info('Could not identify the PR and its target branch.');
-
-            // An empty report leaves no comment. Check CI history for newer verified results on this PR and base.
-            const runs = await list(actions.listWorkflowRuns, {
-              workflow_id: run.workflow_id, event: 'pull_request', branch: run.head_branch,
-              head_sha: run.head_sha, created: `>=${run.created_at}`,
-            });
-            for (const newer of runs) {
-              if (newer.run_number <= run.run_number || newer.head_repository?.id !== run.head_repository.id) continue;
-              const lastCompletedAttempt = newer.status === 'completed' ? newer.run_attempt : newer.run_attempt - 1;
-              if (!lastCompletedAttempt) continue;
-
-              const newerTarget = await targetOf(newer);
-              if (newerTarget?.number !== target.number || newerTarget.base.ref !== target.base.ref) continue;
-
-              const history = await list(actions.listJobsForWorkflowRun, {run_id: newer.id, filter: 'all'});
-              for (let attempt = lastCompletedAttempt; attempt >= 1; attempt--) {
-                if (comparison(history, attempt))
-                  return core.info(`Newer run ${newer.id} already has a verified wire comparison.`);
-              }
-            }
 
             const issue = {...repo, issue_number: target.number};
             const comments = await list(issues.listComments, issue);
