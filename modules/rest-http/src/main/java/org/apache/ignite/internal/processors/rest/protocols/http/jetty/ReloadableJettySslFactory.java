@@ -104,7 +104,7 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         try {
             factory.reload(ignored -> {});
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             restore(prev, e);
 
             throw new SkipUnload(e);
@@ -114,11 +114,11 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /** Makes the factory load the previous state, then sets back the state from {@code jetty.xml} for the next reload. */
-    private void restore(TlsState prev, Exception loadErr) {
+    private void restore(TlsState prev, Throwable loadErr) {
         try {
             factory.reload(prev::applyTo);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             loadErr.addSuppressed(e);
         }
         finally {
@@ -150,10 +150,10 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         private static final long serialVersionUID = 0L;
 
         /** Load failure, or {@code null} if the factory has the replacement. */
-        @Nullable private final Exception loadErr;
+        @Nullable private final Throwable loadErr;
 
         /** */
-        private SkipUnload(@Nullable Exception loadErr) {
+        private SkipUnload(@Nullable Throwable loadErr) {
             super(null, null, false, false);
 
             this.loadErr = loadErr;

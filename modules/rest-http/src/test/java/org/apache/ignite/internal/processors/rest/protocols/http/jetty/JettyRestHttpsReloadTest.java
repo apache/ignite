@@ -211,6 +211,32 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Given: a custom Jetty factory has loaded its keys, and its source then throws an error instead of an exception.
+     * When: Ignite reloads the factory.
+     * Then: the reload fails with {@link IgniteException}, and the factory keeps its working context, as
+     *     {@link ReloadableSslFactory#init()} promises for any failure.
+     */
+    @Test
+    public void testErrorFromSourceKeepsLastWorkingKeys() throws Exception {
+        SourceSslContextFactory.supply(fresh(), new NoClassDefFoundError("Key store provider"));
+
+        SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+
+        jettyFactory.start();
+
+        try {
+            SSLContext ctx = jettyFactory.getSslContext();
+
+            assertThrows(log, factory::init, IgniteException.class, "Key store provider");
+            assertSame(ctx, jettyFactory.getSslContext());
+        }
+        finally {
+            jettyFactory.stop();
+        }
+    }
+
+    /**
      * Given: a reload that Ignite did not start, such as one by Jetty's {@code KeyStoreScanner}, has failed and left
      *     the custom Jetty factory without keys.
      * When: Ignite reloads the factory and reads its hot reload time.
@@ -373,13 +399,13 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
     /**
      * Custom Jetty factory that takes its key stores from a source in memory instead of a file.
-     * Each load takes the next key store or throws the next exception that the test supplied. The last one repeats.
+     * Each load takes the next key store or throws the next exception or error that the test supplied. The last one repeats.
      */
     public static class SourceSslContextFactory extends SslContextFactory.Server {
         /** */
         private static final Deque<Object> LOADS = new ConcurrentLinkedDeque<>();
 
-        /** Replaces what the next loads take: key stores and exceptions, in order. */
+        /** Replaces what the next loads take: key stores, exceptions and errors, in order. */
         private static void supply(Object... loads) {
             LOADS.clear();
             LOADS.addAll(List.of(loads));
@@ -400,6 +426,9 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
             Object load = LOADS.size() > 1 ? LOADS.poll() : LOADS.peek();
 
             if (load instanceof Exception e)
+                throw e;
+
+            if (load instanceof Error e)
                 throw e;
 
             return (KeyStore)load;
