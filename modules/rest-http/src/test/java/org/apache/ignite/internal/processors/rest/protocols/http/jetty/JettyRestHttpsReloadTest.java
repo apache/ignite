@@ -196,13 +196,13 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(23), factory.hotReloadTime());
+            assertEquals(now + DAYS.toMillis(23), factory.getHotReloadTime());
 
             jettyFactory.reload(f -> { });
 
-            assertEquals(now - HOURS.toMillis(6), factory.hotReloadTime());
-            assertThrows(log, factory::reload, IgniteException.class, "Source is unavailable");
-            assertEquals(now - HOURS.toMillis(6), factory.hotReloadTime());
+            assertEquals(now - HOURS.toMillis(6), factory.getHotReloadTime());
+            assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
+            assertEquals(now - HOURS.toMillis(6), factory.getHotReloadTime());
         }
         finally {
             jettyFactory.stop();
@@ -237,14 +237,14 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
             Files.writeString(trust, "not a trust store");
 
-            assertThrows(log, factory::reload, IgniteException.class, null);
+            assertThrows(log, factory::init, IgniteException.class, null);
             assertSame(ctx, jettyFactory.getSslContext());
 
             Certificate cert = keys.getCertificate(HOST);
 
             trusted.setCertificateEntry(HOST, cert);
             save(trusted, trust);
-            factory.reload();
+            factory.init();
 
             assertSame(keys, jettyFactory.getKeyStore());
             assertEquals(cert, jettyFactory.getTrustStore().getCertificate(HOST));
@@ -280,7 +280,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.start();
 
         try {
-            factory.reload();
+            factory.init();
 
             assertEquals(1, reloads.get());
         }

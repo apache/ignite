@@ -17,18 +17,20 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
-/** Operations that the SSL factory registry uses to reload a TLS factory on request and before its certificates expire. */
+import org.apache.ignite.IgniteException;
+
+/** TLS factory that the SSL factory registry can reload on request and before its certificates expire. */
 public interface ReloadableSslFactory {
     /**
      * Loads the keys and trust settings again for new connections. If loading fails, new connections keep the previous ones.
      *
-     * @throws org.apache.ignite.IgniteException If loading fails.
+     * @throws IgniteException If loading fails.
      */
-    public void reload();
+    public void init();
 
     /**
      * @return Time when the certificates that new connections use are due for hot reload, as calculated by
      *     {@link HotReloadTime#of}, or {@code 0} if they give none.
      */
-    public long hotReloadTime();
+    public long getHotReloadTime();
 }

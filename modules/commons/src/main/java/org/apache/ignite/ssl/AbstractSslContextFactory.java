@@ -31,12 +31,13 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.HotReloadTime;
+import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Base class for SSL context factories that cache their {@link SSLContext}.
  */
-public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
+public abstract class AbstractSslContextFactory implements Factory<SSLContext>, ReloadableSslFactory {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,7 +72,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the certificates have not been loaded yet
      *     or the last successful load supplied no key store or no private key with an X.509 chain.
      */
-    public long getHotReloadTime() {
+    @Override public long getHotReloadTime() {
         return hotReloadTime;
     }
 
@@ -229,7 +230,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext> {
      *
      * @throws IgniteException If the context cannot be initialized.
      */
-    public final synchronized void init() {
+    @Override public final synchronized void init() {
         try {
             sslCtx.set(createSslContext());
         }

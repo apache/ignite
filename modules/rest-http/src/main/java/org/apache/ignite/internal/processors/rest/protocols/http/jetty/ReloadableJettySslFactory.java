@@ -48,7 +48,7 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public void reload() {
+    @Override public void init() {
         try {
             factory.unload(this::reloadLocked);
         }
@@ -59,7 +59,7 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /** Reads the date from the keys that new connections use, including keys that the factory loaded without Ignite. */
-    @Override public long hotReloadTime() {
+    @Override public long getHotReloadTime() {
         KeyStore store = factory.getKeyStore();
 
         try {

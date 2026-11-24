@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -196,7 +197,9 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testFactoryWithoutReloadDoesNotStartHotReload() {
-        registry.register("communication", () -> null);
+        Factory<SSLContext> createOnly = () -> null;
+
+        registry.register("communication", createOnly);
         registry.onKernalStart(true);
 
         executorFactory.verifyNoInteractions();
@@ -212,14 +215,14 @@ public class SslFactoryRegistryTest {
     public void testReloadableFactoryIsHotReloadedAndReloadedManually() {
         ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
 
-        when(rest.hotReloadTime()).thenReturn(due(), due(), at(DAYS.toHours(30)));
+        when(rest.getHotReloadTime()).thenReturn(due(), due(), at(DAYS.toHours(30)));
 
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
         check.run();
         reload(rest);
 
-        verify(rest, times(2)).reload();
+        verify(rest, times(2)).init();
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
         assertEquals(1, metric("ManualReloadAttempts"));
         assertEquals(0, failures());
