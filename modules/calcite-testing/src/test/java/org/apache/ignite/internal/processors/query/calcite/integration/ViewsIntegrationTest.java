@@ -420,7 +420,10 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
         assertFalse("View is not dropped in H2", h2TableExists("PUBLIC", viewName));
     }
 
-    /** */
+    /**
+     * Checks a table or view in the internal H2 database. SYS views and Calcite queries use Ignite metadata,
+     * and H2 errors during view registration are only logged, so a wrong statement in H2 is visible only there.
+     */
     private boolean h2TableExists(String schemaName, String tblName) throws Exception {
         IgniteH2Indexing idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
 
