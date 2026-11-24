@@ -60,7 +60,6 @@ module.exports = async function reportWireChanges({github, context, core}) {
     const issue = {...repo, issue_number: Number(number)};
     const comments = await github.paginate(issues.listComments, {...issue, per_page: 100});
     const comment = comments.find(c => c.user?.login === bot && c.body?.startsWith(marker));
-    const events = upload === 'skipped' ? await github.paginate(issues.listEvents, {...issue, per_page: 100}) : [];
 
     const {data: pr} = await pulls.get({...repo, pull_number: issue.issue_number});
     if (pr.state !== 'open' || pr.head.repo?.id !== run.head_repository.id || pr.head.ref !== run.head_branch
@@ -69,8 +68,7 @@ module.exports = async function reportWireChanges({github, context, core}) {
 
     const labeled = pr.labels.some(l => l.name === label);
     if (upload === 'skipped') {
-        const last = events.findLast(e => e.label?.name === label && ['labeled', 'unlabeled'].includes(e.event));
-        if (labeled && last?.event === 'labeled' && last.actor?.login === bot)
+        if (labeled)
             await issues.removeLabel({...issue, name: label});
 
         if (comment)
