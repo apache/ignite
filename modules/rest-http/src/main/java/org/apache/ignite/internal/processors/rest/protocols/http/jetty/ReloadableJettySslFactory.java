@@ -133,7 +133,10 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         }
     }
 
-    /** Ends {@code unload(...)} before it unloads the factory. */
+    /**
+     * Ends the outer {@code unload(...)} before it unloads the factory. It does not bring back the state that a failed
+     * reload inside has already cleared: {@code restore(...)} does that.
+     */
     private static class SkipUnload extends RuntimeException {
         /** */
         private static final long serialVersionUID = 0L;
