@@ -42,7 +42,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
-import org.apache.ignite.internal.processors.ssl.SslFactoryRegistry.RegisteredFactory;
 import org.apache.ignite.internal.thread.context.OperationContext;
 import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
@@ -188,13 +187,8 @@ public class SslFactoryRegistryTest {
         registry.register("client connector", clientConnector);
         registry.register("discovery", factory);
 
-        List<Map.Entry<Object, String>> registered = new ArrayList<>();
-
-        for (RegisteredFactory f : registry.factories())
-            registered.add(Map.entry(f.factory(), f.transports()));
-
-        assertEquals(List.of(Map.entry(factory, "communication, discovery"), Map.entry(clientConnector, "client connector")),
-            registered);
+        assertEquals(List.of(Map.entry(factory, "communication, discovery"),
+            Map.entry(clientConnector, "client connector")), registry.factories());
     }
 
     /**
@@ -231,7 +225,7 @@ public class SslFactoryRegistryTest {
 
         assertEquals(0, failures());
 
-        reload(rest);
+        registry.reload(rest);
 
         verify(rest, times(2)).init();
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
@@ -282,7 +276,7 @@ public class SslFactoryRegistryTest {
         long prevTime = communication.getHotReloadTime();
 
         writeFreshCertificates(keys);
-        reload(clientConnector);
+        registry.reload(clientConnector);
 
         assertTrue(clientConnector.getHotReloadTime() > prevTime);
         assertEquals(prevTime, communication.getHotReloadTime());
@@ -310,7 +304,7 @@ public class SslFactoryRegistryTest {
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
-        reload(communication);
+        registry.reload(communication);
 
         assertEquals("TLS hot reload due [transports=communication, hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']',
             logged.get(logged.size() - 1));
@@ -439,7 +433,7 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", communication);
         registry.onKernalStart(true);
         writeCertificatesDueIn30Minutes(keys);
-        reload(communication);
+        registry.reload(communication);
 
         assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
     }
@@ -456,7 +450,7 @@ public class SslFactoryRegistryTest {
         writeDueCertificates(keys);
         registerTransport("communication", communication);
         registry.onKernalStart(true);
-        reload(communication);
+        registry.reload(communication);
 
         assertEquals(0, failures());
         assertEquals(HOURS.toMillis(1), nextCheckDelay());
@@ -621,7 +615,7 @@ public class SslFactoryRegistryTest {
         long prevTime = communication.getHotReloadTime();
 
         writeFreshCertificates(keys);
-        reload(communication);
+        registry.reload(communication);
 
         assertTrue(communication.getHotReloadTime() > prevTime);
     }
@@ -638,13 +632,13 @@ public class SslFactoryRegistryTest {
         writeFreshCertificates(keys);
         registerTransport("communication", communication);
         registry.onKernalStart(true);
-        reload(communication);
+        registry.reload(communication);
 
         assertEquals(1, metric("ManualReloadAttempts"));
 
         Files.delete(keys);
 
-        assertThrows(IgniteException.class, () -> reload(communication));
+        assertThrows(IgniteException.class, () -> registry.reload(communication));
         assertEquals(2, metric("ManualReloadAttempts"));
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
     }
@@ -696,7 +690,7 @@ public class SslFactoryRegistryTest {
         registry.onKernalStart(true);
 
         custom.setKeys(null, null);
-        reload(custom);
+        registry.reload(custom);
         runChecks();
 
         assertEquals(0, custom.getHotReloadTime());
@@ -714,7 +708,7 @@ public class SslFactoryRegistryTest {
 
         registry.register("client connector", factory);
         registry.onKernalStart(true);
-        reload(factory);
+        registry.reload(factory);
 
         verify(factory).init();
     }
@@ -734,7 +728,7 @@ public class SslFactoryRegistryTest {
         Files.delete(keys);
         runChecks();
 
-        IgniteException err = assertThrows(IgniteException.class, () -> reload(communication));
+        IgniteException err = assertThrows(IgniteException.class, () -> registry.reload(communication));
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
@@ -768,7 +762,7 @@ public class SslFactoryRegistryTest {
         });
 
         GridTestThread attempt = new GridTestThread(nextCheck());
-        GridTestThread manualReload = new GridTestThread(() -> reload(communication));
+        GridTestThread manualReload = new GridTestThread(() -> registry.reload(communication));
 
         attempt.start();
 
@@ -819,7 +813,7 @@ public class SslFactoryRegistryTest {
         assertEquals(1, failures());
 
         writeDueCertificates(keys);
-        reload(communication);
+        registry.reload(communication);
 
         assertEquals(1, failures());
 
@@ -828,7 +822,7 @@ public class SslFactoryRegistryTest {
         assertEquals(3, failures());
 
         writeFreshCertificates(clientKeys);
-        reload(clientConnector);
+        registry.reload(clientConnector);
 
         assertEquals(1, failures());
     }
@@ -987,14 +981,6 @@ public class SslFactoryRegistryTest {
         assertEquals(1, scheduled.size());
 
         return scheduled.values().iterator().next();
-    }
-
-    /** Reloads the registered factory, as the reload command does. */
-    private void reload(Factory<SSLContext> factory) {
-        for (RegisteredFactory registered : registry.factories()) {
-            if (registered.factory() == factory)
-                registered.reload();
-        }
     }
 
     /** Loads a file-backed factory before registration, as the TCP transports do during startup. */

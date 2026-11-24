@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.ssl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -79,9 +82,14 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         factories.add(new RegisteredFactory(factory, transport));
     }
 
-    /** @return Registered factories in registration order. */
-    public List<RegisteredFactory> factories() {
-        return List.copyOf(factories);
+    /** @return Registered factories in registration order, each with its transports joined by commas. */
+    public List<Entry<Factory<SSLContext>, String>> factories() {
+        List<Entry<Factory<SSLContext>, String>> res = new ArrayList<>(factories.size());
+
+        for (RegisteredFactory registered : factories)
+            res.add(Map.entry(registered.factory, registered.transports));
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -95,7 +103,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             "Number of automatic hot reload attempts.");
 
         for (RegisteredFactory registered : factories) {
-            if (!registered.supportsReload())
+            if (registered.reloadable == null)
                 continue;
 
             if (executor == null)
@@ -121,8 +129,22 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             executor.shutdownNow();
     }
 
+    /**
+     * Reloads a registered factory. Waits for its running check, resets its failure count and schedules its next check
+     * for the loaded certificates. If they are already due, the next check comes after {@link #CHECK_PERIOD}, because
+     * a hot reload right away would load the same certificates from the source.
+     *
+     * @param factory Registered factory to reload.
+     */
+    public void reload(ReloadableSslFactory factory) {
+        for (RegisteredFactory registered : factories) {
+            if (registered.factory == factory)
+                registered.reload();
+        }
+    }
+
     /** Registered factory with its transports and hot reload state. Its checks and manual reload hold its monitor. */
-    public class RegisteredFactory {
+    private class RegisteredFactory {
         /** */
         private final Factory<SSLContext> factory;
 
@@ -147,21 +169,6 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             this.transports = transports;
 
             reloadable = factory instanceof ReloadableSslFactory sslFactory ? sslFactory : null;
-        }
-
-        /** @return The factory that the transports registered. */
-        public Factory<SSLContext> factory() {
-            return factory;
-        }
-
-        /** @return Transports that use the factory, joined by commas. */
-        public String transports() {
-            return transports;
-        }
-
-        /** @return Whether the registry can reload the factory. */
-        public boolean supportsReload() {
-            return reloadable != null;
         }
 
         /**
@@ -267,12 +274,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             }
         }
 
-        /**
-         * Reloads a factory that supports reload. Waits for its running check, resets its failure count and schedules
-         * its next check for the loaded certificates. If they are already due, the next check comes after
-         * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source.
-         */
-        public synchronized void reload() {
+        /** */
+        private synchronized void reload() {
             manualReloadAttempts.incrementAndGet();
 
             reloadable.init();
