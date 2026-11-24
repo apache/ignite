@@ -385,7 +385,10 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
             schemaName, idxName);
     }
 
-    /** */
+    /**
+     * Runs a query on the internal H2 database. H2 errors in schema listeners are only logged and Ignite metadata
+     * stays correct, so a wrong DDL statement in H2 is visible only there.
+     */
     private boolean h2RowExists(String sql, String... args) throws Exception {
         IgniteH2Indexing idx = (IgniteH2Indexing)ignite(0).context().query().getIndexing();
 
