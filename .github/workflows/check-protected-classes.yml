@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: Protected Classes
+name: Wire format report
 
 on:
   workflow_run:
     workflows: ['Code Style, Abandoned Tests, Javadocs']
-    types: [requested, completed]
+    types: [completed]
 
 permissions: {}
 
@@ -27,96 +27,13 @@ jobs:
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.path == '.github/workflows/commit-check.yml'
     runs-on: ubuntu-latest
     concurrency:
-      # Serialize the preliminary label and the final comparison result.
       group: wire-report-${{ github.event.workflow_run.head_repository.id }}-${{ github.event.workflow_run.head_branch }}
       queue: max
     permissions:
       actions: read
-      contents: read
       pull-requests: write
     steps:
-      - name: Label changes to protected Java classes
-        if: github.event.action == 'requested'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const ORDER_USE = '@Order(';
-            const ORDER_IMPORT = 'import org.apache.ignite.internal.Order;';
-            const ORDER_PKG = 'package org.apache.ignite.internal;';
-            const {owner, repo} = context.repo;
-            const run = context.payload.workflow_run;
-            if (!run.head_repository) return;
-
-            // A delayed requested event can enter the concurrency group after the final report.
-            const {data: latest} = await github.rest.actions.getWorkflowRun({owner, repo, run_id: run.id});
-            if (latest.status === 'completed' || latest.run_attempt !== run.run_attempt) return;
-
-            // Fork runs may omit pull_requests. Only label an unambiguous open PR for this head.
-            const head = `${run.head_repository.owner.login}:${run.head_branch}`;
-            const open = await github.paginate(github.rest.pulls.list, {owner, repo, state: 'open', head, per_page: 100});
-            const matches = open.filter(pr => pr.head.repo?.id === run.head_repository.id && pr.head.sha === run.head_sha
-              && (!run.pull_requests?.length || run.pull_requests.some(p => p.number === pr.number && p.base.ref === pr.base.ref)));
-            if (matches.length !== 1) return;
-
-            const [pr] = matches;
-            if (pr.labels.some(l => l.name === 'compatibility')) return;
-            const baseSha = pr.base.sha;
-            const headSha = pr.head.sha;
-
-            // Changed files are read from the API as data; the fork's code is never checked out or executed.
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner, repo, pull_number: pr.number, per_page: 100,
-            });
-
-            // Reproduce `git diff --no-renames --diff-filter=ADM`: a rename is a delete(old)+add(new) pair.
-            // A protected class carries the @Order annotation; an added file is defined by the head revision,
-            // a deleted/modified one by the base.
-            const revisions = [];
-            for (const f of files) {
-              if (f.status === 'added' || f.status === 'copied')
-                revisions.push([f.filename, headSha]);
-              else if (f.status === 'removed' || f.status === 'modified' || f.status === 'changed')
-                revisions.push([f.filename, baseSha]);
-              else if (f.status === 'renamed') {
-                revisions.push([f.previous_filename, baseSha]);
-                revisions.push([f.filename, headSha]);
-              }
-            }
-
-            const isProtected = async (path, ref) => {
-              let meta;
-              try {
-                ({ data: meta } = await github.rest.repos.getContent({ owner, repo, path, ref }));
-              } catch (e) {
-                if (e.status === 404) return false;
-                throw e;
-              }
-              if (Array.isArray(meta) || meta.type !== 'file') return false;
-              let content = meta.content ? Buffer.from(meta.content, 'base64').toString('utf8') : '';
-              if (!content && meta.sha) {
-                const { data: blob } = await github.rest.git.getBlob({ owner, repo, file_sha: meta.sha });
-                content = Buffer.from(blob.content, blob.encoding).toString('utf8');
-              }
-              const lines = content.split(/\r?\n/);
-
-              return content.includes(ORDER_USE)
-                && (lines.includes(ORDER_IMPORT) || lines.includes(ORDER_PKG));
-            };
-
-            for (const [path, ref] of revisions) {
-              if (!path.endsWith('.java') || path.startsWith('modules/core/src/test/resources/codegen/')
-                || !await isProtected(path, ref)) continue;
-
-              const {data: current} = await github.rest.pulls.get({owner, repo, pull_number: pr.number});
-              if (current.state === 'open' && current.head.repo?.id === run.head_repository.id
-                && current.head.ref === run.head_branch && current.head.sha === headSha && current.base.ref === pr.base.ref
-                && !current.labels.some(l => l.name === 'compatibility'))
-                await github.rest.issues.addLabels({owner, repo, issue_number: pr.number, labels: ['compatibility']});
-              return;
-            }
-
       - name: Report the wire comparison
-        if: github.event.action == 'completed'
         uses: actions/github-script@v8
         with:
           script: |
