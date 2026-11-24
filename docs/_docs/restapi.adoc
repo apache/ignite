@@ -116,6 +116,9 @@ New connections use the replacement certificates; established connections stay o
 If loading fails, the endpoint keeps its current keys and trust settings, and new connections keep working with them.
 Correct the stores and run the command again.
 
+Keep the stores in the sources that the factory loads: the store paths in the Jetty XML file, or the `loadKeyStore(Resource)` and `loadTrustStore(Resource)` methods of a custom subclass.
+A store that your code sets on the running factory, for example with `setKeyStore(KeyStore)`, does not survive a failed reload: the next reload loads the stores configured in the Jetty XML file instead.
+
 === Security
 
 When link:security/authentication[authentication] is configured in the cluster, all applications that use REST API request authentication by providing security credentials.

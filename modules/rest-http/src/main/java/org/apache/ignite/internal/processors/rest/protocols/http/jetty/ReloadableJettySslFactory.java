@@ -38,6 +38,11 @@ import org.jetbrains.annotations.Nullable;
  * Jetty selects certificates for SNI host names from the key store of the state, so the restore keeps SNI selection.
  * If the restore fails too, the factory has no state until the next successful reload, and the reload error carries
  * that failure as a suppressed exception.
+ * <p>
+ * After a failed reload, the factory gets back the context and stores set in {@code jetty.xml}, and the next reload
+ * reads its configured sources again. Once the factory has started, its getters return the loaded state rather than
+ * these settings. So the adapter cannot keep a context or store that code sets on the running factory: a failed reload
+ * drops it.
  */
 class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** The adapter is serializable only because {@link Factory} is. Serializing it fails, as Jetty's factory is not serializable. */
