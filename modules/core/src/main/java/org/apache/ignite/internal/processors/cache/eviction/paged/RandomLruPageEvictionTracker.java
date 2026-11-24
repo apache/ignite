@@ -74,6 +74,8 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        super.start();
+
         trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4L);
 
         GridUnsafe.zeroMemory(trackingArrPtr, trackingSize * 4L);

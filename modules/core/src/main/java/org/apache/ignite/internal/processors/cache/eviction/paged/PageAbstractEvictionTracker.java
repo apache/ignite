@@ -16,7 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
@@ -89,6 +87,9 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     /** Data region metrics. */
     private final DataRegionMetricsImpl memMetrics;
 
+    /** Free list of the data region. It is created after the tracker, so it is resolved on {@link #start()}. */
+    private AbstractFreeList<?> freeList;
+
     /**
      * Maximum time (milliseconds) the size-aware eviction guard is willing to wait without progress before giving up.
      * This is a liveness guard: a {@code evictDataPage()} call can evict nothing (for example when the sampled rows
@@ -139,6 +140,11 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
         baseCompactTs = (U.currentTimeMillis() - DAY) >> COMPACT_TS_SHIFT;
         // We subtract day to avoid fail in case of daylight shift or timezone change.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() {
+        freeList = (AbstractFreeList<?>)sharedCtx.database().freeList(regCfg.getName());
     }
 
     /**
@@ -309,11 +315,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         if (rowSize <= 0)
             return 0;
 
-        AbstractFreeList<?> freeList = (AbstractFreeList<?>)sharedCtx.database().freeList(regCfg.getName());
-
-        if (freeList == null)
-            return 0;
-
         long claimPages = requiredPages(rowSize);
 
         if (!fitsRegion(claimPages)) {
@@ -331,7 +332,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
         boolean admitted = false;
 
         try {
-            long deficit = deficit(freeList, limitPages, reserved);
+            long deficit = deficit(limitPages, reserved);
 
             // An insert evicts for its own claim and restores the rest of the deficit, at most a half of the pool.
             long share = deficit < claimPages ? deficit :
@@ -378,7 +379,7 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
 
                 memMetrics.updateEvictionRate();
 
-                deficit = deficit(freeList, limitPages, reservedPages.get());
+                deficit = deficit(limitPages, reservedPages.get());
             }
 
             admitted = true;
@@ -389,19 +390,6 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
             if (!admitted)
                 releaseReserved(claimPages);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public long reserve(
-        Collection<? extends Storable> rows,
-        boolean bestEffort
-    ) throws IgniteOutOfMemoryException, IgniteCheckedException {
-        long size = 0;
-
-        for (Storable row : rows)
-            size += requiredPages(row.size()) * pagePayload();
-
-        return reserve(size, bestEffort);
     }
 
     /** {@inheritDoc} */
@@ -482,12 +470,11 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
      * of it must fit into the free pages of the region (empty pages in the free list of the region plus the headroom up
      * to the limit).
      *
-     * @param freeList Free list of the data region.
      * @param limitPages Limit of loaded pages (see {@link #limitPages(long)}).
      * @param reserved Pages reserved by in-flight inserts, including this claim.
      * @return Number of missing pages, a non-positive value if the claim can be admitted.
      */
-    private long deficit(AbstractFreeList<?> freeList, long limitPages, long reserved) {
+    private long deficit(long limitPages, long reserved) {
         long freePages = freeList.emptyDataPages() + Math.max(0, limitPages - pageMem.loadedPages());
 
         return regCfg.getEmptyPagesPoolSize() + countedPages(reserved) - freePages;

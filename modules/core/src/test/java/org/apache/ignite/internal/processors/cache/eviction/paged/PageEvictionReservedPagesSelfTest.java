@@ -106,8 +106,8 @@ public class PageEvictionReservedPagesSelfTest extends PageEvictionAbstractTest 
 
         GridCacheContext<?, ?> cctx = cacheContext(ignite);
 
-        // A batch claims a page per row: small batches keep the claims of all threads below the threshold, so nothing
-        // is evicted (the rows are inserted directly and are not cache entries).
+        // Small batches keep the claims of all threads below the threshold, so nothing is evicted (the rows are
+        // inserted directly and are not cache entries).
         int rowsPerBatch = 200;
 
         AtomicInteger keyGen = new AtomicInteger();

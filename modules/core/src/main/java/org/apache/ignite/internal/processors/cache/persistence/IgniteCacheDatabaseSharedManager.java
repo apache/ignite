@@ -1248,10 +1248,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *      handling {@code IgniteCheckedException} (e.g. the futures that call {@code initialValue}) complete with the
      *      error instead of leaking it; nothing has been changed and the failure handler is not involved.
      */
-    public long reserveInRegion(@Nullable DataRegion memPlc, long rowSize, boolean bestEffort) throws IgniteCheckedException {
-        if (!isReserveEnabled(memPlc))
-            return 0;
-
+    public long reserveInRegion(DataRegion memPlc, long rowSize, boolean bestEffort) throws IgniteCheckedException {
         try {
             return memPlc.evictionTracker().reserve(rowSize, bestEffort);
         }
@@ -1503,9 +1500,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert cfg != null;
 
-        startDataRegions();
-
         initPageMemoryDataStructures(cfg);
+
+        startDataRegions();
 
         dataRegionsStarted = true;
 

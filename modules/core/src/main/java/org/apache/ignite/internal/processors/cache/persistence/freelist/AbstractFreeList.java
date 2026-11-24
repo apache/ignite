@@ -651,7 +651,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * current one.
      * <p>
      * The space of the whole batch is reserved upfront, before any page lock is taken: the eviction is not allowed
-     * under a page write lock, and a batch (e.g. of rebalancing) is small, so a pessimistic reservation is cheap.
+     * under a page write lock.
      *
      * @param rows Rows.
      * @param statHolder Statistics holder to track IO operations.
@@ -661,7 +661,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         IoStatisticsHolder statHolder) throws IgniteCheckedException {
         try {
             // Best-effort: rows of a batch (e.g. of rebalancing) can not be safely refused.
-            long reserved = evictionTracker.reserve(rows, true);
+            long reserved = evictionTracker.reserveEnabled() ? evictionTracker.reserve(batchSize(rows), true) : 0;
 
             try {
                 GridCursor<T> cur = new GridCursorIteratorWrapper<>(rows.iterator());
@@ -699,6 +699,44 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         catch (RuntimeException e) {
             throw new CorruptedFreeListException("Failed to insert data rows", e, grpId);
         }
+    }
+
+    /**
+     * Computes the size of a batch of rows as they are packed into data pages: the fragments that occupy the whole
+     * page take pages of their own, the remainders of the rows share pages. The same estimate is used for a batch of
+     * an atomic cache, see {@code GridDhtAtomicCache#reserveBatchSpace}.
+     *
+     * @param rows Rows.
+     * @return Size of the batch in bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    private long batchSize(Collection<T> rows) throws IgniteCheckedException {
+        // Filled pages and the space taken in the last page.
+        long pages = 0;
+
+        long lastPage = 0;
+
+        for (T row : rows) {
+            int size = row.size();
+
+            pages += size / MIN_SIZE_FOR_DATA_PAGE;
+
+            // 1/64 of a page covers the row overhead and the free list bucket step.
+            long part = size % MIN_SIZE_FOR_DATA_PAGE + pageMem.pageSize() / 64;
+
+            if (lastPage > 0 && lastPage + part > MIN_SIZE_FOR_DATA_PAGE) {
+                pages++;
+
+                lastPage = 0;
+            }
+
+            lastPage += part;
+        }
+
+        if (lastPage > 0)
+            pages++;
+
+        return pages * MIN_SIZE_FOR_DATA_PAGE;
     }
 
     /**

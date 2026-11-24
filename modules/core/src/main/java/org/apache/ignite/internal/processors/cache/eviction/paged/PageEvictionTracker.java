@@ -16,10 +16,8 @@
 */
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
@@ -85,19 +83,6 @@ public interface PageEvictionTracker extends LifecycleAware {
      * @throws IgniteCheckedException If failed to evict data pages.
      */
     public long reserve(long rowSize, boolean bestEffort) throws IgniteOutOfMemoryException, IgniteCheckedException;
-
-    /**
-     * Reserves pages for a batch of rows before it is inserted, see {@link #reserve(long, boolean)}. The size of the
-     * batch is pessimistic: every row is rounded up to whole data pages, as if no rows shared a page.
-     *
-     * @param rows Rows to be inserted.
-     * @param bestEffort {@code True} if the insert can not be safely refused.
-     * @return Number of reserved pages to be released via {@link #releaseReserved(long)} once the rows are inserted,
-     *      or {@code 0} if nothing is reserved.
-     * @throws IgniteOutOfMemoryException If the insert is not best-effort and is refused.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long reserve(Collection<? extends Storable> rows, boolean bestEffort) throws IgniteOutOfMemoryException, IgniteCheckedException;
 
     /**
      * Releases a reservation made by {@link #reserve(long, boolean)}.

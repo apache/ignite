@@ -50,7 +50,7 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        // No-op.
+        super.start();
     }
 
     /** {@inheritDoc} */
