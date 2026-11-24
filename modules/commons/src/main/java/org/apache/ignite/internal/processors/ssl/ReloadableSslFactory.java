@@ -22,12 +22,14 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 
 import static java.util.concurrent.TimeUnit.DAYS;
 
-/** TLS factory that the SSL factory registry can reload on request and before its certificates expire. */
-public interface ReloadableSslFactory {
+/** SSL context factory that the SSL factory registry can reload on request and before its certificates expire. */
+public interface ReloadableSslFactory extends Factory<SSLContext> {
     /**
      * Loads the keys and trust settings again for new connections. If loading fails, new connections keep the previous ones.
      *

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.function.Consumer;
+import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
@@ -35,11 +36,14 @@ import org.jetbrains.annotations.Nullable;
  * reload error carries that failure as a suppressed exception.
  */
 class ReloadableJettySslFactory implements ReloadableSslFactory {
+    /** The adapter is serializable only because {@link Factory} is, and is never serialized. */
+    private static final long serialVersionUID = 0L;
+
     /** */
-    private final SslContextFactory factory;
+    private final transient SslContextFactory factory;
 
     /** Objects supplied directly to Jetty. A null store lets the factory read its configured source. */
-    private final TlsMaterial configured;
+    private final transient TlsMaterial configured;
 
     /** @param factory TLS factory of the HTTPS connector before startup, when its getters expose the configured objects. */
     ReloadableJettySslFactory(SslContextFactory factory) {
@@ -48,6 +52,11 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         this.factory = factory;
 
         configured = new TlsMaterial(factory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public SSLContext create() {
+        return factory.getSslContext();
     }
 
     /** {@inheritDoc} */

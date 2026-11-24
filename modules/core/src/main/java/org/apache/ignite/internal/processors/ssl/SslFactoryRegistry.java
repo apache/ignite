@@ -25,6 +25,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -63,9 +65,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
     /**
      * @param transport Transport name.
-     * @param factory TLS factory of the transport. The registry reloads it if it implements {@link ReloadableSslFactory}.
+     * @param factory SSL context factory of the transport. The registry reloads it if it implements
+     *     {@link ReloadableSslFactory}.
      */
-    public synchronized void register(String transport, Object factory) {
+    public synchronized void register(String transport, Factory<SSLContext> factory) {
         for (int i = 0; i < factories.size(); i++) {
             RegisteredFactory registered = factories.get(i);
 
@@ -150,7 +153,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     /** Registered factory with its transports and hot reload state. Its checks and manual reload hold its monitor. */
     public class RegisteredFactory {
         /** */
-        private final Object factory;
+        private final Factory<SSLContext> factory;
 
         /** The factory if the registry can reload it, {@code null} otherwise. */
         @Nullable private final ReloadableSslFactory reloadable;
@@ -165,7 +168,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         @Nullable private ScheduledFuture<?> dueCheck;
 
         /** */
-        private RegisteredFactory(Object factory, String transports) {
+        private RegisteredFactory(Factory<SSLContext> factory, String transports) {
             this.factory = factory;
             this.transports = transports;
 
@@ -173,7 +176,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
 
         /** @return The factory that the transports registered. */
-        public Object factory() {
+        public Factory<SSLContext> factory() {
             return factory;
         }
 

@@ -886,7 +886,7 @@ public class SslFactoryRegistryTest {
     }
 
     /** Reloads the registered factory, as the reload command does. */
-    private void reload(Object factory) {
+    private void reload(Factory<SSLContext> factory) {
         for (RegisteredFactory registered : registry.factories()) {
             if (registered.factory() == factory)
                 registered.reload();
