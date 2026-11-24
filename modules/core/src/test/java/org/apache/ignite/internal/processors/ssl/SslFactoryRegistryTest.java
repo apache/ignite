@@ -396,7 +396,7 @@ public class SslFactoryRegistryTest {
      *     the next check within that second.
      */
     @Test
-    public void testCheckRightBeforeHotReloadTimeSchedulesCheckAtThatTime() {
+    public void testCheckRightBeforeHotReloadTimeDoesNotDeferHotReload() {
         ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
         AtomicLong hotReloadTime = new AtomicLong(at(DAYS.toHours(30)));
 
