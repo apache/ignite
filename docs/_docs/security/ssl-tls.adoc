@@ -219,9 +219,9 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 === When Hot Reload Runs
 
 At startup, Ignite checks each factory.
-After it finishes checking all factories, it waits one hour before checking them again.
-If a factory becomes due before the next hourly check, Ignite also checks that factory when it becomes due.
-A slow certificate source can therefore delay a factory's next check by more than an hour.
+It checks each factory again when its certificates become due, but no later than an hour after the previous check.
+After a failed attempt, it retries an hour later.
+All checks run in one thread, so a slow certificate source can delay the checks of other factories.
 
 Each certificate in the private key chains, including issuing certificates, becomes due before it expires by a third of its lifetime, but by no more than 7 days.
 For example, a certificate valid for 24 hours is due 8 hours before it expires, and a certificate valid for 90 days is due 7 days before.

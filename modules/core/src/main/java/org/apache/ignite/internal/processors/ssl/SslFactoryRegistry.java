@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry extends GridProcessorAdapter {
-    /** */
+    /** Longest interval between two checks of a factory, and the delay of a retry after a failed check. */
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
@@ -48,9 +48,6 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
     /** */
     private volatile ScheduledExecutorService executor;
-
-    /** */
-    private volatile ScheduledFuture<?> periodicCheck;
 
     /** */
     private final AtomicLong manualReloadAttempts = new AtomicLong();
@@ -112,15 +109,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
         executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
 
-        periodicCheck = executor.scheduleWithFixedDelay(new OperationContextAwareRunnable(this::checkFactories, null),
-            0, CHECK_PERIOD, MILLISECONDS);
-    }
-
-    /** @return Delay until the next periodic check in milliseconds, or the full period while the periodic check runs. */
-    private long nextPeriodicCheckDelay() {
-        long delay = periodicCheck.getDelay(MILLISECONDS);
-
-        return delay > 0 ? delay : CHECK_PERIOD;
+        for (RegisteredFactory registered : factories) {
+            if (registered.supportsReload())
+                registered.scheduleCheck(0);
+        }
     }
 
     /** @return Sum of consecutive automatic hot reload failures across factories. */
@@ -131,17 +123,6 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             sum += registered.failures.get();
 
         return sum;
-    }
-
-    /** Runs the periodic check of the factories that support reload. */
-    private void checkFactories() {
-        if (log.isDebugEnabled())
-            log.debug("TLS hot reload check started");
-
-        for (RegisteredFactory registered : factories) {
-            if (registered.supportsReload())
-                registered.check();
-        }
     }
 
     /** {@inheritDoc} */
@@ -164,8 +145,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         /** */
         private final AtomicInteger failures = new AtomicInteger();
 
-        /** Check at the hot reload time if it comes before the next periodic check. */
-        @Nullable private ScheduledFuture<?> dueCheck;
+        /** */
+        @Nullable private ScheduledFuture<?> nextCheck;
 
         /** */
         private RegisteredFactory(Factory<SSLContext> factory, String transports) {
@@ -191,28 +172,41 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
 
         /**
-         * Checks the factory unless the registry has stopped, and schedules its next check at the hot reload time if
-         * it comes before the next periodic check. Counts and logs a failed check, so it does not stop the other factories
-         * or the schedule. A check that fails while the registry stops is logged at debug level and not counted.
+         * Checks the factory unless the registry has stopped, and schedules its next check. Counts and logs a failed
+         * check and retries it after {@link #CHECK_PERIOD}, so a failure does not stop the checks. A check that fails
+         * while the registry stops is logged at debug level and not counted.
          */
         private synchronized void check() {
             if (executor.isShutdown())
                 return;
 
+            if (log.isDebugEnabled())
+                log.debug("TLS hot reload check started [transports=" + transports + ']');
+
+            long nextCheckDelay;
+
             try {
                 reloadIfDue();
-                scheduleDueCheck();
+
+                nextCheckDelay = nextCheckDelay();
             }
             catch (Throwable e) {
-                if (!executor.isShutdown()) {
-                    failures.incrementAndGet();
+                if (executor.isShutdown()) {
+                    if (log.isDebugEnabled())
+                        log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
 
-                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
-                        + new Date(System.currentTimeMillis() + nextPeriodicCheckDelay()) + ']', e);
+                    return;
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
+
+                failures.incrementAndGet();
+
+                nextCheckDelay = CHECK_PERIOD;
+
+                log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                    + new Date(System.currentTimeMillis() + nextCheckDelay) + ']', e);
             }
+
+            scheduleCheck(nextCheckDelay);
         }
 
         /**
@@ -250,23 +244,25 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
 
         /**
-         * Schedules a check of this factory at the hot reload time if it comes before the next periodic check.
-         * The check replaces the one scheduled before.
+         * @return Delay until the hot reload time, but no longer than {@link #CHECK_PERIOD}. Certificates without a hot
+         *     reload time, or that are already due, are checked again after the full period.
          */
-        private void scheduleDueCheck() {
-            if (dueCheck != null)
-                dueCheck.cancel(false);
+        private long nextCheckDelay() {
+            long delay = reloadable.getHotReloadTime() - System.currentTimeMillis();
 
-            dueCheck = null;
+            return delay > 0 ? Math.min(delay, CHECK_PERIOD) : CHECK_PERIOD;
+        }
 
-            long hotReloadTime = reloadable.getHotReloadTime();
-            long delay = hotReloadTime - System.currentTimeMillis();
-
-            if (hotReloadTime == 0 || delay >= nextPeriodicCheckDelay())
+        /** Replaces the scheduled check of the factory with one after the given delay, once the registry has started. */
+        private synchronized void scheduleCheck(long delay) {
+            if (executor == null)
                 return;
 
+            if (nextCheck != null)
+                nextCheck.cancel(false);
+
             try {
-                dueCheck = executor.schedule(new OperationContextAwareRunnable(this::check, null), delay, MILLISECONDS);
+                nextCheck = executor.schedule(new OperationContextAwareRunnable(this::check, null), delay, MILLISECONDS);
             }
             catch (RejectedExecutionException ignored) {
                 // The registry has stopped.
@@ -288,8 +284,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             logHotReloadTime(reloadable.getHotReloadTime());
 
-            if (periodicCheck != null)
-                scheduleDueCheck();
+            scheduleCheck(nextCheckDelay());
         }
 
         /** */

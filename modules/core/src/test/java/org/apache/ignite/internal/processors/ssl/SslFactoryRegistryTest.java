@@ -24,6 +24,7 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -75,7 +76,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.longThat;
+import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -86,7 +87,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * A manual reload is {@link SslFactoryRegistry#reload}, which the TLS reload command calls.
- * An attempt is an automatic hot reload attempt that the periodic check makes.
+ * An attempt is an automatic hot reload attempt that a scheduled check makes.
  */
 public class SslFactoryRegistryTest {
     /** Upper bound for waiting for an event that must happen. */
@@ -110,8 +111,8 @@ public class SslFactoryRegistryTest {
     /** */
     private MockedStatic<IgniteScheduledThreadPoolExecutor> executorFactory;
 
-    /** Periodic hot reload check that the registry scheduled. */
-    private Runnable check;
+    /** Checks that the registry has scheduled and that have not run or been cancelled, with their delays, in scheduling order. */
+    private final Map<Runnable, Long> scheduled = new LinkedHashMap<>();
 
     /** */
     private Path dir;
@@ -126,8 +127,8 @@ public class SslFactoryRegistryTest {
     private TestCertificateAuthority authority;
 
     /**
-     * Each test gets a registry whose hot reload executor records the periodic check instead of running it.
-     * Tests run the check themselves.
+     * Each test gets a registry whose hot reload executor records the scheduled checks instead of running them.
+     * Tests run the checks themselves.
      * The setup also writes the trust store of a test CA to a temporary directory and stubs the node metrics and logger.
      */
     @Before
@@ -147,10 +148,14 @@ public class SslFactoryRegistryTest {
 
         registry = new SslFactoryRegistry(ctx);
 
-        when(executor.scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), eq(MILLISECONDS))).thenAnswer(call -> {
-            check = call.getArgument(0);
+        when(executor.schedule(any(Runnable.class), anyLong(), eq(MILLISECONDS))).thenAnswer(call -> {
+            Runnable check = call.getArgument(0);
 
-            return mock(ScheduledFuture.class);
+            scheduled.put(check, call.getArgument(1));
+
+            return mock(ScheduledFuture.class, cancel -> "cancel".equals(cancel.getMethod().getName())
+                ? scheduled.remove(check) != null
+                : RETURNS_DEFAULTS.answer(cancel));
         });
 
         executorFactory = mockStatic(IgniteScheduledThreadPoolExecutor.class);
@@ -221,7 +226,7 @@ public class SslFactoryRegistryTest {
 
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
         reload(rest);
 
         verify(rest, times(2)).init();
@@ -249,7 +254,7 @@ public class SslFactoryRegistryTest {
         long prevTime = communication.getHotReloadTime();
 
         writeFreshCertificates(keys);
-        check.run();
+        runChecks();
 
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
         assertTrue(communication.getHotReloadTime() > prevTime);
@@ -295,7 +300,7 @@ public class SslFactoryRegistryTest {
         save(authority.trustStore(), keys);
         registerTransport("communication", communication);
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
 
         assertEquals(1, logged.size());
         assertTrue(logged.get(0), logged.get(0).startsWith("TLS hot reload will not run"));
@@ -310,11 +315,12 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: the loaded certificates are due for hot reload, and the key store file is deleted after start.
-     * When: the periodic check runs three times.
-     * Then: the check runs at start and then every check period of an hour, and each run counts one more failed attempt.
+     * When: the scheduled check runs three times.
+     * Then: the first check runs at start, each failed check schedules a retry in an hour, and each run counts one more
+     *     failed attempt.
      */
     @Test
-    public void testHotReloadIsCheckedPeriodicallyFromStart() throws Exception {
+    public void testFailedCheckIsRetriedAfterCheckPeriod() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeDueCertificates(keys);
@@ -322,23 +328,25 @@ public class SslFactoryRegistryTest {
         registry.onKernalStart(true);
         Files.delete(keys);
 
-        verify(executor).scheduleWithFixedDelay(any(Runnable.class), eq(0L), eq(HOURS.toMillis(1)), eq(MILLISECONDS));
+        assertEquals(List.of(0L), List.copyOf(scheduled.values()));
 
         for (int failure = 1; failure <= 3; failure++) {
-            check.run();
+            runChecks();
 
             assertEquals(failure, failures());
+            assertEquals(List.of(HOURS.toMillis(1)), List.copyOf(scheduled.values()));
         }
     }
 
     /**
      * Given: communication has certificates that are due for hot reload in 30 minutes, and the client connector has
      *     certificates that are due in 23 days.
-     * When: the periodic check runs.
-     * Then: the registry schedules one more check, of communication, in 30 minutes.
+     * When: the checks at start run.
+     * Then: the next check of communication comes at its hot reload time, and the next check of the client connector
+     *     comes in an hour, the longest interval between checks.
      */
     @Test
-    public void testCheckIsScheduledAtHotReloadTimeBeforeNextPeriodicCheck() throws Exception {
+    public void testNextCheckComesAtHotReloadTimeButWithinCheckPeriod() throws Exception {
         Path clientKeys = dir.resolve("client-keys.jks");
 
         writeCertificatesDueIn30Minutes(keys);
@@ -346,15 +354,18 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", factory(keys));
         registerTransport("client connector", factory(clientKeys));
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
 
-        verify(executor).schedule(any(Runnable.class), longThat(SslFactoryRegistryTest::isAbout30Minutes), eq(MILLISECONDS));
+        List<Long> delays = List.copyOf(scheduled.values());
+
+        assertTrue(delays.toString(), isAbout30Minutes(delays.get(0)));
+        assertEquals(HOURS.toMillis(1), (long)delays.get(1));
     }
 
     /**
      * Given: the loaded certificates are due for hot reload, and the key store gets certificates that are due in 30 minutes.
-     * When: the periodic check loads them.
-     * Then: the registry schedules the next check of the factory in 30 minutes.
+     * When: the scheduled check loads them.
+     * Then: the next check of the factory comes in 30 minutes.
      */
     @Test
     public void testHotReloadSchedulesCheckAtNewHotReloadTime() throws Exception {
@@ -362,16 +373,16 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", factory(keys));
         registry.onKernalStart(true);
         writeCertificatesDueIn30Minutes(keys);
-        check.run();
+        runChecks();
 
         assertEquals(0, failures());
-        verify(executor).schedule(any(Runnable.class), longThat(SslFactoryRegistryTest::isAbout30Minutes), eq(MILLISECONDS));
+        assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
     }
 
     /**
      * Given: the registry has started, and the key store gets certificates that are due for hot reload in 30 minutes.
      * When: a manual reload loads them.
-     * Then: the registry schedules a check of the factory in 30 minutes.
+     * Then: the check that the registry scheduled at start is replaced by one in 30 minutes.
      */
     @Test
     public void testManualReloadSchedulesCheckAtHotReloadTime() throws Exception {
@@ -383,7 +394,25 @@ public class SslFactoryRegistryTest {
         writeCertificatesDueIn30Minutes(keys);
         reload(communication);
 
-        verify(executor).schedule(any(Runnable.class), longThat(SslFactoryRegistryTest::isAbout30Minutes), eq(MILLISECONDS));
+        assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
+    }
+
+    /**
+     * Given: the registry has started, and the key store still holds certificates that are due for hot reload.
+     * When: a manual reload loads them.
+     * Then: the failure count is zero, and the next check comes in an hour rather than right away.
+     */
+    @Test
+    public void testManualReloadOfDueCertificatesDefersNextCheck() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeDueCertificates(keys);
+        registerTransport("communication", communication);
+        registry.onKernalStart(true);
+        reload(communication);
+
+        assertEquals(0, failures());
+        assertEquals(HOURS.toMillis(1), nextCheckDelay());
     }
 
     /**
@@ -432,7 +461,7 @@ public class SslFactoryRegistryTest {
         registerTransport("client connector", clientConnector);
         registry.onKernalStart(true);
         writeFreshCertificates(keys);
-        check.run();
+        runChecks();
 
         assertEquals(1, failures());
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
@@ -457,9 +486,9 @@ public class SslFactoryRegistryTest {
         long due = communication.getHotReloadTime();
 
         Files.delete(keys);
-        check.run();
+        runChecks();
         writeFreshCertificates(keys);
-        check.run();
+        runChecks();
 
         List<String> evts = new ArrayList<>();
 
@@ -489,18 +518,18 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", communication);
         registry.onKernalStart(true);
         Files.delete(keys);
-        check.run();
+        runChecks();
 
         assertEquals(1, failures());
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
 
         writeFreshCertificates(keys);
-        check.run();
+        runChecks();
 
         assertEquals(0, failures());
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
 
-        check.run();
+        runChecks();
 
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
     }
@@ -518,13 +547,13 @@ public class SslFactoryRegistryTest {
         writeDueCertificates(keys);
         registerTransport("communication", communication);
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
 
         assertEquals(1, failures());
 
         writeFreshCertificates(keys);
         communication.init();
-        check.run();
+        runChecks();
 
         assertEquals(0, failures());
         assertEquals(1, metric("AutomaticHotReloadAttempts"));
@@ -593,7 +622,7 @@ public class SslFactoryRegistryTest {
         KeyStore replacement = authority.keyStore("node", at(-1), at(DAYS.toHours(30)), replacementPwd);
 
         custom.setKeys(replacement, replacementPwd);
-        check.run();
+        runChecks();
 
         assertNotSame(initCtx, custom.create());
 
@@ -621,7 +650,7 @@ public class SslFactoryRegistryTest {
 
         custom.setKeys(null, null);
         reload(custom);
-        check.run();
+        runChecks();
 
         assertEquals(0, custom.getHotReloadTime());
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
@@ -656,7 +685,7 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", communication);
         registry.onKernalStart(true);
         Files.delete(keys);
-        check.run();
+        runChecks();
 
         IgniteException err = assertThrows(IgniteException.class, () -> reload(communication));
 
@@ -691,7 +720,7 @@ public class SslFactoryRegistryTest {
             return false;
         });
 
-        GridTestThread attempt = new GridTestThread(check);
+        GridTestThread attempt = new GridTestThread(nextCheck());
         GridTestThread manualReload = new GridTestThread(() -> reload(communication));
 
         attempt.start();
@@ -738,7 +767,7 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", communication);
         registerTransport("client connector", clientConnector);
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
 
         assertEquals(1, failures());
 
@@ -747,7 +776,7 @@ public class SslFactoryRegistryTest {
 
         assertEquals(1, failures());
 
-        check.run();
+        runChecks();
 
         assertEquals(3, failures());
 
@@ -821,10 +850,10 @@ public class SslFactoryRegistryTest {
 
         registry.register("communication", factory);
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
 
         assertEquals(0, failures());
-        assertTrue(logged.toString(), logged.contains("TLS hot reload check started"));
+        assertTrue(logged.toString(), logged.contains("TLS hot reload check started [transports=communication]"));
         assertTrue(logged.toString(),
             logged.toString().contains("TLS hot reload failed during node stop [transports=communication, err="));
     }
@@ -854,7 +883,7 @@ public class SslFactoryRegistryTest {
         registry.register("communication", factory);
         registry.register("client connector", clientConnector);
         registry.onKernalStart(true);
-        check.run();
+        runChecks();
 
         assertEquals(1, loads.get());
     }
@@ -883,6 +912,34 @@ public class SslFactoryRegistryTest {
         registry = new SslFactoryRegistry(ctx);
 
         return logged;
+    }
+
+    /** Runs the checks that the registry has scheduled, in scheduling order. The checks that they schedule stay pending. */
+    private void runChecks() {
+        List<Runnable> checks = List.copyOf(scheduled.keySet());
+
+        scheduled.clear();
+
+        for (Runnable check : checks)
+            check.run();
+    }
+
+    /** @return The only check that the registry has scheduled, which no longer counts as pending. */
+    private Runnable nextCheck() {
+        assertEquals(1, scheduled.size());
+
+        Runnable check = scheduled.keySet().iterator().next();
+
+        scheduled.clear();
+
+        return check;
+    }
+
+    /** @return Delay of the only check that the registry has scheduled. */
+    private long nextCheckDelay() {
+        assertEquals(1, scheduled.size());
+
+        return scheduled.values().iterator().next();
     }
 
     /** Reloads the registered factory, as the reload command does. */
