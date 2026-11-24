@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.function.Consumer;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.HotReloadTime;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
@@ -29,26 +30,27 @@ import org.jetbrains.annotations.Nullable;
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
  * <p>
- * Before Jetty loads the replacement, it clears the TLS state of its factory, including the certificates that it selects
- * by SNI host name. New connections take that state under the factory's lock. Jetty lets callers hold this lock only
- * inside {@link SslContextFactory#unload(Consumer)} and {@link SslContextFactory#reload(Consumer)}, so the reload runs
- * inside {@code unload(...)}. If loading fails, the factory loads its previous key and trust stores from memory before
- * the lock is released. New connections wait and then get either the replacement or the previous keys. The next reload
- * reads the factory's sources again, so stores that were set on the factory directly are not kept.
+ * Jetty clears its active context before loading the replacement. Holding its lock through reload and recovery lets
+ * new connections use the previous context if loading fails. Jetty uses the accompanying key store for SNI.
  */
 class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** */
     private final SslContextFactory factory;
 
-    /** @param factory Started TLS factory of the HTTPS connector. */
+    /** Objects supplied directly to Jetty. A null store lets the factory read its configured source. */
+    private final TlsMaterial configured;
+
+    /** @param factory TLS factory of the HTTPS connector before startup, when its getters expose the configured objects. */
     ReloadableJettySslFactory(SslContextFactory factory) {
         this.factory = factory;
+
+        configured = new TlsMaterial(factory);
     }
 
     /** {@inheritDoc} */
     @Override public void reload() {
         try {
-            factory.unload(ReloadableJettySslFactory::reloadLocked);
+            factory.unload(this::reloadLocked);
         }
         catch (ReloadDone done) {
             if (done.err != null)
@@ -69,18 +71,17 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /**
-     * Reloads the factory while {@code unload(...)} holds its lock. If loading fails, the factory loads its previous stores.
+     * Reloads the factory while {@link SslContextFactory#unload(Consumer)} holds its lock.
      * Always throws {@link ReloadDone}, so that {@code unload(...)} does not unload the factory.
      */
-    private static void reloadLocked(SslContextFactory f) {
-        KeyStore keyStore = f.getKeyStore();
-        KeyStore trustStore = f.getTrustStore();
+    private void reloadLocked(SslContextFactory f) {
+        TlsMaterial prev = new TlsMaterial(f);
 
         try {
             f.reload(ignored -> {});
         }
         catch (Exception e) {
-            restore(f, keyStore, trustStore, e);
+            restore(f, prev, e);
 
             throw new ReloadDone(e);
         }
@@ -88,20 +89,31 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         throw new ReloadDone(null);
     }
 
-    /** Makes the factory load the given stores instead of reading its sources. Its next reload reads its sources again. */
-    private static void restore(SslContextFactory f, KeyStore keyStore, KeyStore trustStore, Exception err) {
-        f.setKeyStore(keyStore);
-        f.setTrustStore(trustStore);
-
+    /** Reinstalls the working context, then restores the settings Jetty will use on the next reload. */
+    private void restore(SslContextFactory f, TlsMaterial prev, Exception err) {
         try {
-            f.reload(ignored -> {});
+            f.reload(prev::applyTo);
         }
         catch (Exception e) {
             err.addSuppressed(e);
         }
         finally {
-            f.setKeyStore(null);
-            f.setTrustStore(null);
+            configured.applyTo(f);
+        }
+    }
+
+    /** The context and stores Jetty uses together for new connections. */
+    private record TlsMaterial(SSLContext ctx, KeyStore keyStore, KeyStore trustStore) {
+        /** */
+        TlsMaterial(SslContextFactory factory) {
+            this(factory.getSslContext(), factory.getKeyStore(), factory.getTrustStore());
+        }
+
+        /** */
+        private void applyTo(SslContextFactory factory) {
+            factory.setSslContext(ctx);
+            factory.setKeyStore(keyStore);
+            factory.setTrustStore(trustStore);
         }
     }
 

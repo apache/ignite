@@ -191,12 +191,11 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh(), due(), new IOException("Source is unavailable"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
 
         jettyFactory.start();
 
         try {
-            ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
-
             assertEquals(now + DAYS.toMillis(23), factory.hotReloadTime());
 
             jettyFactory.reload(f -> { });
@@ -211,29 +210,44 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a Jetty factory serves certificate A and reads its trust store from a file.
-     * When: the trust store file becomes unreadable and Ignite reloads the factory.
-     * Then: the reload fails, and the factory keeps serving A.
+     * Given: Jetty has keys configured in memory and reads its trust store from a file.
+     * When: reload fails because the file is corrupt, then the operator replaces it and retries.
+     * Then: the failed reload keeps the working context. The retry picks up the new trust store with the configured keys.
      */
     @Test
-    public void testFailedTrustStoreLoadKeepsLastWorkingKeys() throws Exception {
-        KeyStore a = fresh();
+    public void testTrustStoreReloadKeepsConfiguredKeysAfterFailure() throws Exception {
+        KeyStore keys = fresh();
+        KeyStore trusted = ca.trustStore();
         Path trust = tmp.newFile("trust.jks").toPath();
         SslContextFactory.Server jettyFactory = new SslContextFactory.Server();
 
-        save(ca.trustStore(), trust);
-        jettyFactory.setKeyStore(a);
+        save(trusted, trust);
+        jettyFactory.setKeyStore(keys);
         jettyFactory.setKeyStorePassword(new String(PASSWORD));
         jettyFactory.setTrustStorePath(trust.toString());
         jettyFactory.setTrustStoreType("JKS");
         jettyFactory.setTrustStorePassword(new String(PASSWORD));
+
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+
         jettyFactory.start();
 
         try {
+            SSLContext ctx = jettyFactory.getSslContext();
+
             Files.writeString(trust, "not a trust store");
 
-            assertThrows(log, new ReloadableJettySslFactory(jettyFactory)::reload, IgniteException.class, null);
-            assertEquals(a.getCertificate(HOST), jettyFactory.getKeyStore().getCertificate(HOST));
+            assertThrows(log, factory::reload, IgniteException.class, null);
+            assertSame(ctx, jettyFactory.getSslContext());
+
+            Certificate cert = keys.getCertificate(HOST);
+
+            trusted.setCertificateEntry(HOST, cert);
+            save(trusted, trust);
+            factory.reload();
+
+            assertSame(keys, jettyFactory.getKeyStore());
+            assertEquals(cert, jettyFactory.getTrustStore().getCertificate(HOST));
         }
         finally {
             jettyFactory.stop();
@@ -260,10 +274,13 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
         jettyFactory.setKeyStore(fresh());
         jettyFactory.setKeyStorePassword(new String(PASSWORD));
+
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+
         jettyFactory.start();
 
         try {
-            new ReloadableJettySslFactory(jettyFactory).reload();
+            factory.reload();
 
             assertEquals(1, reloads.get());
         }
