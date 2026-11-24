@@ -157,7 +157,6 @@ jobs:
           path: merge
           fetch-depth: 2
           persist-credentials: false
-      # workflow_run.pull_requests can be empty for forks. Preserve the PR and target in the job metadata.
       - name: 'Check out target commit for PR #${{ github.event.pull_request.number }} into ${{ github.base_ref }}'
         run: git -C merge worktree add ../base HEAD^1
       - uses: actions/setup-java@v4
