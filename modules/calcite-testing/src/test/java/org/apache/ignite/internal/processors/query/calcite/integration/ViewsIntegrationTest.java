@@ -16,9 +16,12 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -27,11 +30,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.h2.H2PooledConnection;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
 public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
@@ -379,6 +385,55 @@ public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
 
         assertThrows("CREATE OR REPLACE VIEW sys.views AS SELECT * FROM sys.tables", IgniteSQLException.class, msg);
         assertThrows("DROP VIEW IF EXISTS sys.views", IgniteSQLException.class, msg);
+    }
+
+    /** Tests a view whose name contains a quote. */
+    @Test
+    public void testViewNameWithQuote() throws Exception {
+        assumeTrue(CalciteQueryEngineConfiguration.ENGINE_NAME.equals(engine),
+            "Only Calcite parser supports doubled quotes inside quoted identifiers");
+
+        initGrids(1);
+        initTable(3);
+
+        String viewName = "V\" AS SELECT 1;CREATE TABLE PUBLIC.VIEW_INJECTED(ID INT);--";
+
+        String quotedView = "\"" + viewName.replace("\"", "\"\"") + "\"";
+
+        sql("create view " + quotedView + " as select * from my_table");
+
+        assertViewsCount("PUBLIC", viewName, 1);
+
+        assertFalse("Unexpected H2 table: VIEW_INJECTED", h2TableExists("PUBLIC", "VIEW_INJECTED"));
+        assertTrue("View is not created in H2", h2TableExists("PUBLIC", viewName));
+
+        assertRowsCount(3, "select * from " + quotedView);
+
+        sql("drop view " + quotedView);
+
+        assertViewsCount("PUBLIC", viewName, 0);
+
+        assertFalse("Unexpected H2 table: VIEW_INJECTED", h2TableExists("PUBLIC", "VIEW_INJECTED"));
+        assertFalse("View is not dropped in H2", h2TableExists("PUBLIC", viewName));
+    }
+
+    /**
+     * Checks a table or view in the internal H2 database. SYS views and Calcite queries use Ignite metadata,
+     * and H2 errors during view registration are only logged, so a wrong statement in H2 is visible only there.
+     */
+    private boolean h2TableExists(String schemaName, String tblName) throws Exception {
+        IgniteH2Indexing idx = (IgniteH2Indexing)grid(0).context().query().getIndexing();
+
+        try (H2PooledConnection conn = idx.connections().connection();
+             PreparedStatement stmt = conn.connection().prepareStatement(
+                 "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?")) {
+            stmt.setString(1, schemaName);
+            stmt.setString(2, tblName);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
     }
 
     /** */
