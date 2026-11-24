@@ -22,7 +22,6 @@ import java.security.KeyStore;
 import java.util.function.Consumer;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.ssl.HotReloadTime;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
@@ -65,7 +64,7 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
         try {
             KeyStore store = factory.getKeyStore();
 
-            return store == null ? 0 : HotReloadTime.of(store);
+            return store == null ? 0 : ReloadableSslFactory.hotReloadTime(store);
         }
         catch (IllegalStateException | GeneralSecurityException e) {
             throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);

@@ -30,7 +30,6 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.ssl.HotReloadTime;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
@@ -206,7 +205,7 @@ public abstract class AbstractSslContextFactory implements Factory<SSLContext>, 
         throws GeneralSecurityException {
         keyMgrFactory.init(store, pwd);
 
-        pendingHotReloadTime = HotReloadTime.of(store);
+        pendingHotReloadTime = ReloadableSslFactory.hotReloadTime(store);
 
         return keyMgrFactory.getKeyManagers();
     }
