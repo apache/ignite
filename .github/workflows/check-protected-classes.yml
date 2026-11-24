@@ -50,14 +50,13 @@ jobs:
             }
 
             async function findPullRequestForRun(run) {
-              if (!run.head_repository) return;
-              if (run.pull_requests?.length) return singleOrUndefined(run.pull_requests);
+              if (run.pull_requests.length) return singleOrUndefined(run.pull_requests);
 
               const head = `${run.head_repository.owner.login}:${run.head_branch}`;
               const candidates = await list(pulls.list, {head, state: 'all'});
               const target = singleOrUndefined(candidates.filter(pr => pr.head.repo?.id === run.head_repository.id
                 && pr.created_at <= run.created_at && (!pr.closed_at || pr.closed_at >= run.created_at)));
-              if (!target || target.state !== 'open' || target.head.sha !== run.head_sha) return;
+              if (!target) return;
 
               const {node} = await github.graphql(`query($id: ID!, $since: DateTime!) {
                 node(id: $id) { ... on PullRequest {
@@ -71,9 +70,8 @@ jobs:
             if (jobs.some(job => job.run_attempt > run.run_attempt))
               return core.info('A newer attempt has started.');
 
-            const headJobs = jobs.filter(job => job.head_sha === run.head_sha);
-            const wire = singleOrUndefined(headJobs.filter(job => job.name === 'Compare wire format descriptions'));
-            const java = singleOrUndefined(headJobs.filter(job => job.name === 'Check java code on JDK 17'));
+            const wire = singleOrUndefined(jobs.filter(job => job.name === 'Compare wire format descriptions'));
+            const java = singleOrUndefined(jobs.filter(job => job.name === 'Check java code on JDK 17'));
             const upload = findStepConclusion(wire, 'Upload wire diff');
             if (wire?.conclusion !== 'success' || findStepConclusion(wire, 'Compare descriptions and publish summary') !== 'success'
               || findStepConclusion(java, 'Check all wire format descriptions are collected') !== 'success'
