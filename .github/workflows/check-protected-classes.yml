@@ -45,15 +45,14 @@ jobs:
             const only = items => items.length === 1 ? items[0] : undefined;
             const list = (method, params) => github.paginate(method, {...repo, ...params, per_page: 100});
 
-            function stepResult(job, name) {
+            function findStepConclusion(job, name) {
               return only(job?.steps?.filter(step => step.name === name && step.status === 'completed') ?? [])?.conclusion;
             }
 
-            async function targetOf(run) {
+            async function findPullRequestForRun(run) {
               if (!run.head_repository) return;
               if (run.pull_requests?.length) return only(run.pull_requests);
 
-              // Fork runs can omit pull_requests. Match the source branch to a single PR open at run creation.
               const head = `${run.head_repository.owner.login}:${run.head_branch}`;
               const candidates = await list(pulls.list, {head, state: 'all'});
               const target = only(candidates.filter(pr => pr.head.repo?.id === run.head_repository.id
@@ -75,13 +74,13 @@ jobs:
             const headJobs = jobs.filter(job => job.head_sha === run.head_sha);
             const wire = only(headJobs.filter(job => job.name === 'Compare wire format descriptions'));
             const java = only(headJobs.filter(job => job.name === 'Check java code on JDK 17'));
-            const upload = stepResult(wire, 'Upload wire diff');
-            if (wire?.conclusion !== 'success' || stepResult(wire, 'Compare descriptions and publish summary') !== 'success'
-              || stepResult(java, 'Check all wire format descriptions are collected') !== 'success'
+            const upload = findStepConclusion(wire, 'Upload wire diff');
+            if (wire?.conclusion !== 'success' || findStepConclusion(wire, 'Compare descriptions and publish summary') !== 'success'
+              || findStepConclusion(java, 'Check all wire format descriptions are collected') !== 'success'
               || !['success', 'skipped'].includes(upload))
               return core.info('The wire comparison or completeness check could not be verified.');
 
-            const target = await targetOf(run);
+            const target = await findPullRequestForRun(run);
             if (!target)
               return core.info('Could not identify the PR and its target branch.');
 
