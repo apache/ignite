@@ -22,6 +22,7 @@ import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
@@ -29,22 +30,21 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.deployment.DeploymentListener;
-import org.apache.ignite.spi.deployment.DeploymentResource;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
- * Tests exceptions that are thrown by event storage and deployment spi.
+ * Tests exceptions that are thrown by event storage spi and local deployment.
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_MSG = "Test exception message";
+
+    /** Message of the exception thrown by local deployment on task name collision. */
+    private static final String DEP_MSG = "Failed to register resources with given task name";
 
     /** */
     public GridSpiExceptionSelfTest() {
@@ -56,7 +56,6 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setEventStorageSpi(new GridTestRuntimeExceptionSpi());
-        cfg.setDeploymentSpi(new GridTestCheckedExceptionSpi());
 
         // Disable cache since it can deploy some classes during start process.
         cfg.setCacheConfiguration();
@@ -81,8 +80,11 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
                 assert e.getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
             }
 
+            ignite.compute().localDeployTask(GridTestTask1.class, GridTestTask1.class.getClassLoader());
+
             try {
-                ignite.compute().localDeployTask(GridTestTask.class, GridTestTask.class.getClassLoader());
+                // Another class with the same task name in the same class loader.
+                ignite.compute().localDeployTask(GridTestTask2.class, GridTestTask2.class.getClassLoader());
 
                 assert false : "Exception should be thrown";
             }
@@ -91,9 +93,9 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
                 Throwable err = e.getCause().getCause();
 
-                assert err instanceof GridTestSpiException : "Wrong cause exception type. " + e;
+                assert err instanceof IgniteSpiException : "Wrong cause exception type. " + e;
 
-                assert err.getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
+                assert err.getMessage().startsWith(DEP_MSG) : "Wrong exception message." + e.getMessage();
             }
         }
         finally {
@@ -128,59 +130,18 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test deployment spi that throws an exception on try to register any class.
+     * Test task with explicit task name.
      */
-    @IgniteSpiMultipleInstancesSupport(true)
-    private static class GridTestCheckedExceptionSpi extends IgniteSpiAdapter implements DeploymentSpi {
-        /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-            startStopwatch();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void spiStop() throws IgniteSpiException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public DeploymentResource findResource(String rsrcName) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class<?> rsrc) throws IgniteSpiException {
-            throw new GridTestSpiException(TEST_MSG);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean unregister(String rsrcName) {
-            // No-op.
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setListener(DeploymentListener lsnr) {
-            // No-op.
-        }
+    @ComputeTaskName("GridSpiExceptionTestTask")
+    private static class GridTestTask1 extends GridTestTask {
+        // No-op.
     }
 
     /**
-     * Test spi exception.
+     * Test task with the same task name as {@link GridTestTask1}.
      */
-    private static class GridTestSpiException extends IgniteSpiException {
-        /**
-         * @param msg Error message.
-         */
-        GridTestSpiException(String msg) {
-            super(msg);
-        }
-
-        /**
-         * @param msg Error message.
-         * @param cause Error cause.
-         */
-        GridTestSpiException(String msg, Throwable cause) {
-            super(msg, cause);
-        }
+    @ComputeTaskName("GridSpiExceptionTestTask")
+    private static class GridTestTask2 extends GridTestTask {
+        // No-op.
     }
 }
