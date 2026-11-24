@@ -26,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
@@ -52,19 +53,17 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     private Map<String, LocalDeploymentSpi> spis = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
-        IgniteTestResources rsrcs) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, rsrcs);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteTestResources rsrcs) throws Exception {
+        return super.getConfiguration(igniteInstanceName, rsrcs).setDeploymentMode(depMode);
+    }
 
-        LocalDeploymentSpi spi = new LocalDeploymentSpi();
+    /** {@inheritDoc} */
+    @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx) throws Exception {
+        Ignite node = super.startGrid(igniteInstanceName, cfg, ctx);
 
-        spis.put(igniteInstanceName, spi);
+        spis.put(igniteInstanceName, (LocalDeploymentSpi)node.configuration().getDeploymentSpi());
 
-        cfg.setDeploymentSpi(spi);
-
-        cfg.setDeploymentMode(depMode);
-
-        return cfg;
+        return node;
     }
 
     /**

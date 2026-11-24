@@ -24,10 +24,8 @@ import java.security.Permissions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -113,12 +111,6 @@ public class AccessToClassesInsideInternalPackageTest extends AbstractSandboxTes
         startGrid(FORBIDDEN, ALL_PERMISSIONS, false);
 
         srv.cluster().state(ClusterState.ACTIVE);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setDeploymentSpi(new LocalDeploymentSpi());
     }
 
     /** */
