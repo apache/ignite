@@ -78,11 +78,61 @@ function renamedKeys(base, merge) {
     return res;
 }
 
+/** Separator of the items of a value that a collector describes item by item, such as the operations of a message layout. */
+const ITEMS = '; ';
+
+/** @return Whether an item is structure, such as a branch with its condition or the end of a block: it starts with {@code #}. */
+function structure(item) {
+    return item.startsWith('#');
+}
+
+/**
+ * @return Whether every changed part of two values has an item that the collector could not resolve or is only structure.
+ *      Then the change is only possible: for example, the code that a message layout calls may write the same bytes as the
+ *      code it replaced, or a branch may be rearranged around the same call.
+ */
+function onlyUnresolvedChanged(before, after) {
+    const a = before.split(ITEMS);
+    const b = after.split(ITEMS);
+    const common = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+
+    for (let i = a.length - 1; i >= 0; i--) {
+        for (let j = b.length - 1; j >= 0; j--)
+            common[i][j] = a[i] === b[j] ? common[i + 1][j + 1] + 1 : Math.max(common[i + 1][j], common[i][j + 1]);
+    }
+
+    const parts = [];
+    let part = [];
+    let i = 0;
+    let j = 0;
+
+    while (i < a.length || j < b.length) {
+        if (i < a.length && j < b.length && a[i] === b[j]) {
+            if (part.length > 0)
+                parts.push(part);
+
+            part = [];
+            i++;
+            j++;
+        }
+        else if (j < b.length && (i === a.length || common[i][j + 1] >= common[i + 1][j]))
+            part.push(b[j++]);
+        else
+            part.push(a[i++]);
+    }
+
+    if (part.length > 0)
+        parts.push(part);
+
+    return parts.every(p => p.some(item => item.startsWith('?')) || p.every(structure));
+}
+
 /**
  * @return Declarations added, removed or changed by the PR. A removed deprecated declaration and any change to an experimental
- *      declaration have their own kinds: the reviewer decides whether they need an RFC. A removed deprecated declaration points
- *      at the annotation that deprecates it, which can be on its type or parent command; any other finding points at the
- *      declaration.
+ *      declaration have their own kinds: the reviewer decides whether they need an RFC. So does a possible change of an
+ *      itemized declaration, such as a message layout: adding or removing it, or changing only its unresolved items. A
+ *      removed deprecated declaration points at the annotation that deprecates it, which can be on its type or parent
+ *      command; any other finding points at the declaration.
  */
 function compare(baseText, mergeText) {
     const base = parse(baseText);
@@ -92,6 +142,7 @@ function compare(baseText, mergeText) {
 
     const finding = (b, m) => {
         const kind = !m && b.flags.includes('deprecated') ? 'deprecated-removal'
+            : (b || m).flags.includes('itemized') && (!b || !m || onlyUnresolvedChanged(b.value, m.value)) ? 'possible'
             : (b || m).flags.includes('experimental') ? 'experimental' : 'contract';
 
         res.push({

@@ -21,7 +21,7 @@
 
 const { RFC_NAME } = require('./rfc.js');
 
-const KINDS = ['contract', 'deprecated-removal', 'experimental'];
+const KINDS = ['contract', 'deprecated-removal', 'experimental', 'possible'];
 const OUTCOMES = ['clean', 'review', 'check', 'rfc-found', 'rfc-name', 'rfc-missing', 'error'];
 const FAILED = ['rfc-name', 'rfc-missing', 'error'];
 const NEEDS_RFC = ['rfc-found', 'rfc-name', 'rfc-missing'];

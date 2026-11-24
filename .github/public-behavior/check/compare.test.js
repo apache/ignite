@@ -128,3 +128,21 @@ test('a description from a version of the check with fewer columns is read with 
 
     assert.deepStrictEqual(compare(older, BASE), []);
 });
+
+test('a layout added, removed or changed only in unresolved items is a possible change, any other change of it is certain', () => {
+    const layout = items => line('JDBC protocol', 'layout JdbcQuery.writeBinary', items.join('; '), 'itemized', 'A.java:1', 'JdbcQuery');
+    const base = ['writeString', '#if:ctx.isSupported()', 'writeInt', '#end', '#loop', '?call:writeObject', '#end'];
+    const kind = after => compare(layout(base), layout(after)).map(f => f.kind);
+
+    assert.deepStrictEqual(kind(base.map(i => i === '#if:ctx.isSupported()' ? '#if:context.isSupported()' : i)), ['possible']);
+    assert.deepStrictEqual(kind(base.map(i => i === '?call:writeObject' ? 'writeJdbcObject' : i)), ['possible']);
+    assert.deepStrictEqual(kind(base.map(i => i === 'writeInt' ? 'writeLong' : i)), ['contract']);
+    assert.deepStrictEqual(kind([...base.map(i => i === '?call:writeObject' ? 'writeJdbcObject' : i), 'writeBoolean']), ['contract']);
+    assert.deepStrictEqual(compare(layout(['writeInt']), layout(['writeLong'])).map(f => f.kind), ['contract']);
+    assert.deepStrictEqual(kind(['writeString', '#if:ctx.isSupported()', 'writeInt', '#end', '#else', '#loop', '?call:writeObject', '#end', '#end']),
+        ['possible']);
+    assert.deepStrictEqual(kind([...base, '#if:ctx.isTxSupported()', 'writeBoolean', '#end']), ['contract']);
+    assert.deepStrictEqual(compare(layout(base), '').map(f => f.kind), ['possible']);
+    assert.deepStrictEqual(compare('', layout(base)).map(f => f.kind), ['possible']);
+    assert.deepStrictEqual(compare(line('JDBC protocol', 'k', 'a; ?b'), line('JDBC protocol', 'k', 'c; ?b')).map(f => f.kind), ['contract']);
+});

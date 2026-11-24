@@ -58,3 +58,10 @@ test('a failed description says who fixes it: the PR for its merge, the target b
     assert.ok(merge.includes('If the PR does not compile, fix it.') && merge.includes('`.github/public-behavior/describe`'), merge);
     assert.ok(base.includes('the check needs a fix on the target branch'), base);
 });
+
+test('a possible change is marked, and the review warning explains it', () => {
+    const possible = { ...CONTRACT, before: 'writeInt; ?call:writeObject', after: 'writeInt; writeJdbcObject', kind: 'possible' };
+    const md = render({ outcome: 'review', findings: [possible], rfcs: [], invalidNames: [], badLinks: [] }, {}, 10);
+
+    assert.ok(md.includes('writeJdbcObject [possible] (A.java:1)') && md.includes('check whether the bytes'), md);
+});

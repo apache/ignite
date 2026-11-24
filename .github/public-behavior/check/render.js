@@ -42,7 +42,7 @@ function diffBlock(text) {
 
 /** @return Diff line, cut to a length that keeps the comment within the GitHub limit. */
 function diffLine(sign, f, val, last) {
-    const note = { 'deprecated-removal': ` [${f.hint || 'deprecated'}]`, 'experimental': ' [experimental]' }[f.kind] || '';
+    const note = { 'deprecated-removal': ` [${f.hint || 'deprecated'}]`, 'experimental': ' [experimental]', 'possible': ' [possible]' }[f.kind] || '';
     const line = sign + ' ' + f.key + (val ? ': ' + val : '') + (last ? note + (f.location ? ' (' + f.location + ')' : '') : '');
 
     return line.length > LINE_CHARS ? line.slice(0, LINE_CHARS - 3) + '...' : line;
@@ -97,7 +97,7 @@ function rfcUrl(rfc, links) {
 function title(res) {
     return {
         'clean': 'No public behavior changes',
-        'review': 'Review deprecated or experimental API changes',
+        'review': 'Review deprecated, experimental or possible changes',
         'check': 'Review the changes to the check',
         'rfc-found': 'Review the RFC',
         'rfc-name': 'Fix the RFC filename',
@@ -147,11 +147,13 @@ function render(res, links, limit) {
     const notShownLine = notShown ? [`- ${notShown} not shown.`] : [];
 
     if (res.outcome === 'review') {
-        out.push('This PR removes deprecated declarations or changes experimental API. ' +
-            `The [RFC process](${PROCESS_URL}) lets authors remove APIs deprecated before it without an RFC, ` +
-            'and experimental APIs may change in any release.',
+        out.push('This PR removes deprecated declarations, changes experimental API or possibly changes a message or record ' +
+            `layout. The [RFC process](${PROCESS_URL}) lets authors remove APIs deprecated before it without an RFC, and ` +
+            'experimental APIs may change in any release. A change marked `[possible]` touches code that the check could not ' +
+            'resolve, so the layout may stay the same.',
             '',
-            'Reviewer: decide whether these changes need an RFC. For a deprecated declaration, check when it was deprecated.');
+            'Reviewer: decide whether these changes need an RFC. For a deprecated declaration, check when it was deprecated. ' +
+            'For a possible change, check whether the bytes on the wire or on disk change.');
     }
     else if (res.outcome === 'check') {
         out.push('This PR changes only the check. The target branch is described by its own version of the check and this PR by ' +

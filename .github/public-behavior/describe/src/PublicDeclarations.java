@@ -22,6 +22,7 @@ import collectors.Codes;
 import collectors.Distribution;
 import collectors.JavaApi;
 import collectors.JdbcDriver;
+import collectors.Layouts;
 import collectors.Odbc;
 import collectors.PageVersions;
 import collectors.Platforms;
@@ -51,6 +52,7 @@ public class PublicDeclarations {
         new Sql(),
         new Distribution(),
         new JdbcDriver(),
+        new Layouts(),
         new Odbc(),
         new PageVersions(),
         new Platforms(),

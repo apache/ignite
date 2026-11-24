@@ -33,9 +33,10 @@ taken for a new status code with the same value.
 ## Results
 
 - **No change.** The check passes. A clean PR gets no comment, including a PR that changes only an RFC.
-- **Removed deprecated or changed experimental API only.** The check passes with a review warning. The RFC process lets
-  authors remove APIs deprecated before it without an RFC, and experimental APIs may change in any release. The reviewer
-  decides whether such a change needs an RFC. For a removed deprecated declaration the report shows the commit and the first
+- **Removed deprecated or changed experimental API, or possible layout changes only.** The check passes with a review
+  warning. The RFC process lets authors remove APIs deprecated before it without an RFC, and experimental APIs may change in
+  any release. A possible layout change touches code that the check cannot resolve, so the bytes may stay the same. The
+  reviewer decides whether such a change needs an RFC. For a removed deprecated declaration the report shows the commit and the first
   release where its deprecation was last changed, if the check finds the annotation that deprecates it in the sources: its
   own, or that of its type or parent command.
 - **RFC in the PR.** Every Markdown file in `rfcs/` that the PR adds or updates, except `rfcs/TEMPLATE.md`, must be named
@@ -64,8 +65,8 @@ covers the changes, reviews compatibility and verifies any required vote on the 
 | CLI | `control.sh` commands and subcommands, including whether a command is experimental (its own mark, which `control.sh` checks) or deprecated (its own or a parent's mark) and whether it asks for confirmation, named and positional parameters with their types, accepted enum values and whether they are required, groups of parameters, common options and exit codes. Options of `ignite.sh` that `bin/include/parseargs.sh` handles. | Options of `ignite.bat` and the help option of the launcher: `CommandLineTransformer` and `CommandLineStartup` parse them in code, with no declaration. |
 | Configuration | Configuration classes through the Java API, including default value constants. System properties printed by `ignite.sh -systemProps`: name, type, default value and deprecation. Connection properties of the JDBC thin driver: name, whether required, default and accepted values. Attributes of the ODBC connection string with their types and defaults. | Distributed properties: Ignite creates them when a node starts. Environment variables of the scripts: the scripts read them among their internal variables, with no list of their own. |
 | Monitoring | Name, type and position of each system view column. JMX interfaces and event types through the Java API. | Metric names and types and system view names: Ignite registers them when a node starts, often under computed names. |
-| Client protocols and external formats | Thin client operation codes, status codes, protocol versions and feature IDs. JDBC and ODBC request types and protocol versions. Binary format constants. | Layout of thin client, JDBC and ODBC messages: the code that reads and writes the fields sets it, and no declaration describes it. |
-| Stored data | WAL record type indices, page IO types, the latest version of each page type and the serialization version of snapshot metadata. | Layout of WAL records and pages: the code that reads and writes them sets it. The serialized form of stored cache configurations: Ignite writes them with Java serialization, and the classes it stores are yet to be identified. Versions of pages that Ignite registers when a node starts, such as H2 index pages. |
+| Client protocols and external formats | Thin client operation codes, status codes, protocol versions and feature IDs. JDBC and ODBC request types and protocol versions. Binary format constants. Layout of thin client, JDBC and ODBC messages: the reads and writes in the code that serializes them by hand, with the branches, loops and switch cases around them. | What a helper or the serialization of a field writes, and the conditions of branches: the check cannot resolve them from the source, so their changes are only possible layout changes for the reviewer. |
+| Stored data | WAL record type indices, page IO types, the latest version of each page type and the serialization version of snapshot metadata. Layout of WAL records: the reads and writes of each record type in the WAL serializers. | Layout of pages: Ignite reads and writes them by offsets, which the check does not describe. What a helper writes and the conditions of branches in the WAL serializers: possible layout changes for the reviewer. The serialized form of stored cache configurations: Ignite writes them with Java serialization, and the classes it stores are yet to be identified. Versions of pages that Ignite registers when a node starts, such as H2 index pages. |
 | Distribution and runtime | Entries of `ignite-bom` as Maven publishes it, including the ones it takes from the parent POM, with their type and classifier, the Java release that the build targets, the minimum Java version in the launch scripts, the launch scripts in `bin`, NuGet package IDs and their target frameworks. | Docker images and DEB and RPM packages: separate scripts in `deliveries` and `packaging` build them, and the check does not read them yet. |
 | Errors | SQLSTATE values, query error codes and the SQLSTATE of each code, thin client status codes and `control.sh` exit codes. | Nothing. |
 | Results, effects and operations | Public modes and defaults of transactions, retries and cancellation through the Java API. | Nothing beyond behavior, see below. |
@@ -87,7 +88,7 @@ The check has two parts, connected by the description format below.
 - `describe/` finds the public declarations of a built source tree. `describe.sh` builds the tree, compiles the sources in
   `src/` and runs `PublicDeclarations.java`. It runs one collector for each kind of declarations from the package
   `collectors`: `JavaApi`, `SystemProperties`, `SystemViews`, `Cli`, `Codes`, `Sql`, `Distribution`, `JdbcDriver`, `Odbc`,
-  `PageVersions`, `Scripts` and `Platforms`. `Platforms` adds what the describers of other languages in `platforms/` print:
+  `Layouts`, `PageVersions`, `Scripts` and `Platforms`. `Platforms` adds what the describers of other languages in `platforms/` print:
   `cpp.py` parses the C++ headers with clang, and `dotnet/` reads the built .NET assemblies. They print area, key, value,
   flags and location separated by tabs, and the collector escapes the texts like any other. The collectors use
   the package `framework` only through its public API. There, `BuiltTree` gives them the published modules, their classes,
@@ -110,7 +111,8 @@ Each line is one declaration, with seven columns separated by tabs:
 2. **Key**: identifies the declaration within its area. The same key in both descriptions is the same declaration.
 3. **Value**: what users rely on. The check reports a declaration whose value changed. Values of declarations with the same
    key are joined with ` | `.
-4. **Flags**: `deprecated`, `experimental` or both, separated by a comma. They decide whether a change needs an RFC. A
+4. **Flags**: `deprecated`, `experimental` and `itemized`, separated by commas. The first two decide whether a change needs an
+   RFC; `itemized` marks a value that lists items, described below. A
    collector sets a flag only for a mark that users see, and the value of the declaration, or of the type or command
    that contains it, shows that mark too: marking a declaration deprecated is a change, and the flag lets the reviewer
    decide on its later removal. `@Deprecated` on an internal constant is not such a mark.
@@ -120,6 +122,14 @@ Each line is one declaration, with seven columns separated by tabs:
    occurrence counts.
 7. **Deprecation**: `path:line` of the annotation that deprecates the declaration, or empty. The report uses it to show when
    a removed declaration was deprecated.
+
+A collector may describe a value item by item, separated by `; `, and flag it `itemized`, such as the reads and writes of a
+message layout. Items that start with `#` are structure: a branch with its condition, a loop, a switch case and the end of
+each. Items that start with `?` could not be resolved from the source, such as a call that gets the writer. A change is
+possible if every changed part has an unresolved item or only structure, and so is adding or removing such a declaration.
+The report marks a possible change `[possible]`, and the reviewer decides whether it needs an RFC. Any other change of the
+items is certain. On the history of master since 2021, this rule finds the layout changes that added fields or handshake
+data as certain and leaves refactoring around helpers as possible.
 
 Only the key and the value are compared. They keep every character, so two declarations that differ in a space stay
 different. A backslash, a tab, a line feed, a carriage return, another control character and a space at either end are
