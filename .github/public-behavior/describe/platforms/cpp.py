@@ -19,8 +19,8 @@
 """
 Prints the public C++ API of the Ignite source tree in the current directory, one declaration per line: area, key, value,
 flags and location, separated by tabs. The public API is what the headers that the modules install declare, except the impl
-directories and namespaces, which Ignite uses for internal code. Clang parses all those headers in one translation unit, as
-users include them.
+directories and namespaces, which Ignite uses for internal code, and the service namespaces in SERVICE. Clang parses all those
+headers in one translation unit, as users include them.
 """
 
 import json
@@ -33,6 +33,11 @@ CPP = 'modules/platforms/cpp'
 
 # Modules whose CMake builds install their headers for users.
 PUBLIC = ['binary', 'common', 'core', 'network', 'thin-client']
+
+# Namespaces of ignite that hold service code. The examples do not use them, jni and network appear in no public signature,
+# and the types of common that public signatures use are compared through those signatures. Ignite does not define its C++
+# API: cpp.dxg, which builds the C++ documentation, points at directories that do not exist.
+SERVICE = {'common', 'jni', 'network'}
 
 AREA = 'C++ API'
 FUNCTIONS = {'FunctionDecl', 'CXXMethodDecl', 'CXXConstructorDecl', 'CXXDestructorDecl', 'CXXConversionDecl'}
@@ -142,7 +147,7 @@ class Walker:
         deprecated = any(c.get('kind') == 'DeprecatedAttr' for c in inner)
 
         if kind == 'NamespaceDecl':
-            if name in ('impl', 'detail'):
+            if name in ('impl', 'detail') or (scope == ['ignite'] and name in SERVICE):
                 self.skip(inner)
             else:
                 self.children(inner, scope + [name], False)
