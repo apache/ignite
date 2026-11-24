@@ -86,7 +86,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * A manual reload is {@link SslFactoryRegistry#reload}, which the TLS reload command calls.
- * An attempt is an automatic hot reload attempt that the hourly check makes.
+ * An attempt is an automatic hot reload attempt that the periodic check makes.
  */
 public class SslFactoryRegistryTest {
     /** Upper bound for waiting for an event that must happen. */
@@ -110,7 +110,7 @@ public class SslFactoryRegistryTest {
     /** */
     private MockedStatic<IgniteScheduledThreadPoolExecutor> executorFactory;
 
-    /** Hourly hot reload check that the registry scheduled. */
+    /** Periodic hot reload check that the registry scheduled. */
     private Runnable check;
 
     /** */
@@ -126,7 +126,7 @@ public class SslFactoryRegistryTest {
     private TestCertificateAuthority authority;
 
     /**
-     * Each test gets a registry whose hot reload executor records the hourly check instead of running it.
+     * Each test gets a registry whose hot reload executor records the periodic check instead of running it.
      * Tests run the check themselves.
      * The setup also writes the trust store of a test CA to a temporary directory and stubs the node metrics and logger.
      */
@@ -210,7 +210,7 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: HTTP REST registers a factory that is not an Ignite SSL context factory, with certificates due for hot reload.
-     * When: the hourly check runs, and then a manual reload runs.
+     * When: the periodic check runs, and then a manual reload runs.
      * Then: the registry reloads the factory each time and counts one automatic and one manual attempt.
      */
     @Test
@@ -232,7 +232,7 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: communication and discovery share a factory, and the client connector has an equal factory for the same file.
-     * When: the key store is replaced and the hourly check runs.
+     * When: the key store is replaced and the periodic check runs.
      * Then: each factory instance loads the new certificates once.
      */
     @Test
@@ -282,7 +282,7 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: the key store holds only a CA certificate.
-     * When: the registry starts and the hourly check runs, then the operator puts a key store with a private key in place
+     * When: the registry starts and the periodic check runs, then the operator puts a key store with a private key in place
      *     and reloads it.
      * Then: the registry logs that hot reload will not run, and the check makes no attempt.
      *     After the reload, the log shows when hot reload is due.
@@ -310,11 +310,11 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: the loaded certificates are due for hot reload, and the key store file is deleted after start.
-     * When: the hourly check runs three times.
-     * Then: the check runs at start and then every hour, and each run counts one more failed attempt.
+     * When: the periodic check runs three times.
+     * Then: the check runs at start and then every check period of an hour, and each run counts one more failed attempt.
      */
     @Test
-    public void testHotReloadIsCheckedEveryHourFromStart() throws Exception {
+    public void testHotReloadIsCheckedPeriodicallyFromStart() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeDueCertificates(keys);
@@ -334,11 +334,11 @@ public class SslFactoryRegistryTest {
     /**
      * Given: communication has certificates that are due for hot reload in 30 minutes, and the client connector has
      *     certificates that are due in 23 days.
-     * When: the hourly check runs.
+     * When: the periodic check runs.
      * Then: the registry schedules one more check, of communication, in 30 minutes.
      */
     @Test
-    public void testCheckIsScheduledAtHotReloadTimeBeforeNextHourlyCheck() throws Exception {
+    public void testCheckIsScheduledAtHotReloadTimeBeforeNextPeriodicCheck() throws Exception {
         Path clientKeys = dir.resolve("client-keys.jks");
 
         writeCertificatesDueIn30Minutes(keys);
@@ -353,7 +353,7 @@ public class SslFactoryRegistryTest {
 
     /**
      * Given: the loaded certificates are due for hot reload, and the key store gets certificates that are due in 30 minutes.
-     * When: the hourly check loads them.
+     * When: the periodic check loads them.
      * Then: the registry schedules the next check of the factory in 30 minutes.
      */
     @Test
@@ -416,7 +416,7 @@ public class SslFactoryRegistryTest {
     /**
      * Given: two factories with due certificates, and loading the first one throws an error,
      *     as a missing class of a key store provider does.
-     * When: the hourly check runs.
+     * When: the periodic check runs.
      * Then: the check completes normally, so the executor keeps the schedule. It counts and logs the error
      *     and still reloads the second factory.
      */
