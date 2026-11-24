@@ -63,6 +63,7 @@ import org.mockito.MockedStatic;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -74,6 +75,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.longThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -327,6 +329,61 @@ public class SslFactoryRegistryTest {
 
             assertEquals(failure, failures());
         }
+    }
+
+    /**
+     * Given: communication has certificates that are due for hot reload in 30 minutes, and the client connector has
+     *     certificates that are due in 23 days.
+     * When: the hourly check runs.
+     * Then: the registry schedules one more check, of communication, in 30 minutes.
+     */
+    @Test
+    public void testCheckIsScheduledAtHotReloadTimeBeforeNextHourlyCheck() throws Exception {
+        Path clientKeys = dir.resolve("client-keys.jks");
+
+        writeCertificatesDueIn30Minutes(keys);
+        writeFreshCertificates(clientKeys);
+        registerTransport("communication", factory(keys));
+        registerTransport("client connector", factory(clientKeys));
+        registry.onKernalStart(true);
+        check.run();
+
+        verify(executor).schedule(any(Runnable.class), longThat(SslFactoryRegistryTest::isAbout30Minutes), eq(MILLISECONDS));
+    }
+
+    /**
+     * Given: the loaded certificates are due for hot reload, and the key store gets certificates that are due in 30 minutes.
+     * When: the hourly check loads them.
+     * Then: the registry schedules the next check of the factory in 30 minutes.
+     */
+    @Test
+    public void testHotReloadSchedulesCheckAtNewHotReloadTime() throws Exception {
+        writeDueCertificates(keys);
+        registerTransport("communication", factory(keys));
+        registry.onKernalStart(true);
+        writeCertificatesDueIn30Minutes(keys);
+        check.run();
+
+        assertEquals(0, failures());
+        verify(executor).schedule(any(Runnable.class), longThat(SslFactoryRegistryTest::isAbout30Minutes), eq(MILLISECONDS));
+    }
+
+    /**
+     * Given: the registry has started, and the key store gets certificates that are due for hot reload in 30 minutes.
+     * When: a manual reload loads them.
+     * Then: the registry schedules a check of the factory in 30 minutes.
+     */
+    @Test
+    public void testManualReloadSchedulesCheckAtHotReloadTime() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeFreshCertificates(keys);
+        registerTransport("communication", communication);
+        registry.onKernalStart(true);
+        writeCertificatesDueIn30Minutes(keys);
+        reload(communication);
+
+        verify(executor).schedule(any(Runnable.class), longThat(SslFactoryRegistryTest::isAbout30Minutes), eq(MILLISECONDS));
     }
 
     /**
@@ -891,6 +948,21 @@ public class SslFactoryRegistryTest {
      */
     private void writeDueCertificates(Path keyStore) throws Exception {
         save(authority.keyStore("node", at(-90), at(10)), keyStore);
+    }
+
+    /**
+     * Writes a key store whose certificate became valid 30 minutes ago and expires in an hour, so it is due for hot reload
+     * in 30 minutes, a third of its lifetime before it expires.
+     */
+    private void writeCertificatesDueIn30Minutes(Path keyStore) throws Exception {
+        long now = System.currentTimeMillis();
+
+        save(authority.keyStore("node", now - MINUTES.toMillis(30), now + MINUTES.toMillis(60)), keyStore);
+    }
+
+    /** @return Whether the delay ends within the next 30 minutes, but no more than a minute earlier. */
+    private static boolean isAbout30Minutes(long delay) {
+        return delay > MINUTES.toMillis(29) && delay <= MINUTES.toMillis(30);
     }
 
     /**
