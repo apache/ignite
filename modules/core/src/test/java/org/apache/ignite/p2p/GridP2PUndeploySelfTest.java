@@ -58,7 +58,11 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected Ignite startGrid(String igniteInstanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx) throws Exception {
+    @Override protected Ignite startGrid(
+        String igniteInstanceName,
+        IgniteConfiguration cfg,
+        GridSpringResourceContext ctx
+    ) throws Exception {
         Ignite node = super.startGrid(igniteInstanceName, cfg, ctx);
 
         spis.put(igniteInstanceName, (LocalDeploymentSpi)node.configuration().getDeploymentSpi());

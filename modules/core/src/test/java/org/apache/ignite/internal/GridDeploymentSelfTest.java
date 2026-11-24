@@ -18,9 +18,11 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -37,8 +39,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
@@ -53,32 +53,32 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 @GridCommonTest(group = "Kernal Self")
 public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
-    private TestDeploymentSpi depSpi;
+    private DeploymentEventListener evtLsnr;
 
     /** */
     private boolean p2pEnabled = true;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        depSpi = new TestDeploymentSpi();
+        evtLsnr = new DeploymentEventListener();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        depSpi = null;
+        evtLsnr = null;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDeploymentSpi(depSpi = new TestDeploymentSpi());
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
         // Disable cache since it can deploy some classes during start process.
         cfg.setCacheConfiguration();
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
+        cfg.setLocalEventListeners(Collections.singletonMap(evtLsnr, new int[] {EVT_TASK_DEPLOYED, EVT_TASK_UNDEPLOYED}));
 
         return cfg;
     }
@@ -120,15 +120,15 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
             ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 1 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 1 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert checkUndeployed(ignite, GridDeploymentTestTask.class.getName());
         }
@@ -151,13 +151,13 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         try {
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
-            assert depSpi.getRegisterCount() == 0 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 0 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
-            assert depSpi.getRegisterCount() == 0 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 0 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
         }
         finally {
             stopGrid(ignite);
@@ -180,8 +180,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
@@ -190,8 +190,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
             fut.get();
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
@@ -200,8 +200,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             // Check 2nd execute.
             fut = executeAsync(ignite.compute(), GridDeploymentTestTask.class.getName(), null);
@@ -210,16 +210,16 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             // Check undeploy.
             ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) == null;
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 1 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 1 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             // Added to work with P2P
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
@@ -227,8 +227,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
             // Check auto-deploy.
             executeAsync(ignite.compute(), GridDeploymentTestTask.class.getName(), null);
 
-            assert depSpi.getRegisterCount() == 2;
-            assert depSpi.getUnregisterCount() == 1;
+            assert evtLsnr.getDeployCount() == 2;
+            assert evtLsnr.getUndeployCount() == 1;
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
@@ -245,8 +245,8 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
                 info("Received expected grid exception: " + e);
             }
 
-            assert depSpi.getRegisterCount() == 3 : "Invalid register count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 1 : "Invalid unregister count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 3 : "Invalid register count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 1 : "Invalid unregister count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get("GridDeploymentTestTask") != null;
 
@@ -311,55 +311,51 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid(getTestIgniteInstanceName());
 
         try {
-            DeploymentEventListener evtLsnr = new DeploymentEventListener();
-
-            ignite.events().localListen(evtLsnr, EVT_TASK_DEPLOYED, EVT_TASK_UNDEPLOYED);
-
             // Should generate 1st deployment event.
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 0 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 0 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
             // Should generate 1st un-deployment event.
             ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
-            assert depSpi.getRegisterCount() == 1 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 1 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 1 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 1 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert checkUndeployed(ignite, GridDeploymentTestTask.class.getName());
 
             // Should generate 2nd deployment event.
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
-            assert depSpi.getRegisterCount() == 2 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 1 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 2 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 1 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
             // Should generate 2nd un-deployment event.
             ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
-            assert depSpi.getRegisterCount() == 2 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 2 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 2 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 2 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert checkUndeployed(ignite, GridDeploymentTestTask.class.getName());
 
             // Should generate 3rd deployment event.
             ignite.compute().localDeployTask(GridDeploymentTestTask.class, GridDeploymentTestTask.class.getClassLoader());
 
-            assert depSpi.getRegisterCount() == 3 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 2 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 3 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 2 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert ignite.compute().localTasks().get(GridDeploymentTestTask.class.getName()) != null;
 
             // Should generate 3rd un-deployment event.
             ignite.compute().undeployTask(GridDeploymentTestTask.class.getName());
 
-            assert depSpi.getRegisterCount() == 3 : "Invalid deploy count: " + depSpi.getRegisterCount();
-            assert depSpi.getUnregisterCount() == 3 : "Invalid undeploy count: " + depSpi.getUnregisterCount();
+            assert evtLsnr.getDeployCount() == 3 : "Invalid deploy count: " + evtLsnr.getDeployCount();
+            assert evtLsnr.getUndeployCount() == 3 : "Invalid undeploy count: " + evtLsnr.getUndeployCount();
 
             assert checkUndeployed(ignite, GridDeploymentTestTask.class.getName());
 
@@ -469,58 +465,14 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     * Test deployment spi.
-     */
-    private static class TestDeploymentSpi extends LocalDeploymentSpi {
-        /** */
-        private volatile int deployCnt;
-
-        /** */
-        private volatile int undeployCnt;
-
-        /** {@inheritDoc} */
-        @Override public boolean register(ClassLoader ldr, Class rsrc) throws IgniteSpiException {
-            if (super.register(ldr, rsrc) && ComputeTaskAdapter.class.isAssignableFrom(rsrc)) {
-                deployCnt++;
-
-                return true;
-            }
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean unregister(String rsrcName) {
-            undeployCnt++;
-
-            return super.unregister(rsrcName);
-        }
-
-        /**
-         * @return Deploy count.
-         */
-        public int getRegisterCount() {
-            return deployCnt;
-        }
-
-        /**
-         * @return Undeploy count.
-         */
-        public int getUnregisterCount() {
-            return undeployCnt;
-        }
-    }
-
-    /**
      * Deployment listener.
      */
     private static class DeploymentEventListener implements IgnitePredicate<Event> {
         /** */
-        private int depCnt;
+        private final AtomicInteger depCnt = new AtomicInteger();
 
         /** */
-        private int undepCnt;
+        private final AtomicInteger undepCnt = new AtomicInteger();
 
         /**
          * Gonna process task deployment events only.
@@ -529,9 +481,9 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
          */
         @Override public boolean apply(Event evt) {
             if (evt.type() == EVT_TASK_DEPLOYED)
-                depCnt++;
+                depCnt.incrementAndGet();
             else if (evt.type() == EVT_TASK_UNDEPLOYED)
-                undepCnt++;
+                undepCnt.incrementAndGet();
 
             return true;
         }
@@ -540,14 +492,14 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
          * @return Deploy count.
          */
         public int getDeployCount() {
-            return depCnt;
+            return depCnt.get();
         }
 
         /**
          * @return Undeploy count.
          */
         public int getUndeployCount() {
-            return undepCnt;
+            return undepCnt.get();
         }
     }
 }
