@@ -188,9 +188,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
 
         /**
-         * Checks the factory unless the registry has stopped. Counts and logs a failed check, so it does not stop
-         * the other factories or the schedule. A check that fails while the registry stops is logged at debug level
-         * and not counted.
+         * Checks the factory unless the registry has stopped, and schedules its next check at the hot reload time if
+         * it comes before the next hourly check. Counts and logs a failed check, so it does not stop the other factories
+         * or the schedule. A check that fails while the registry stops is logged at debug level and not counted.
          */
         private synchronized void check() {
             if (executor.isShutdown())
@@ -198,6 +198,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             try {
                 reloadIfDue();
+                scheduleDueCheck();
             }
             catch (Throwable e) {
                 if (!executor.isShutdown()) {
@@ -217,12 +218,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private void reloadIfDue() {
-            long hotReloadTime = reloadable.getHotReloadTime();
-
-            if (!due(hotReloadTime)) {
+            if (!due(reloadable.getHotReloadTime())) {
                 failures.set(0);
-
-                scheduleDueCheck(hotReloadTime);
 
                 return;
             }
@@ -234,7 +231,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            hotReloadTime = reloadable.getHotReloadTime();
+            long hotReloadTime = reloadable.getHotReloadTime();
 
             if (due(hotReloadTime)) {
                 throw new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
@@ -247,20 +244,19 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
                 log.info("TLS hot reload succeeded [transports=" + transports + ']');
 
             logHotReloadTime(hotReloadTime);
-
-            scheduleDueCheck(hotReloadTime);
         }
 
         /**
          * Schedules a check of this factory at the hot reload time if it comes before the next hourly check.
          * The check replaces the one scheduled before.
          */
-        private void scheduleDueCheck(long hotReloadTime) {
+        private void scheduleDueCheck() {
             if (dueCheck != null)
                 dueCheck.cancel(false);
 
             dueCheck = null;
 
+            long hotReloadTime = reloadable.getHotReloadTime();
             long delay = hotReloadTime - System.currentTimeMillis();
 
             if (hotReloadTime == 0 || delay >= nextHourlyCheckDelay())
@@ -287,12 +283,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             failures.set(0);
 
-            long hotReloadTime = reloadable.getHotReloadTime();
-
-            logHotReloadTime(hotReloadTime);
+            logHotReloadTime(reloadable.getHotReloadTime());
 
             if (hourlyCheck != null)
-                scheduleDueCheck(hotReloadTime);
+                scheduleDueCheck();
         }
 
         /** */

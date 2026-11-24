@@ -43,6 +43,8 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
 
     /** @param factory TLS factory of the HTTPS connector before startup, when its getters expose the configured objects. */
     ReloadableJettySslFactory(SslContextFactory factory) {
+        assert !factory.isStarted();
+
         this.factory = factory;
 
         configured = new TlsMaterial(factory);
