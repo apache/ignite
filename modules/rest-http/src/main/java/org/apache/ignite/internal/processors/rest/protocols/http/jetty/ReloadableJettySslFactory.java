@@ -72,6 +72,9 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
             if (skip.loadErr != null)
                 throw new IgniteException(skip.loadErr);
         }
+        catch (IllegalStateException e) {
+            throw new IgniteException("Failed to read the TLS state of the HTTPS connector", e);
+        }
     }
 
     /** {@inheritDoc} */

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadCommand;
+import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -203,6 +204,31 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
             assertEquals(now - HOURS.toMillis(6), factory.getHotReloadTime());
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
             assertEquals(now - HOURS.toMillis(6), factory.getHotReloadTime());
+        }
+        finally {
+            jettyFactory.stop();
+        }
+    }
+
+    /**
+     * Given: a reload that Ignite did not start, such as one by Jetty's {@code KeyStoreScanner}, has failed and left
+     *     the custom Jetty factory without keys.
+     * When: Ignite reloads the factory and reads its hot reload time.
+     * Then: both fail with {@link IgniteException}, as {@link ReloadableSslFactory} declares.
+     */
+    @Test
+    public void testFactoryLeftWithoutKeysFailsWithIgniteException() throws Exception {
+        SourceSslContextFactory.supply(fresh(), new IOException("Source is unavailable"));
+
+        SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
+
+        jettyFactory.start();
+
+        try {
+            assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
+            assertThrows(log, factory::init, IgniteException.class, "TLS state of the HTTPS connector");
+            assertThrows(log, factory::getHotReloadTime, IgniteException.class, "certificates of the HTTPS connector");
         }
         finally {
             jettyFactory.stop();

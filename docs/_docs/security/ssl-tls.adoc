@@ -234,7 +234,7 @@ If the loaded certificates are still due for hot reload, Ignite records a failed
 This can happen when the certificates have not changed, only the trust store changed, or the replacements are already due when loaded.
 The loaded context remains in use until a later reload replaces it.
 
-After a manual reload, the next hourly check uses the loaded certificates.
+After a manual reload, Ignite schedules the next check from the loaded certificates.
 
 New connections use the loaded certificates; established connections remain open.
 To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.
