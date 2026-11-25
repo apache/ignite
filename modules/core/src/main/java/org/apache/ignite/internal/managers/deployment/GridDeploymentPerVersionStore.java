@@ -91,12 +91,11 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     private final GridStripedLock loadRmtLock = new GridStripedLock(16);
 
     /**
-     * @param spi Underlying SPI.
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentPerVersionStore(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
-        super(spi, ctx, comm);
+    GridDeploymentPerVersionStore(GridKernalContext ctx, GridDeploymentCommunication comm) {
+        super(ctx, comm);
 
         missedRsrcCacheSize = ctx.config().getPeerClassLoadingMissedResourcesCacheSize();
 

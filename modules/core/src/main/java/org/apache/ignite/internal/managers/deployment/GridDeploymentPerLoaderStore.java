@@ -68,12 +68,11 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     private final Object mux = new Object();
 
     /**
-     * @param spi Underlying SPI.
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentPerLoaderStore(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
-        super(spi, ctx, comm);
+    GridDeploymentPerLoaderStore(GridKernalContext ctx, GridDeploymentCommunication comm) {
+        super(ctx, comm);
     }
 
     /** {@inheritDoc} */

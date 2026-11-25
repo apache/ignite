@@ -60,13 +60,20 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Mutex. */
     private final Object mux = new Object();
 
+    /** Deployment SPI. */
+    private final LocalDeploymentSpi spi;
+
     /**
      * @param spi Deployment SPI.
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
     GridDeploymentLocalStore(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
-        super(spi, ctx, comm);
+        super(ctx, comm);
+
+        assert spi != null;
+
+        this.spi = spi;
     }
 
     /** {@inheritDoc} */

@@ -33,9 +33,6 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     /** Logger. */
     protected final IgniteLogger log;
 
-    /** Deployment SPI. */
-    protected final LocalDeploymentSpi spi;
-
     /** Kernal context. */
     protected final GridKernalContext ctx;
 
@@ -43,16 +40,13 @@ abstract class GridDeploymentStoreAdapter implements GridDeploymentStore {
     protected final GridDeploymentCommunication comm;
 
     /**
-     * @param spi Underlying SPI.
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentStoreAdapter(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
-        assert spi != null;
+    GridDeploymentStoreAdapter(GridKernalContext ctx, GridDeploymentCommunication comm) {
         assert ctx != null;
         assert comm != null;
 
-        this.spi = spi;
         this.ctx = ctx;
         this.comm = comm;
 

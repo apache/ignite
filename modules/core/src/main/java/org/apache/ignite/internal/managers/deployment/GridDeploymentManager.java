@@ -126,8 +126,6 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
         if (comm != null)
             comm.stop();
 
-        getSpi().setListener(null);
-
         stopSpi();
 
         if (log.isDebugEnabled())
@@ -636,8 +634,8 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
      */
     private void startStores() throws IgniteCheckedException {
         locStore = new GridDeploymentLocalStore(getSpi(), ctx, comm);
-        ldrStore = new GridDeploymentPerLoaderStore(getSpi(), ctx, comm);
-        verStore = new GridDeploymentPerVersionStore(getSpi(), ctx, comm);
+        ldrStore = new GridDeploymentPerLoaderStore(ctx, comm);
+        verStore = new GridDeploymentPerVersionStore(ctx, comm);
 
         locStore.start();
         ldrStore.start();
