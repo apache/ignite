@@ -29,10 +29,13 @@ import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
 import org.apache.ignite.internal.processors.rollingupgrade.AbstractRollingUpgradeTest;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.apache.ignite.internal.processors.query.calcite.schema.IgniteStatisticsImpl.DFLT_ROW_CNT;
 
 /** */
 public class IgniteStatisticsImplRollingUpgradeTest extends AbstractRollingUpgradeTest {
@@ -80,20 +83,22 @@ public class IgniteStatisticsImplRollingUpgradeTest extends AbstractRollingUpgra
             && StatisticsCacheSizeTask.class.getName().equals(req.taskClassName()));
 
         sql(node, "CREATE TABLE TEST (id INT PRIMARY KEY, val INT) WITH template=replicated");
-        sql(node, "INSERT INTO TEST VALUES (1, 42)");
+        long rowCnt = DFLT_ROW_CNT + 1;
 
-        assertEquals(1_000, refreshRowCount(node), 0.0);
+        sql(node, "INSERT INTO TEST SELECT CAST(x AS INT), 42 FROM TABLE(SYSTEM_RANGE(1, ?))", rowCnt);
+
+        assertEquals(DFLT_ROW_CNT, refreshRowCount(node), 0.0);
         assertTrue(spi.recordedMessages(false).isEmpty());
 
         upgradeNodeVersion(1, MASTER_VER_REF);
         awaitPartitionMapExchange();
 
-        assertEquals(1_000, refreshRowCount(node), 0.0);
+        assertEquals(DFLT_ROW_CNT, refreshRowCount(node), 0.0);
         assertTrue(spi.recordedMessages(false).isEmpty());
 
         finalizeClusterVersion(0, MASTER_VER_REF);
 
-        assertEquals(1, refreshRowCount(node), 0.0);
+        assertEquals(rowCnt, refreshRowCount(node), 0.0);
         assertFalse(spi.recordedMessages(false).isEmpty());
     }
 
@@ -103,14 +108,17 @@ public class IgniteStatisticsImplRollingUpgradeTest extends AbstractRollingUpgra
         CacheTableImpl tbl = (CacheTableImpl)proc.schemaHolder().schema("PUBLIC").getTable("TEST");
         IgniteStatisticsImpl stat = (IgniteStatisticsImpl)tbl.getStatistic();
 
-        stat.cliReqCnt.set(0);
+        stat.lastRefreshTs = 0;
 
         return stat.getRowCount();
     }
 
     /** */
-    private static void sql(IgniteEx node, String sql) {
+    private static void sql(IgniteEx node, String sql, Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setSchema("PUBLIC");
+
+        if (!F.isEmpty(args))
+            qry.setArgs(args);
 
         try (FieldsQueryCursor<List<?>> cur = node.context().query().querySqlFields(qry, false)) {
             cur.getAll();

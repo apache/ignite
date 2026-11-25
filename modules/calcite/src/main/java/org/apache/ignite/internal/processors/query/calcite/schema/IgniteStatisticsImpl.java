@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.schema;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelReferentialConstraint;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsCacheSizeTask;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry.STATISTICS_CACHE_SIZE_TASK_FEATURE;
@@ -41,17 +43,23 @@ import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.op
 
 /** Calcite statistics wrapper. */
 public class IgniteStatisticsImpl implements Statistic {
-    /** */
-    private static final int STATS_CLI_UPDATE_THRESHOLD = 200;
+    /** Minimum interval between row count refresh attempts, in milliseconds. */
+    static final long STATS_REFRESH_INTERVAL = 2_000;
 
     /** */
     private static final long LOCAL_CACHE_SIZE_TIMEOUT = 1_000;
 
-    /** */
-    private static final long DFLT_ROW_CNT = 1_000;
+    /** Fallback estimate until a row count measurement succeeds. */
+    static final long DFLT_ROW_CNT = 1_000;
 
     /** */
-    AtomicInteger cliReqCnt = new AtomicInteger();
+    private static final CompletableFuture<Void> COMPLETED_FUTURE = CompletableFuture.completedFuture(null);
+
+    /** */
+    private final AtomicBoolean updateInProgress = new AtomicBoolean();
+
+    /** Time the last refresh attempt finished, or zero if none has finished. */
+    volatile long lastRefreshTs;
 
     /** */
     private volatile long primaryRowCnt = DFLT_ROW_CNT;
@@ -62,6 +70,9 @@ public class IgniteStatisticsImpl implements Statistic {
     /** Table descriptor. */
     private final CacheTableDescriptor desc;
 
+    /** Waiters share only the first estimate. Later refreshes can serve the previous value to other readers. */
+    private final CompletableFuture<Void> firstRowCntFut;
+
     /**
      * Constructor.
      *
@@ -70,6 +81,7 @@ public class IgniteStatisticsImpl implements Statistic {
     public IgniteStatisticsImpl(ObjectStatisticsImpl statistics) {
         this.statistics = statistics;
         desc = null;
+        firstRowCntFut = COMPLETED_FUTURE;
     }
 
     /**
@@ -80,6 +92,7 @@ public class IgniteStatisticsImpl implements Statistic {
     public IgniteStatisticsImpl(CacheTableDescriptor desc) {
         statistics = null;
         this.desc = desc;
+        firstRowCntFut = desc == null ? COMPLETED_FUTURE : new CompletableFuture<>();
     }
 
     /** {@inheritDoc} */
@@ -135,17 +148,10 @@ public class IgniteStatisticsImpl implements Statistic {
      * Refreshes table stats if they are possibly outdated, must be called only in client mode.
      */
     private void refreshStatsIfNeededEx() {
-        if (cliReqCnt.getAndIncrement() % STATS_CLI_UPDATE_THRESHOLD == 0) {
-            try {
-                Long size = localCacheSize(desc.cacheInfo().cacheContext());
-
-                if (size != null)
-                    primaryRowCnt = size;
-            }
-            catch (IgniteCheckedException ignore) {
-                // No-op.
-            }
-        }
+        if (!firstRowCntFut.isDone())
+            firstRefreshRowCount();
+        else
+            subsequentRefreshRowCount();
     }
 
     /** */
@@ -172,5 +178,53 @@ public class IgniteStatisticsImpl implements Statistic {
         );
 
         return fut.get();
+    }
+
+    /** */
+    private void firstRefreshRowCount() {
+        if (updateInProgress.compareAndSet(false, true)) {
+            try {
+                if (!firstRowCntFut.isDone())
+                    refreshRowCount();
+            }
+            finally {
+                firstRowCntFut.complete(null);
+
+                updateInProgress.set(false);
+            }
+        }
+        else
+            firstRowCntFut.join();
+    }
+
+    /** */
+    private void subsequentRefreshRowCount() {
+        if (updateInProgress.compareAndSet(false, true)) {
+            try {
+                if (U.currentTimeMillis() - lastRefreshTs < STATS_REFRESH_INTERVAL)
+                    return;
+
+                refreshRowCount();
+            }
+            finally {
+                updateInProgress.set(false);
+            }
+        }
+    }
+
+    /** Refreshes the cached row count, retaining the previous estimate if the measurement fails. */
+    private void refreshRowCount() {
+        try {
+            Long size = localCacheSize(desc.cacheInfo().cacheContext());
+
+            if (size != null)
+                primaryRowCnt = size;
+        }
+        catch (IgniteCheckedException ignore) {
+            // No-op.
+        }
+        finally {
+            lastRefreshTs = U.currentTimeMillis();
+        }
     }
 }
