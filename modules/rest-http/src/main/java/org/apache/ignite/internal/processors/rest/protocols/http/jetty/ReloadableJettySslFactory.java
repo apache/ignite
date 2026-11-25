@@ -101,7 +101,7 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public long getHotReloadTime() {
+    @Override public long hotReloadTime() {
         TlsState state = currentState();
 
         if (state == null)

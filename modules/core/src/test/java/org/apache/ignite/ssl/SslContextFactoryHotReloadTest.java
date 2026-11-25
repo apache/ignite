@@ -94,7 +94,7 @@ public class SslContextFactoryHotReloadTest {
 
         assertTrue(factory.isHotReloadEnabled());
         assertNotNull(factory.create());
-        assertEquals(0, factory.getHotReloadTime());
+        assertEquals(0, factory.hotReloadTime());
     }
 
     /**
@@ -115,11 +115,11 @@ public class SslContextFactoryHotReloadTest {
         factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
         factory.create();
 
-        assertEquals(at(DAYS.toHours(3)), factory.getHotReloadTime());
+        assertEquals(at(DAYS.toHours(3)), factory.hotReloadTime());
 
         factory.setHotReloadBeforeExpiryMs(DAYS.toMillis(14));
 
-        assertEquals(at(-DAYS.toHours(4)), factory.getHotReloadTime());
+        assertEquals(at(-DAYS.toHours(4)), factory.hotReloadTime());
     }
 
     /**
@@ -188,7 +188,7 @@ public class SslContextFactoryHotReloadTest {
 
         factory.create();
 
-        assertEquals(at(-16), factory.getHotReloadTime());
+        assertEquals(at(-16), factory.hotReloadTime());
     }
 
     /**
@@ -206,7 +206,7 @@ public class SslContextFactoryHotReloadTest {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(store);
 
         assertNotNull(factory.create());
-        assertEquals(0, factory.getHotReloadTime());
+        assertEquals(0, factory.hotReloadTime());
     }
 
     /**
@@ -301,7 +301,7 @@ public class SslContextFactoryHotReloadTest {
         factory.useTrustStore(trust.toString());
 
         SSLContext ctx = factory.create();
-        long hotReloadTime = factory.getHotReloadTime();
+        long hotReloadTime = factory.hotReloadTime();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
         Files.delete(trust);
@@ -310,24 +310,24 @@ public class SslContextFactoryHotReloadTest {
 
         assertTrue(err.getCause().getMessage(), err.getCause().getMessage().contains("key store file was not found"));
         assertSame(ctx, factory.create());
-        assertEquals(hotReloadTime, factory.getHotReloadTime());
+        assertEquals(hotReloadTime, factory.hotReloadTime());
 
         save(authority.trustStore(), trust);
         factory.init();
 
         assertNotSame(ctx, factory.create());
-        assertEquals(at(84), factory.getHotReloadTime());
+        assertEquals(at(84), factory.hotReloadTime());
     }
 
     /**
      * Given: a reload of certificates with a new date blocks on the trust store load.
-     * When: another thread reads {@link SslContextFactory#getHotReloadTime()} during the reload.
+     * When: another thread reads {@link SslContextFactory#hotReloadTime()} during the reload.
      * Then: the read returns the current date without waiting for the reload.
      */
     @Test
     public void testHotReloadTimeRemainsReadableDuringLoad() throws Exception {
         InMemorySslContextFactory factory = spy(dueFactory());
-        long hotReloadTime = factory.getHotReloadTime();
+        long hotReloadTime = factory.hotReloadTime();
 
         factory.keyStore = authority.keyStore("node", at(-1), at(99));
 
@@ -349,7 +349,7 @@ public class SslContextFactoryHotReloadTest {
         try {
             assertTrue(trustLoadStarted.await(TIMEOUT_MS, MILLISECONDS));
 
-            assertEquals(hotReloadTime, factory.getHotReloadTime());
+            assertEquals(hotReloadTime, factory.hotReloadTime());
         }
         finally {
             finishTrustLoad.countDown();
@@ -371,7 +371,7 @@ public class SslContextFactoryHotReloadTest {
         factory.useTrustStore("memory-trust");
         factory.create();
 
-        assertEquals(at(-5), factory.getHotReloadTime());
+        assertEquals(at(-5), factory.hotReloadTime());
 
         return factory;
     }
@@ -382,7 +382,7 @@ public class SslContextFactoryHotReloadTest {
 
         factory.create();
 
-        assertEquals(now, factory.getHotReloadTime());
+        assertEquals(now, factory.hotReloadTime());
     }
 
     /**

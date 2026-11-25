@@ -237,7 +237,7 @@ public class SslFactoryRegistryTest {
     public void testReloadableFactoryIsHotReloadedAndReloadedManually() {
         ReloadableSslFactory rest = httpRestFactory();
 
-        when(rest.getHotReloadTime()).thenReturn(due(), at(DAYS.toHours(30)));
+        when(rest.hotReloadTime()).thenReturn(due(), at(DAYS.toHours(30)));
 
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
@@ -268,14 +268,14 @@ public class SslFactoryRegistryTest {
         registerTransport("client connector", clientConnector);
         registry.onKernalStart(true);
 
-        long prevTime = communication.getHotReloadTime();
+        long prevTime = communication.hotReloadTime();
 
         writeFreshCertificates(keys);
         runChecks();
 
         assertEquals(2, metric("AutomaticHotReloadAttempts"));
-        assertTrue(communication.getHotReloadTime() > prevTime);
-        assertEquals(communication.getHotReloadTime(), clientConnector.getHotReloadTime());
+        assertTrue(communication.hotReloadTime() > prevTime);
+        assertEquals(communication.hotReloadTime(), clientConnector.hotReloadTime());
     }
 
     /**
@@ -293,13 +293,13 @@ public class SslFactoryRegistryTest {
         registerTransport("client connector", clientConnector);
         registry.onKernalStart(true);
 
-        long prevTime = communication.getHotReloadTime();
+        long prevTime = communication.hotReloadTime();
 
         writeFreshCertificates(keys);
         registry.reload(clientConnector);
 
-        assertTrue(clientConnector.getHotReloadTime() > prevTime);
-        assertEquals(prevTime, communication.getHotReloadTime());
+        assertTrue(clientConnector.hotReloadTime() > prevTime);
+        assertEquals(prevTime, communication.hotReloadTime());
     }
 
     /**
@@ -326,7 +326,7 @@ public class SslFactoryRegistryTest {
         writeFreshCertificates(keys);
         registry.reload(communication);
 
-        assertEquals("TLS hot reload due [transports=communication, hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']',
+        assertEquals("TLS hot reload due [transports=communication, hotReloadTime=" + new Date(communication.hotReloadTime()) + ']',
             logged.get(logged.size() - 1));
     }
 
@@ -365,7 +365,7 @@ public class SslFactoryRegistryTest {
     public void testFailedReadOfHotReloadTimeIsRetriedWithoutFailingStart() throws Exception {
         ReloadableSslFactory rest = httpRestFactory();
 
-        when(rest.getHotReloadTime()).thenThrow(new IgniteException("Failed to read the certificates of the HTTPS connector"));
+        when(rest.hotReloadTime()).thenThrow(new IgniteException("Failed to read the certificates of the HTTPS connector"));
         writeCertificatesDueIn30Minutes(keys);
         registry.register("HTTP REST", rest);
         registerTransport("communication", factory(keys));
@@ -413,7 +413,7 @@ public class SslFactoryRegistryTest {
     public void testCheckRightBeforeHotReloadTimeDoesNotDeferHotReload() {
         ReloadableSslFactory rest = httpRestFactory();
 
-        when(rest.getHotReloadTime()).thenReturn(System.currentTimeMillis() + MINUTES.toMillis(30), due());
+        when(rest.hotReloadTime()).thenReturn(System.currentTimeMillis() + MINUTES.toMillis(30), due());
 
         registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
@@ -543,7 +543,7 @@ public class SslFactoryRegistryTest {
         registerTransport("communication", communication);
         registry.onKernalStart(true);
 
-        long due = communication.getHotReloadTime();
+        long due = communication.hotReloadTime();
 
         Files.delete(keys);
         runChecks();
@@ -561,7 +561,7 @@ public class SslFactoryRegistryTest {
         assertEquals(List.of("due", "started", "failed", "started", "succeeded", "due"), evts);
         assertTrue(logged.get(0), logged.get(0).endsWith("hotReloadTime=" + new Date(due) + ']'));
         assertTrue(logged.get(2), logged.get(2).contains("nextAttempt="));
-        assertTrue(logged.get(5), logged.get(5).endsWith("hotReloadTime=" + new Date(communication.getHotReloadTime()) + ']'));
+        assertTrue(logged.get(5), logged.get(5).endsWith("hotReloadTime=" + new Date(communication.hotReloadTime()) + ']'));
     }
 
     /**
@@ -631,12 +631,12 @@ public class SslFactoryRegistryTest {
         writeDueCertificates(keys);
         registerTransport("communication", communication);
 
-        long prevTime = communication.getHotReloadTime();
+        long prevTime = communication.hotReloadTime();
 
         writeFreshCertificates(keys);
         registry.reload(communication);
 
-        assertTrue(communication.getHotReloadTime() > prevTime);
+        assertTrue(communication.hotReloadTime() > prevTime);
     }
 
     /**
@@ -711,7 +711,7 @@ public class SslFactoryRegistryTest {
 
         long expiry = ((X509Certificate)replacement.getCertificate("node")).getNotAfter().getTime();
 
-        assertEquals(expiry - custom.getHotReloadBeforeExpiryMs(), custom.getHotReloadTime());
+        assertEquals(expiry - custom.getHotReloadBeforeExpiryMs(), custom.hotReloadTime());
     }
 
     /**
@@ -726,7 +726,7 @@ public class SslFactoryRegistryTest {
         custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
         custom.create();
 
-        assertTrue(custom.getHotReloadTime() > 0);
+        assertTrue(custom.hotReloadTime() > 0);
 
         registry.register("communication", custom);
         registry.onKernalStart(true);
@@ -735,7 +735,7 @@ public class SslFactoryRegistryTest {
         registry.reload(custom);
         runChecks();
 
-        assertEquals(0, custom.getHotReloadTime());
+        assertEquals(0, custom.hotReloadTime());
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
     }
 
@@ -799,7 +799,7 @@ public class SslFactoryRegistryTest {
         registerTransport("client connector", clientConnector);
         registry.onKernalStart(true);
 
-        long prevTime = clientConnector.getHotReloadTime();
+        long prevTime = clientConnector.hotReloadTime();
 
         writeFreshCertificates(keys);
 
@@ -809,7 +809,7 @@ public class SslFactoryRegistryTest {
             assertTrue(manualStarted.await(TIMEOUT_MS, MILLISECONDS));
             runAsync(nextCheck()).get(TIMEOUT_MS);
 
-            assertTrue(clientConnector.getHotReloadTime() > prevTime);
+            assertTrue(clientConnector.hotReloadTime() > prevTime);
         }
         finally {
             finishManual.countDown();
@@ -1084,14 +1084,14 @@ public class SslFactoryRegistryTest {
 
     /**
      * Makes the factory mock look like a factory with hot reload enabled and loaded certificates with the given date.
-     * The mock returns {@code true} from {@code isHotReloadEnabled()} and the date from {@code getHotReloadTime()}.
+     * The mock returns {@code true} from {@code isHotReloadEnabled()} and the date from {@code hotReloadTime()}.
      *
      * @param factory Factory mock.
      * @param hotReloadTime Hot reload time of the loaded certificates.
      */
     private static void enableHotReload(SslContextFactory factory, long hotReloadTime) {
         when(factory.isHotReloadEnabled()).thenReturn(true);
-        when(factory.getHotReloadTime()).thenReturn(hotReloadTime);
+        when(factory.hotReloadTime()).thenReturn(hotReloadTime);
     }
 
     /**

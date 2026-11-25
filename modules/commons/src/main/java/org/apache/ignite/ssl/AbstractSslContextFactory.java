@@ -104,7 +104,7 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     }
 
     /** {@inheritDoc} */
-    @Override public long getHotReloadTime() {
+    @Override public long hotReloadTime() {
         long expiry = earliestExpiry;
 
         return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;

@@ -46,7 +46,7 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
      *     an X.509 certificate chain.
      * @throws IgniteException If the factory cannot give the certificates that new connections use.
      */
-    public long getHotReloadTime();
+    public long hotReloadTime();
 
     /** @return Whether the registry reloads the factory before its certificates expire. Manual reload works either way. */
     public default boolean isHotReloadEnabled() {

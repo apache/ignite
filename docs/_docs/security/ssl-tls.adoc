@@ -246,7 +246,7 @@ For the HTTP REST endpoint, Ignite takes the certificates from the key store tha
 The first check at or after that date attempts a reload, including the startup check.
 Allow enough time before expiry to supply the replacements and load the stores.
 Keep the lead time shorter than the lifetime of the replacement certificates, or they will already be due when loaded.
-See link:{javadoc_base_url}/org/apache/ignite/ssl/AbstractSslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
+See link:{javadoc_base_url}/org/apache/ignite/ssl/AbstractSslContextFactory.html#hotReloadTime()[hotReloadTime(), window=_blank] for the calculation.
 
 If the loaded certificates are still due for hot reload, Ignite records a failed hot reload attempt even though it installed them.
 This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.

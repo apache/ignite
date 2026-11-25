@@ -209,7 +209,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private long reloadIfDue() {
-            long hotReloadTime = reloadable.getHotReloadTime();
+            long hotReloadTime = reloadable.hotReloadTime();
 
             logHotReloadTime(hotReloadTime);
 
@@ -228,7 +228,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            hotReloadTime = reloadable.getHotReloadTime();
+            hotReloadTime = reloadable.hotReloadTime();
             nextCheckDelay = nextCheckDelay(hotReloadTime);
 
             if (nextCheckDelay == 0) {
@@ -285,7 +285,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             failures.set(0);
 
-            long hotReloadTime = reloadable.getHotReloadTime();
+            long hotReloadTime = reloadable.hotReloadTime();
 
             logHotReloadTime(hotReloadTime);
 

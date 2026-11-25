@@ -223,15 +223,15 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(23), factory.getHotReloadTime());
+            assertEquals(now + DAYS.toMillis(23), factory.hotReloadTime());
 
             jettyFactory.reload(f -> { });
 
             long dueB = now + HOURS.toMillis(1) - DAYS.toMillis(7);
 
-            assertEquals(dueB, factory.getHotReloadTime());
+            assertEquals(dueB, factory.hotReloadTime());
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
-            assertEquals(dueB, factory.getHotReloadTime());
+            assertEquals(dueB, factory.hotReloadTime());
         }
         finally {
             jettyFactory.stop();
@@ -268,7 +268,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         long expiry = ((X509Certificate)keys.getCertificate(HOST)).getNotAfter().getTime();
 
         assertFalse(https.isHotReloadEnabled());
-        assertEquals(expiry - HOURS.toMillis(1), https.getHotReloadTime());
+        assertEquals(expiry - HOURS.toMillis(1), https.hotReloadTime());
     }
 
     /**
@@ -319,7 +319,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
             assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
 
-            long hotReloadTime = factory.getHotReloadTime();
+            long hotReloadTime = factory.hotReloadTime();
 
             assertTrue(hotReloadTime > 0 && hotReloadTime <= System.currentTimeMillis());
 

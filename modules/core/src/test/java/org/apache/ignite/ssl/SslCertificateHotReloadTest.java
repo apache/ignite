@@ -68,7 +68,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
             SSLContext initCtx = serverFactory.create();
 
-            assertTrue("Hot reload must be due at startup", serverFactory.getHotReloadTime() < now);
+            assertTrue("Hot reload must be due at startup", serverFactory.hotReloadTime() < now);
 
             save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(10)), keys);
             save(ca2.trustStore(), trust);
