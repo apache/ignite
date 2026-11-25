@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.deployment.protocol.gg.GridProtocolHandler;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -84,8 +83,6 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        GridProtocolHandler.registerDeploymentManager(this);
-
         assertParameter(ctx.config().getDeploymentMode() != null, "ctx.config().getDeploymentMode() != null");
 
         if (ctx.config().isPeerClassLoadingEnabled())
@@ -124,8 +121,6 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
 
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        GridProtocolHandler.deregisterDeploymentManager();
-
         storesStop();
 
         if (comm != null)
