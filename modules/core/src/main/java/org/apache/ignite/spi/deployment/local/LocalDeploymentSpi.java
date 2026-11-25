@@ -36,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
@@ -88,8 +87,6 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
-
-        registerMBean(igniteInstanceName, new LocalDeploymentSpiMBeanImpl(this), LocalDeploymentSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -460,15 +457,5 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(LocalDeploymentSpi.class, this);
-    }
-
-    /**
-     * MBean implementation for LocalDeploymentSpi.
-     */
-    private class LocalDeploymentSpiMBeanImpl extends IgniteSpiMBeanAdapter implements LocalDeploymentSpiMBean {
-        /** {@inheritDoc} */
-        LocalDeploymentSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
-            super(spiAdapter);
-        }
     }
 }
