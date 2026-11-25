@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.deployment.local;
+package org.apache.ignite.internal.managers.deployment;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -31,8 +31,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.apache.ignite.internal.managers.deployment.DeploymentResource;
-import org.apache.ignite.internal.managers.deployment.LocalDeploymentSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -40,11 +38,11 @@ import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
 /**
- * Local deployment SPI test.
+ * Local deployment registry test.
  */
-public class GridLocalDeploymentSpiSelfTest extends GridCommonAbstractTest {
+public class LocalDeploymentRegistrySelfTest extends GridCommonAbstractTest {
     /** */
-    private LocalDeploymentSpi spi;
+    private LocalDeploymentRegistry spi;
 
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
@@ -54,7 +52,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         tasks.clear();
 
-        spi = new LocalDeploymentSpi(log);
+        spi = new LocalDeploymentRegistry(log);
 
         spi.setListener((ldr) -> tasks.remove(ldr));
     }
@@ -77,7 +75,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridCommonAbstractTest {
 
         clss.add(taskCls);
 
-        tasks.put(LocalDeploymentSpi.class.getClassLoader(), clss);
+        tasks.put(LocalDeploymentRegistry.class.getClassLoader(), clss);
     }
 
     /**
@@ -187,7 +185,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridCommonAbstractTest {
      * @param spi Deployment SPI.
      * @param registered True id the resource registered, false otherwise.
      */
-    private void checkResourceRegisteredInSpi(ClassLoader tstClsLdr, String taskName, LocalDeploymentSpi spi, boolean registered) {
+    private void checkResourceRegisteredInSpi(ClassLoader tstClsLdr, String taskName, LocalDeploymentRegistry spi, boolean registered) {
         ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = U.field(spi, "ldrRsrcs");
 
         ConcurrentMap<String, String> rcsAliasMap = ldrRsrcs.get(tstClsLdr);

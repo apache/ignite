@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.classpath.ClassPathCreationFailoverTest;
 import org.apache.ignite.internal.classpath.ClassPathMaliciuosRequestsTest;
 import org.apache.ignite.internal.classpath.ClassPathSelfTest;
-import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiSelfTest;
+import org.apache.ignite.internal.managers.deployment.LocalDeploymentRegistrySelfTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    GridLocalDeploymentSpiSelfTest.class,
+    LocalDeploymentRegistrySelfTest.class,
     ClassPathSelfTest.class,
     ClassPathMaliciuosRequestsTest.class,
     ClassPathCreationFailoverTest.class

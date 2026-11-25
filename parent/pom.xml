@@ -416,7 +416,7 @@
                             </group>
                             <group>
                                 <title>SPI APIs</title>
-                                <packages>org.apache.ignite.spi:org.apache.ignite.spi.checkpoint*:org.apache.ignite.spi.collision*:org.apache.ignite.spi.indexing*:org.apache.ignite.spi.loadbalancing*:org.apache.ignite.spi.communication*:org.apache.ignite.spi.deployment*:org.apache.ignite.spi.swapspace*:org.apache.ignite.spi.discovery*:org.apache.ignite.spi.failover*:org.apache.ignite.spi.eventstorage*:org.apache.ignite.spi.tracing*:org.apache.ignite.spi.metric*</packages>
+                                <packages>org.apache.ignite.spi:org.apache.ignite.spi.checkpoint*:org.apache.ignite.spi.collision*:org.apache.ignite.spi.indexing*:org.apache.ignite.spi.loadbalancing*:org.apache.ignite.spi.communication*:org.apache.ignite.spi.swapspace*:org.apache.ignite.spi.discovery*:org.apache.ignite.spi.failover*:org.apache.ignite.spi.eventstorage*:org.apache.ignite.spi.tracing*:org.apache.ignite.spi.metric*</packages>
                             </group>
                             <group>
                                 <title>Development Utils</title>

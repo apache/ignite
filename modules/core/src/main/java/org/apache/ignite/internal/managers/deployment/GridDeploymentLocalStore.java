@@ -61,7 +61,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     private final Object mux = new Object();
 
     /** Deployment SPI. */
-    private final LocalDeploymentSpi spi;
+    private final LocalDeploymentRegistry spi;
 
     /**
      * @param ctx Grid kernal context.
@@ -70,7 +70,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     GridDeploymentLocalStore(GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(ctx, comm);
 
-        spi = new LocalDeploymentSpi(ctx.log(LocalDeploymentSpi.class));
+        spi = new LocalDeploymentRegistry(ctx.log(LocalDeploymentRegistry.class));
     }
 
     /** {@inheritDoc} */

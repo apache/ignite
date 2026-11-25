@@ -39,23 +39,15 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
- * Local deployment SPI that implements only within VM deployment on local
- * node via {@link #register(ClassLoader, Class)} method. This SPI requires
- * no configuration.
+ * Registry of classes explicitly deployed on the local node via {@link #register(ClassLoader, Class)}.
+ * Used by {@link GridDeploymentLocalStore} to resolve deployed classes and their class loaders by name or alias.
  * <p>
  * Note that if peer class loading is enabled (which is default behavior,
  * see {@link org.apache.ignite.configuration.IgniteConfiguration#isPeerClassLoadingEnabled()}), then it is
  * enough to deploy a task only on one node and all other nodes will load
  * required classes from the node that initiated task execution.
- * <p>
- * <h1 class="header">Configuration</h1>
- * This SPI requires no configuration.
- * <h2 class="header">Example</h2>
- * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
- * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
- * configuration parameters.
  */
-public class LocalDeploymentSpi {
+public class LocalDeploymentRegistry {
     /** Enables additional check for resource name on resources removal. */
     @SystemProperty(value = "Enables an additional check of a resource name on resources removal")
     public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
@@ -76,7 +68,7 @@ public class LocalDeploymentSpi {
     /**
      * @param log Logger.
      */
-    public LocalDeploymentSpi(IgniteLogger log) {
+    public LocalDeploymentRegistry(IgniteLogger log) {
         this.log = log;
     }
 
@@ -434,6 +426,6 @@ public class LocalDeploymentSpi {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(LocalDeploymentSpi.class, this);
+        return S.toString(LocalDeploymentRegistry.class, this);
     }
 }
