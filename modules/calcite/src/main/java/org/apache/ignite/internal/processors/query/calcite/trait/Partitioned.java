@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.calcite.trait;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
 
 /** */
 public final class Partitioned<Row> implements Destination<Row> {
@@ -29,11 +27,15 @@ public final class Partitioned<Row> implements Destination<Row> {
     private final List<List<UUID>> assignments;
 
     /** */
+    private final List<UUID> targets;
+
+    /** */
     private final ToIntFunction<Row> partFun;
 
     /** */
-    public Partitioned(List<List<UUID>> assignments, ToIntFunction<Row> partFun) {
+    public Partitioned(List<List<UUID>> assignments, List<UUID> targets, ToIntFunction<Row> partFun) {
         this.assignments = assignments;
+        this.targets = targets;
         this.partFun = partFun;
     }
 
@@ -44,8 +46,6 @@ public final class Partitioned<Row> implements Destination<Row> {
 
     /** {@inheritDoc} */
     @Override public List<UUID> targets() {
-        return assignments.stream()
-            .flatMap(Collection::stream)
-            .distinct().collect(Collectors.toList());
+        return targets;
     }
 }
