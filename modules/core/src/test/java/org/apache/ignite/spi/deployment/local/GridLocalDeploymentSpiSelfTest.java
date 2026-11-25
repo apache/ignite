@@ -31,10 +31,10 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.managers.deployment.DeploymentResource;
+import org.apache.ignite.internal.managers.deployment.LocalDeploymentSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.deployment.DeploymentListener;
-import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -56,11 +56,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        getSpi().setListener(new DeploymentListener() {
-            @Override public void onUnregistered(ClassLoader ldr) {
-                tasks.remove(ldr);
-            }
-        });
+        getSpi().setListener((ldr) -> tasks.remove(ldr));
     }
 
     /** {@inheritDoc} */

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.deployment.local;
+package org.apache.ignite.internal.managers.deployment;
 
 import java.io.InputStream;
 import java.util.Collection;
@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.SystemProperty;
@@ -37,9 +38,6 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
-import org.apache.ignite.spi.deployment.DeploymentListener;
-import org.apache.ignite.spi.deployment.DeploymentResource;
-import org.apache.ignite.spi.deployment.DeploymentResourceAdapter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -81,7 +79,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
     private volatile ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = new ConcurrentLinkedHashMap<>();
 
     /** Deployment SPI listener. */
-    private volatile DeploymentListener lsnr;
+    private volatile Consumer<ClassLoader> unregisterLsnr;
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
@@ -114,7 +112,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
             ClassLoader ldr = e.getKey();
             ConcurrentMap<String, String> rsrcs = e.getValue();
 
-            DeploymentResourceAdapter res = findResource0(rsrcs, rsrcName, ldr);
+            DeploymentResource res = findResource0(rsrcs, rsrcName, ldr);
 
             if (res != null)
                 return res;
@@ -131,7 +129,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
      * @param clsLdr desired class loader.
      * @return Deployed class loader, or {@code null} if not deployed.
      */
-    @Nullable private DeploymentResourceAdapter findResource0(Map<String, String> rsrcs, String rsrcName, ClassLoader clsLdr) {
+    @Nullable private DeploymentResource findResource0(Map<String, String> rsrcs, String rsrcName, ClassLoader clsLdr) {
         String clsName = rsrcs.get(rsrcName);
 
         // Return class if it was found in resources map.
@@ -148,7 +146,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
                 assert cls != null;
 
                 // Return resource.
-                return new DeploymentResourceAdapter(rsrcName, cls, clsLdr);
+                return new DeploymentResource(rsrcName, cls, clsLdr);
             }
             catch (ClassNotFoundException e) {
                 log.warning("Can`t find appropriate class. ", e);
@@ -431,10 +429,10 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
      * @param clsLdr Released class loader.
      */
     private void onClassLoaderReleased(ClassLoader clsLdr) {
-        DeploymentListener tmp = lsnr;
+        Consumer<ClassLoader> tmp = unregisterLsnr;
 
         if (tmp != null)
-            tmp.onUnregistered(clsLdr);
+            tmp.accept(clsLdr);
     }
 
     /**
@@ -443,8 +441,8 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
      *
      * @param lsnr Listener for deployment events. {@code null} to unset the listener.
      */
-    public void setListener(DeploymentListener lsnr) {
-        this.lsnr = lsnr;
+    public void setListener(Consumer<ClassLoader> lsnr) {
+        this.unregisterLsnr = lsnr;
     }
 
     /** {@inheritDoc} */

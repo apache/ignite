@@ -41,7 +41,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.AbstractMarshaller;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_CLASS_UNDEPLOYED;

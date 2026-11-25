@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.deployment.local;
 
+import org.apache.ignite.internal.managers.deployment.LocalDeploymentSpi;
 import org.apache.ignite.spi.GridSpiStartStopAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 

@@ -71,7 +71,7 @@ public class GridMbeansMiscTest extends GridCommonAbstractTest {
         String[] beansToValidate = new String[] {
             "org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi$FifoQueueCollisionSpiMBeanImpl",
             "org.apache.ignite.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi$WeightedRandomLoadBalancingSpiMBeanImpl",
-            "org.apache.ignite.spi.deployment.local.LocalDeploymentSpi$LocalDeploymentSpiMBeanImpl",
+            "org.apache.ignite.internal.managers.deployment.LocalDeploymentSpi$LocalDeploymentSpiMBeanImpl",
             "org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi$SharedFsCheckpointSpiMBeanImpl"
         };
 

@@ -108,7 +108,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
             "org.apache.ignite.internal.worker.FailureHandlingMxBeanImpl",
             "org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi$SharedFsCheckpointSpiMBeanImpl",
             "org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationSpiMBeanImpl",
-            "org.apache.ignite.spi.deployment.local.LocalDeploymentSpi$LocalDeploymentSpiMBeanImpl",
+            "org.apache.ignite.internal.managers.deployment.LocalDeploymentSpi$LocalDeploymentSpiMBeanImpl",
             "org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi$TcpDiscoverySpiMBeanImpl",
             "org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi$MemoryEventStorageSpiMBeanImpl",
             "org.apache.ignite.spi.failover.always.AlwaysFailoverSpi$AlwaysFailoverSpiMBeanImpl",

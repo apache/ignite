@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.deployment;
+package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
 @Deprecated
-public class DeploymentResourceAdapter implements DeploymentResource {
+public class DeploymentResource {
     /** */
     private final String name;
 
@@ -43,7 +43,7 @@ public class DeploymentResourceAdapter implements DeploymentResource {
      * @param rsrcCls Class.
      * @param clsLdr Class loader.
      */
-    public DeploymentResourceAdapter(String name, Class<?> rsrcCls, ClassLoader clsLdr) {
+    public DeploymentResource(String name, Class<?> rsrcCls, ClassLoader clsLdr) {
         assert name != null;
         assert rsrcCls != null;
         assert clsLdr != null;
@@ -53,18 +53,31 @@ public class DeploymentResourceAdapter implements DeploymentResource {
         this.clsLdr = clsLdr;
     }
 
-    /** {@inheritDoc} */
-    @Override public String getName() {
+    /**
+     * Gets resource name, either class name or alias name, such as alias
+     * specified by {@link org.apache.ignite.compute.ComputeTaskName} annotation.
+     *
+     * @return Resource name.
+     */
+    public String getName() {
         return name;
     }
 
-    /** {@inheritDoc} */
-    @Override public Class<?> getResourceClass() {
+    /**
+     * Gets resource class.
+     *
+     * @return Resource class.
+     */
+    public Class<?> getResourceClass() {
         return rsrcCls;
     }
 
-    /** {@inheritDoc} */
-    @Override public ClassLoader getClassLoader() {
+    /**
+     * Gets resource class loader.
+     *
+     * @return Resource class loader.
+     */
+    public ClassLoader getClassLoader() {
         return clsLdr;
     }
 
@@ -76,7 +89,7 @@ public class DeploymentResourceAdapter implements DeploymentResource {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        DeploymentResourceAdapter rsrc = (DeploymentResourceAdapter)obj;
+        DeploymentResource rsrc = (DeploymentResource)obj;
 
         return clsLdr.equals(rsrc.clsLdr) && name.equals(rsrc.name) &&
             rsrcCls.equals(rsrc.rsrcCls);
@@ -94,6 +107,6 @@ public class DeploymentResourceAdapter implements DeploymentResource {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DeploymentResourceAdapter.class, this);
+        return S.toString(DeploymentResource.class, this);
     }
 }
