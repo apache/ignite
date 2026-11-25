@@ -1132,7 +1132,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (!notStartedCacheConfigs.isEmpty())
-            cacheProc.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
+            cacheProc.dynamicStartCaches(notStartedCacheConfigs, false, false);
     }
 
     /**
@@ -2420,7 +2420,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Complete any affReady futures and update last exchange done version.
             cctx.exchange().onExchangeDone(res, initialVersion(), err0);
 
-            cctx.cache().completeProxyRestart(resolveCacheRequests(exchActions), initialVersion(), res);
+            cctx.cache().completeProxyInitialize(resolveCacheRequests(exchActions), initialVersion(), res);
 
             if (exchActions != null && err0 == null)
                 exchActions.completeRequestFutures(cctx, null);

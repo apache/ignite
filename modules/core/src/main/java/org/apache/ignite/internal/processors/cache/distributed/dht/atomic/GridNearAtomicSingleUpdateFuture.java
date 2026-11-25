@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -389,12 +388,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         AffinityTopologyVersion topVer;
 
         if (cache.topology().stopping()) {
-            completeFuture(
-                null,
-                cctx.shared().cache().isCacheRestarting(cache.name()) ?
-                    new IgniteCacheRestartingException(cache.name()) :
-                    new CacheStoppedException(cache.name()),
-                null);
+            completeFuture(null, new CacheStoppedException(cache.name()), null);
 
             return;
         }

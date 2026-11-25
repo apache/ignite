@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
 import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.systemview.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -130,6 +131,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** @see BinaryMetadataView */
     public static final String BINARY_METADATA_DESC = "Binary metadata";
+
+    /** Binary metadata metrics registry name. */
+    static final String BINARY_METADATA_METRICS = metricName("binary", "metadata");
 
     /** */
     private volatile boolean discoveryStarted;
@@ -199,6 +203,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             metadataFileStore.start();
         }
 
+        AtomicLongMetric metaNotFoundCnt = ctx.metric().registry(BINARY_METADATA_METRICS).longMetric("NotFoundCount",
+            "Total number of failed attempts to find metadata or schema for an object with compact footer.");
+
         BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
             @Override public void addMeta(
                 int typeId,
@@ -243,7 +250,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
 
             @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
+                BinaryType meta = CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
+
+                if (meta == null || !((BinaryTypeImpl)meta).metadata().hasSchema(schemaId))
+                    metaNotFoundCnt.increment();
+
+                return meta;
             }
 
             @Override public Collection<BinaryType> metadata() throws BinaryObjectException {

@@ -1295,7 +1295,7 @@ public class SnapshotRestoreProcess {
 
         // We set the topology node IDs required to successfully start the cache, if any of the required nodes leave
         // the cluster during the cache startup, the whole procedure will be rolled back.
-        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, false, IgniteUuid.fromUuid(req.requestId()))
+        return ctx.cache().dynamicStartCachesByStoredConf(ccfgs, true, true, IgniteUuid.fromUuid(req.requestId()))
             .chain(fut -> {
                 if (fut.error() != null)
                     throw F.wrap(fut.error());
