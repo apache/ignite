@@ -17,23 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.PartitionLossPolicy.IGNORE;
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
-import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVersion;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Checks that the other nodes learn the state of a lost partition from its new owner. A server leaves with the only
@@ -53,6 +55,10 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     /** Partition loss policy of the cache. */
     private PartitionLossPolicy plc;
 
+    /** Full maps the server outside the node filter defers during an exchange. */
+    private final LogListener deferredMaps =
+        LogListener.matches("Delay process full message without exchange id").atLeast(2).build();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         boolean data = !igniteInstanceName.equals(getTestIgniteInstanceName(NO_DATA));
@@ -60,11 +66,15 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setUserAttributes(Collections.singletonMap(DATA_ATTR, data));
 
+        if (!data)
+            return cfg.setGridLogger(new ListeningTestLogger(log, deferredMaps));
+
         // A node with the cache in its configuration starts it on join, even outside the node filter.
-        return data ? cfg.setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
+        return cfg.setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
             .setBackups(0)
+            .setAtomicityMode(TRANSACTIONAL)
             .setPartitionLossPolicy(plc)
-            .setNodeFilter(new AttributeNodeFilter(DATA_ATTR, true))) : cfg;
+            .setNodeFilter(new AttributeNodeFilter(DATA_ATTR, true)));
     }
 
     /** {@inheritDoc} */
@@ -101,32 +111,44 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Two servers leave in one merged exchange, and the coordinator becomes the only new owner. A server outside the
-     * node filter starts the cache after that and copies the partition map it kept without the cache.
+     * Two servers fail while a client transaction is open, so both leave in one merged exchange, and the coordinator
+     * becomes the only new owner. A server outside the node filter defers the maps it gets during the exchange. Then it
+     * starts the cache and copies the partition map it kept without the cache.
      *
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = IGNITE_PRELOAD_RESEND_TIMEOUT, value = "0") // A startup resend would hide a dropped map.
     public void testLostPartitionOwnedInMergedExchange() throws Exception {
         plc = IGNORE;
 
         IgniteEx crd = startGrids(3);
-        startClientGrid(3);
+        IgniteEx cln = startClientGrid(3);
         IgniteEx noData = startGrid(NO_DATA);
 
         awaitPartitionMapExchange(true, true, null);
 
-        List<DiscoveryEvent> merged = new ArrayList<>();
+        deferredMaps.reset();
 
-        mergeExchangeWaitVersion(crd, crd.cluster().topologyVersion() + 2, merged);
+        Integer key = primaryKey(crd.cache(CACHE));
 
-        stopGrid(getTestIgniteInstanceName(2), true, false);
-        stopGrid(getTestIgniteInstanceName(1), true, false);
+        // The exchange waits for the transaction, so the second failure merges into it.
+        try (Transaction tx = cln.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            cln.cache(CACHE).put(key, key);
+
+            stopGrid(getTestIgniteInstanceName(2), true, false);
+            stopGrid(getTestIgniteInstanceName(1), true, false);
+
+            U.sleep(3_000);
+
+            tx.commit();
+        }
 
         awaitPartitionMapsMatchLocalStates(CACHE);
 
-        assertEquals(1, merged.size());
+        GridDhtPartitionsExchangeFuture exchFut = crd.context().cache().context().exchange().lastFinishedFuture();
+
+        assertTrue(exchFut.initialVersion().before(exchFut.topologyVersion()));
+        assertTrue(deferredMaps.check());
 
         noData.cache(CACHE);
 
