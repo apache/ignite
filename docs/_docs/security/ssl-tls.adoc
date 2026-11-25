@@ -214,6 +214,10 @@ Changing this setting requires a node restart.
 The reload command still reloads the factory.
 The HTTP REST endpoint follows this setting of the REST connector's SSL factory, as described in link:restapi#https[HTTPS].
 
+The `SslContextFactory` of Ignite.NET has no `hotReloadEnabled` or `hotReloadBeforeExpiryMs` property.
+To set them for a .NET node, define the SSL factory in the Spring XML file set by `IgniteConfiguration.SpringConfigUrl`.
+Leave `IgniteConfiguration.SslContextFactory` unset: it replaces the factory from the XML file.
+
 === Supply Replacements
 
 The key store must contain a private key with an X.509 certificate chain.
@@ -283,10 +287,11 @@ Otherwise, or to load the corrected stores without waiting, restart the affected
 
 === Custom Certificate Sources
 
-For automatic hot reload, a custom factory creates its key managers with `createKeyManagers(KeyManagerFactory, KeyStore, char[])` of javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
+For automatic hot reload, a custom Ignite factory creates its key managers with `createKeyManagers(KeyManagerFactory, KeyStore, char[])` of javadoc:org.apache.ignite.ssl.AbstractSslContextFactory[].
 On each load, call this method once with the key store and the key password that your source returned.
 Ignite takes the hot reload date from that key store.
 A factory that does not call this method has no hot reload date, and the node logs a warning.
+A custom Jetty factory of the HTTP REST endpoint needs no such call: Ignite takes the date from the key store that the Jetty factory loads, for example in `loadKeyStore(Resource)`.
 Limit request duration in custom sources: a blocked load delays other hot reloads and manual reload.
 
 == SslContextFactory Properties

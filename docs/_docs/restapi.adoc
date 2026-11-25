@@ -117,6 +117,8 @@ Each reload asks the Jetty factory to load its stores again.
 New connections use the replacement certificates; established connections stay open.
 If loading fails, the endpoint keeps its current keys and trust settings, and new connections keep working with them.
 Correct the stores and run the command again.
+A failed reload by Jetty's own `KeyStoreScanner` leaves the endpoint without keys.
+Correct the stores and run the command to load them.
 
 Keep the stores in the sources that the factory loads: the store paths in the Jetty XML file, or the `loadKeyStore(Resource)` and `loadTrustStore(Resource)` methods of a custom subclass.
 A store that your code sets on the running factory, for example with `setKeyStore(KeyStore)`, does not survive a failed reload: the next reload loads the stores configured in the Jetty XML file instead.

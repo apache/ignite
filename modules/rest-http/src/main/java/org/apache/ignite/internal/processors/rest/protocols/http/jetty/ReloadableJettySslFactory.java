@@ -44,7 +44,8 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
  * {@link SslContextFactory#reload(Consumer)}, so the work runs inside {@code unload(...)} and ends with {@link SkipUnload}.
  * Jetty selects certificates for SNI host names from the key store of the state, so the restore keeps SNI selection.
  * If the restore fails too, the factory has no state until the next successful reload, and the reload error carries
- * that failure as a suppressed exception.
+ * that failure as a suppressed exception. A failed reload outside Ignite, such as one by Jetty's {@code KeyStoreScanner},
+ * can also leave the factory without state. Then the reload has nothing to restore and loads the configured sources.
  * <p>
  * After a failed reload, the factory gets back the context and stores set in {@code jetty.xml}, and the next reload
  * reads its configured sources again. Once the factory has started, its getters return the loaded state rather than
@@ -91,9 +92,6 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
             if (skip.loadErr != null)
                 throw new IgniteException(skip.loadErr);
         }
-        catch (IllegalStateException e) {
-            throw new IgniteException("Failed to read the TLS state of the HTTPS connector", e);
-        }
     }
 
     /** {@inheritDoc} */
@@ -120,22 +118,33 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /**
-     * Reloads the factory and, if loading fails, restores the state that new connections used before. Runs under the
-     * factory lock inside {@code unload(...)}, and always throws {@link SkipUnload}.
+     * Reloads the factory and, if loading fails, restores the state that new connections used before, if there was one.
+     * Runs under the factory lock inside {@code unload(...)}, and always throws {@link SkipUnload}.
      */
     private void reloadOrRestore() {
-        TlsState prev = new TlsState(factory);
+        TlsState prev = currentState();
 
         try {
             factory.reload(ignored -> {});
         }
         catch (Throwable e) {
-            restore(prev, e);
+            if (prev != null)
+                restore(prev, e);
 
             throw new SkipUnload(e);
         }
 
         throw new SkipUnload(null);
+    }
+
+    /** @return State that new connections use, or {@code null} if a failed reload has left the factory without state. */
+    @Nullable private TlsState currentState() {
+        try {
+            return new TlsState(factory);
+        }
+        catch (IllegalStateException noState) {
+            return null;
+        }
     }
 
     /** Makes the factory load the previous state, then sets back the state from {@code jetty.xml} for the next reload. */

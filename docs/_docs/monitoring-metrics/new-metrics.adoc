@@ -445,7 +445,7 @@ Register name: `ssl`
 |AutomaticHotReloadAttempts | long | Number of automatic hot reload attempts.
 |===
 
-See link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload] for when it runs and how to recover.
+See link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload] for configuration and recovery.
 
 == Communication Connection Pool
 
