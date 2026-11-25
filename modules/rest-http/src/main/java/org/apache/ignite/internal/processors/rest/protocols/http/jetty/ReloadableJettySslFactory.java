@@ -32,7 +32,10 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
 
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
- * Hot reload comes {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS} before the certificates expire.
+ * Hot reload follows {@link AbstractSslContextFactory#isHotReloadEnabled()} and
+ * {@link AbstractSslContextFactory#getHotReloadBeforeExpiryMs()} of the SSL factory of the REST connector. If that
+ * factory is not an {@link AbstractSslContextFactory}, hot reload is enabled and comes
+ * {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS} before the certificates expire.
  * <p>
  * Jetty's factory guards its TLS state with an internal lock: it loads the state under this lock, and new connections
  * take the state under it too. Before loading a replacement, Jetty clears the state. So that new connections never see
@@ -58,13 +61,20 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** State set in {@code jetty.xml}. The factory loads a {@code null} part from its configured source. */
     private final TlsState configured;
 
-    /** @param factory TLS factory of the HTTPS connector before startup, when its getters return the state set in {@code jetty.xml}. */
-    ReloadableJettySslFactory(SslContextFactory factory) {
+    /** SSL factory of the REST connector with the hot reload settings, or {@code null} to use the defaults. */
+    @Nullable private final AbstractSslContextFactory hotReloadSettings;
+
+    /**
+     * @param factory TLS factory of the HTTPS connector before startup, when its getters return the state set in {@code jetty.xml}.
+     * @param connectorFactory SSL factory of the REST connector.
+     */
+    ReloadableJettySslFactory(SslContextFactory factory, @Nullable Factory<SSLContext> connectorFactory) {
         assert !factory.isStarted();
 
         this.factory = factory;
 
         configured = new TlsState(factory);
+        hotReloadSettings = connectorFactory instanceof AbstractSslContextFactory sslFactory ? sslFactory : null;
     }
 
     /** {@inheritDoc} */
@@ -87,12 +97,19 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isHotReloadEnabled() {
+        return hotReloadSettings == null || hotReloadSettings.isHotReloadEnabled();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getHotReloadTime() {
         try {
             KeyStore store = factory.getKeyStore();
             long expiry = store == null ? 0 : ReloadableSslFactory.keyChainsExpiry(store);
 
-            return expiry == 0 ? 0 : expiry - DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+            long lead = hotReloadSettings == null ? DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS : hotReloadSettings.getHotReloadBeforeExpiryMs();
+
+            return expiry == 0 ? 0 : expiry - lead;
         }
         catch (IllegalStateException | GeneralSecurityException e) {
             throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);

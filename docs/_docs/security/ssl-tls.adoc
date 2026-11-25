@@ -212,7 +212,7 @@ factory.setHotReloadEnabled(false);
 
 Changing this setting requires a node restart.
 The reload command still reloads the factory.
-The HTTP REST endpoint has no such setting: hot reload always covers it.
+The HTTP REST endpoint follows this setting of the REST connector's SSL factory, as described in link:restapi#https[HTTPS].
 
 === Supply Replacements
 
@@ -238,7 +238,7 @@ All checks run in one thread, so a slow certificate source can delay the checks 
 
 For each factory, hot reload becomes due `hotReloadBeforeExpiryMs` before the earliest certificate expiry in its private key chains.
 This includes issuing certificates. The default lead time is 7 days.
-For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded, and the lead time is always 7 days.
+For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded, and the lead time from the REST connector's SSL factory, as described in link:restapi#https[HTTPS].
 The first check at or after that date attempts a reload, including the startup check.
 Allow enough time before expiry to supply the replacements and load the stores.
 Keep the lead time shorter than the lifetime of the replacement certificates, or they will already be due when loaded.
