@@ -38,7 +38,9 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
     /**
      * The hot reload time is the earliest expiry among the certificate chains of the private keys that new connections
      * use, minus the lead time of the factory. A chain expires when any certificate in it expires.
-     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
+     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them. A factory that has lost the keys
+     * of new connections, for example after a failed reload outside the registry, gives a time that has already come,
+     * so that the next check reloads it.
      *
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the factory gives no private key with
      *     an X.509 certificate chain.

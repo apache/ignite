@@ -356,8 +356,7 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: two factories, and reading the hot reload time of the first one fails, as it does for a Jetty factory that
-     *     a failed reload outside the registry has left without keys.
+     * Given: two factories, and reading the hot reload time of the first one fails.
      * When: the registry starts and its checks run.
      * Then: the start completes, the check of the first factory fails and is retried in an hour, and the second factory
      *     gets its next check at its hot reload time.
