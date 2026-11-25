@@ -27,8 +27,6 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.StringTokenizer;
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -149,13 +147,6 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
      */
     protected ConnectorConfiguration config() {
         return ctx.config().getConnectorConfiguration();
-    }
-
-    /** @return SSL context factory that the connector configuration sets, or the node's one if the connector sets none. */
-    protected Factory<SSLContext> sslContextFactory() {
-        Factory<SSLContext> factory = config().getSslFactory();
-
-        return factory != null ? factory : ctx.config().getSslContextFactory();
     }
 
     /** {@inheritDoc} */

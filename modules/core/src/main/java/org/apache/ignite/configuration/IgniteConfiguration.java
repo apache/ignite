@@ -261,6 +261,12 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     @Deprecated
     public static final int DFLT_SQL_QUERY_HISTORY_SIZE = SqlConfiguration.DFLT_SQL_QUERY_HISTORY_SIZE;
 
+    /** Default value of {@link #isSslHotReloadEnabled()}. */
+    public static final boolean DFLT_SSL_HOT_RELOAD_ENABLED = true;
+
+    /** Default value of {@link #getSslHotReloadBeforeExpiry()}: 7 days. */
+    public static final long DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY = 7L * 24 * 60 * 60 * 1000;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -512,6 +518,12 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
 
+    /** Whether the node reloads its SSL context factories before their certificates expire. */
+    private boolean sslHotReloadEnabled = DFLT_SSL_HOT_RELOAD_ENABLED;
+
+    /** How long before the certificates expire hot reload becomes due, in milliseconds. */
+    private long sslHotReloadBeforeExpiry = DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY;
+
     /** Platform configuration. */
     private PlatformConfiguration platformCfg;
 
@@ -691,6 +703,8 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         sndRetryDelay = cfg.getNetworkSendRetryDelay();
         sqlConnCfg = cfg.getSqlConnectorConfiguration();
         sslCtxFactory = cfg.getSslContextFactory();
+        sslHotReloadBeforeExpiry = cfg.getSslHotReloadBeforeExpiry();
+        sslHotReloadEnabled = cfg.isSslHotReloadEnabled();
         storeSesLsnrs = cfg.getCacheStoreSessionListenerFactories();
         stripedPoolSize = cfg.getStripedPoolSize();
         svcCfgs = cfg.getServiceConfiguration();
@@ -1862,6 +1876,54 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      */
     public Factory<SSLContext> getSslContextFactory() {
         return sslCtxFactory;
+    }
+
+    /**
+     * Sets whether the node reloads the SSL context factories of its transports, including the HTTP REST endpoint,
+     * before their certificates expire. The TLS reload command reloads them either way. Changes require a node restart.
+     *
+     * @param sslHotReloadEnabled Whether automatic certificate hot reload is enabled.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSslHotReloadEnabled(boolean sslHotReloadEnabled) {
+        this.sslHotReloadEnabled = sslHotReloadEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets whether automatic certificate hot reload is enabled. Defaults to {@link #DFLT_SSL_HOT_RELOAD_ENABLED}.
+     *
+     * @return Whether automatic certificate hot reload is enabled.
+     */
+    public boolean isSslHotReloadEnabled() {
+        return sslHotReloadEnabled;
+    }
+
+    /**
+     * Sets how long before the certificates of an SSL context factory expire the node reloads the factory. Hot reload
+     * becomes due this long before the earliest expiry among the certificate chains of the private keys that the factory
+     * loaded.
+     *
+     * @param sslHotReloadBeforeExpiry Lead time in milliseconds. Must be positive.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setSslHotReloadBeforeExpiry(long sslHotReloadBeforeExpiry) {
+        A.ensure(sslHotReloadBeforeExpiry > 0, "sslHotReloadBeforeExpiry > 0");
+
+        this.sslHotReloadBeforeExpiry = sslHotReloadBeforeExpiry;
+
+        return this;
+    }
+
+    /**
+     * Gets how long before the certificates expire hot reload becomes due. Defaults to
+     * {@link #DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY}.
+     *
+     * @return Lead time in milliseconds.
+     */
+    public long getSslHotReloadBeforeExpiry() {
+        return sslHotReloadBeforeExpiry;
     }
 
     /**

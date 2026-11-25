@@ -111,8 +111,6 @@ Both the standard Jetty factory and custom subclasses of `SslContextFactory.Serv
 
 After you replace the stores, run the link:tools/control-script#reloading-tls-certificates[`--ssl reload` command].
 The node also reloads the stores automatically before its certificates expire, as described in link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload].
-Hot reload of the endpoint follows the `hotReloadEnabled` and `hotReloadBeforeExpiryMs` settings of the REST connector's SSL factory: the one set by `ConnectorConfiguration.setSslFactory(...)`, or the node's `IgniteConfiguration.setSslContextFactory(...)` if the connector sets none.
-If there is no such factory, or it does not extend `AbstractSslContextFactory`, hot reload is enabled with a lead time of 7 days.
 Each reload asks the Jetty factory to load its stores again.
 New connections use the replacement certificates; established connections stay open.
 If loading fails, the endpoint keeps its current keys and trust settings, and new connections keep working with them.

@@ -168,7 +168,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         if (!cfg.isSslEnabled())
             return new GridNioFilter[] { codec };
 
-        Factory<SSLContext> sslCtxFactory = sslContextFactory();
+        Factory<SSLContext> sslCtxFactory = sslContextFactory(cfg);
 
         if (sslCtxFactory == null)
             // Thrown SSL exception instead of IgniteCheckedException for writing correct warning message into log.
@@ -185,6 +185,13 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
         sslFilter.needClientAuth(auth);
 
         return new GridNioFilter[] { codec, sslFilter };
+    }
+
+    /** */
+    private Factory<SSLContext> sslContextFactory(ConnectorConfiguration cfg) {
+        Factory<SSLContext> factory = cfg.getSslFactory();
+
+        return factory != null ? factory : ctx.config().getSslContextFactory();
     }
 
     /**
@@ -231,7 +238,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
             if (cfg.isSslEnabled())
-                ctx.ssl().register("binary REST", sslContextFactory());
+                ctx.ssl().register("binary REST", sslContextFactory(cfg));
 
             return true;
         }

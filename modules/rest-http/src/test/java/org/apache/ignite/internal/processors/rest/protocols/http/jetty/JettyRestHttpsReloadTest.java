@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -210,65 +209,30 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a custom Jetty factory has loaded certificate A, valid for 30 days.
      * When: the factory reloads by itself and gets certificate B, which was issued 20 hours ago and expires in an hour.
      *     Then its source fails, and Ignite reloads the factory.
-     * Then: the hot reload date comes 7 days before the certificate in use expires: 23 days ahead for A, 7 days before
-     *     the expiry of B for B. The failed reload keeps B's date.
+     * Then: the factory reports the expiry of the certificate in use: in 30 days for A, in an hour for B. The failed reload
+     *     keeps B's expiry.
      */
     @Test
-    public void testHotReloadTimeFollowsKeysInUse() throws Exception {
+    public void testCertificatesExpiryFollowsKeysInUse() throws Exception {
         SourceSslContextFactory.supply(fresh(), due(), new IOException("Source is unavailable"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
-        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory, null);
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
 
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(23), factory.hotReloadTime());
+            assertEquals(now + DAYS.toMillis(30), factory.certificatesExpiry());
 
             jettyFactory.reload(f -> { });
 
-            long dueB = now + HOURS.toMillis(1) - DAYS.toMillis(7);
-
-            assertEquals(dueB, factory.hotReloadTime());
+            assertEquals(now + HOURS.toMillis(1), factory.certificatesExpiry());
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
-            assertEquals(dueB, factory.hotReloadTime());
+            assertEquals(now + HOURS.toMillis(1), factory.certificatesExpiry());
         }
         finally {
             jettyFactory.stop();
         }
-    }
-
-    /**
-     * Given: the SSL factory of the REST connector disables hot reload and sets a lead time of an hour, and HTTPS serves
-     *     a certificate that expires in 30 days.
-     * When: the node starts.
-     * Then: the HTTPS factory follows both settings: its hot reload is disabled, and its hot reload date comes an hour
-     *     before the certificate expires.
-     */
-    @Test
-    @WithSystemProperty(key = KEY_STORE_PATH, value = "")
-    public void testHttpsFollowsHotReloadSettingsOfRestConnectorFactory() throws Exception {
-        KeyStore keys = fresh();
-        org.apache.ignite.ssl.SslContextFactory connectorFactory = new org.apache.ignite.ssl.SslContextFactory();
-
-        keyStoreFile(keys);
-        connectorFactory.setHotReloadEnabled(false);
-        connectorFactory.setHotReloadBeforeExpiryMs(HOURS.toMillis(1));
-
-        IgniteConfiguration cfg = jettyConfig("jetty/https.xml");
-
-        cfg.getConnectorConfiguration().setSslFactory(connectorFactory);
-
-        IgniteEx node = startGrid(cfg);
-        ReloadableSslFactory https = (ReloadableSslFactory)node.context().ssl().factories().stream()
-            .filter(registered -> "HTTP REST".equals(registered.getValue()))
-            .findFirst()
-            .orElseThrow()
-            .getKey();
-        long expiry = ((X509Certificate)keys.getCertificate(HOST)).getNotAfter().getTime();
-
-        assertFalse(https.isHotReloadEnabled());
-        assertEquals(expiry - HOURS.toMillis(1), https.hotReloadTime());
     }
 
     /**
@@ -282,7 +246,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh(), new NoClassDefFoundError("Key store provider"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
-        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory, null);
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
 
         jettyFactory.start();
 
@@ -301,7 +265,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a reload that Ignite did not start, such as one by Jetty's {@code KeyStoreScanner}, has failed and left
      *     the custom Jetty factory without keys.
      * When: Ignite reloads the factory while the source still fails, and again after the source supplies certificate B.
-     * Then: the first reload reports the source error, and the factory is due for hot reload right away, so a scheduled
+     * Then: the first reload reports the source error, and the certificates of the factory count as expired, so a scheduled
      *     check reloads it as the reload command does. The second reload installs B.
      */
     @Test
@@ -311,7 +275,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh(), new IOException("Source is unavailable"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
-        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory, null);
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
 
         jettyFactory.start();
 
@@ -319,9 +283,9 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
             assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
 
-            long hotReloadTime = factory.hotReloadTime();
+            long expiry = factory.certificatesExpiry();
 
-            assertTrue(hotReloadTime > 0 && hotReloadTime <= System.currentTimeMillis());
+            assertTrue(expiry > 0 && expiry <= System.currentTimeMillis());
 
             SourceSslContextFactory.supply(b);
             factory.init();
@@ -352,7 +316,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.setTrustStoreType("JKS");
         jettyFactory.setTrustStorePassword(new String(PASSWORD));
 
-        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory, null);
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
 
         jettyFactory.start();
 
@@ -399,7 +363,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.setKeyStore(fresh());
         jettyFactory.setKeyStorePassword(new String(PASSWORD));
 
-        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory, null);
+        ReloadableJettySslFactory factory = new ReloadableJettySslFactory(jettyFactory);
 
         jettyFactory.start();
 

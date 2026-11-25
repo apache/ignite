@@ -19,6 +19,7 @@ package org.apache.ignite.ssl;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.List;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.Ignition;
@@ -36,7 +37,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -68,7 +71,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
             SSLContext initCtx = serverFactory.create();
 
-            assertTrue("Hot reload must be due at startup", serverFactory.hotReloadTime() < now);
+            assertTrue("Hot reload must be due at startup", serverFactory.certificatesExpiry() - DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY < now);
 
             save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(10)), keys);
             save(ca2.trustStore(), trust);
@@ -170,6 +173,81 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
             hotReload.join(TIMEOUT_MS);
 
             assertFalse("The hot reload thread is still running", hotReload.isAlive());
+        }
+        finally {
+            stopAllGrids();
+            U.delete(dir);
+        }
+    }
+
+    /**
+     * Given: the node configuration disables hot reload, and the certificates of a TLS transport are due for hot reload.
+     * When: the node starts.
+     * Then: the node starts no hot reload thread.
+     */
+    @Test
+    public void testNodeWithHotReloadDisabledStartsNoHotReloadThread() throws Exception {
+        long now = System.currentTimeMillis();
+        TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
+        Path dir = Files.createTempDirectory("ssl-hot-reload");
+        Path keys = dir.resolve("keys.jks");
+        Path trust = dir.resolve("trust.jks");
+
+        try {
+            save(ca.keyStore("node", now - MINUTES.toMillis(110), now + MINUTES.toMillis(10)), keys);
+            save(ca.trustStore(), trust);
+
+            SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
+
+            IgniteEx node = startGrid(0, cfg -> {
+                cfg.setSslHotReloadEnabled(false).setClientConnectorConfiguration(sslClientConnector(serverFactory));
+            });
+
+            for (Thread thread : Thread.getAllStackTraces().keySet()) {
+                String name = thread.getName();
+
+                assertFalse(name, name.startsWith("ssl-hot-reload") && name.contains(node.name()));
+            }
+        }
+        finally {
+            stopAllGrids();
+            U.delete(dir);
+        }
+    }
+
+    /**
+     * Given: the node configuration sets a hot reload lead time of an hour, and the certificates of a TLS transport
+     *     expire in 10 days.
+     * When: the node starts.
+     * Then: the node logs that hot reload is due an hour before the certificates expire.
+     */
+    @Test
+    public void testNodeUsesHotReloadLeadTimeFromConfiguration() throws Exception {
+        long now = System.currentTimeMillis();
+        long expiry = now + DAYS.toMillis(10);
+        TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(20));
+        Path dir = Files.createTempDirectory("ssl-hot-reload");
+        Path keys = dir.resolve("keys.jks");
+        Path trust = dir.resolve("trust.jks");
+        ListeningTestLogger nodeLog = new ListeningTestLogger(log);
+        LogListener due = LogListener.matches("TLS hot reload due [transports=client connector, hotReloadTime="
+            + new Date(expiry - HOURS.toMillis(1)) + ']').build();
+
+        nodeLog.registerListener(due);
+
+        try {
+            save(ca.keyStore("node", now - DAYS.toMillis(1), expiry), keys);
+            save(ca.trustStore(), trust);
+
+            SslContextFactory serverFactory = configure(new SslContextFactory(), keys, trust);
+
+            startGrid(0, cfg -> {
+                cfg.setGridLogger(nodeLog)
+                    .setSslHotReloadBeforeExpiry(HOURS.toMillis(1))
+                    .setClientConnectorConfiguration(sslClientConnector(serverFactory));
+            });
+
+            assertTrue(due.check(TIMEOUT_MS));
         }
         finally {
             stopAllGrids();
