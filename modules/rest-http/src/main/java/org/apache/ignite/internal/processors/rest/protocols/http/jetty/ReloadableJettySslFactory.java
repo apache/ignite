@@ -45,7 +45,8 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
  * Jetty selects certificates for SNI host names from the key store of the state, so the restore keeps SNI selection.
  * If the restore fails too, the factory has no state until the next successful reload, and the reload error carries
  * that failure as a suppressed exception. A failed reload outside Ignite, such as one by Jetty's {@code KeyStoreScanner},
- * can also leave the factory without state. Then the reload has nothing to restore and loads the configured sources.
+ * can also leave the factory without state. Such a factory is due for hot reload right away, and the reload has nothing
+ * to restore: it loads the configured sources.
  * <p>
  * After a failed reload, the factory gets back the context and stores set in {@code jetty.xml}, and the next reload
  * reads its configured sources again. Once the factory has started, its getters return the loaded state rather than
@@ -101,13 +102,18 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
 
     /** {@inheritDoc} */
     @Override public long getHotReloadTime() {
+        TlsState state = currentState();
+
+        if (state == null)
+            return System.currentTimeMillis();
+
         try {
-            KeyStore store = factory.getKeyStore();
+            KeyStore store = state.keyStore();
             long expiry = store == null ? 0 : ReloadableSslFactory.keyChainsExpiry(store);
 
             return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs();
         }
-        catch (IllegalStateException | GeneralSecurityException e) {
+        catch (GeneralSecurityException e) {
             throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);
         }
     }

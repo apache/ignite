@@ -301,8 +301,8 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a reload that Ignite did not start, such as one by Jetty's {@code KeyStoreScanner}, has failed and left
      *     the custom Jetty factory without keys.
      * When: Ignite reloads the factory while the source still fails, and again after the source supplies certificate B.
-     * Then: the first reload reports the source error, and the hot reload time cannot be read, as no keys are loaded.
-     *     The second reload installs B.
+     * Then: the first reload reports the source error, and the factory is due for hot reload right away, so a scheduled
+     *     check reloads it as the reload command does. The second reload installs B.
      */
     @Test
     public void testReloadRecoversFactoryLeftWithoutKeys() throws Exception {
@@ -318,7 +318,10 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         try {
             assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
-            assertThrows(log, factory::getHotReloadTime, IgniteException.class, "certificates of the HTTPS connector");
+
+            long hotReloadTime = factory.getHotReloadTime();
+
+            assertTrue(hotReloadTime > 0 && hotReloadTime <= System.currentTimeMillis());
 
             SourceSslContextFactory.supply(b);
             factory.init();
