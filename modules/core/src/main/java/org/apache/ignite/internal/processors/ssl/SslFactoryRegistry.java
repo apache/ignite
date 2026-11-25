@@ -103,8 +103,11 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic hot reload attempts.");
 
+        if (!ctx.config().isSslHotReloadEnabled())
+            return;
+
         for (RegisteredFactory registered : factories) {
-            if (!registered.hotReloadEnabled())
+            if (registered.reloadable == null)
                 continue;
 
             if (executor == null)
@@ -131,10 +134,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /**
-     * Reloads a registered factory. If hot reload is enabled on the node and the factory allows it, waits for the running
-     * check of the factory, resets its failure count and schedules its next check for the loaded certificates. If they
-     * are already due, the next check comes after {@link #CHECK_PERIOD}, because a hot reload right away would load
-     * the same certificates from the source.
+     * Reloads a registered factory. If hot reload is enabled, waits for the running check of the factory, resets its failure
+     * count and schedules its next check for the loaded certificates. If they are already due, the next check comes after
+     * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source.
      *
      * @param factory Registered factory to reload.
      */
@@ -292,7 +294,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            if (!hotReloadEnabled())
+            if (!ctx.config().isSslHotReloadEnabled())
                 return;
 
             failures.set(0);
@@ -304,14 +306,6 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             long nextCheckDelay = nextCheckDelay(hotReloadTime);
 
             scheduleCheck(nextCheckDelay == 0 ? CHECK_PERIOD : nextCheckDelay);
-        }
-
-        /**
-         * @return Whether the registry reloads the factory before its certificates expire: hot reload is enabled on
-         *     the node, and the factory allows it.
-         */
-        private boolean hotReloadEnabled() {
-            return reloadable != null && ctx.config().isSslHotReloadEnabled() && reloadable.hotReloadAllowed();
         }
 
         /** Logs the hot reload time of the loaded certificates if it differs from the one logged last. */

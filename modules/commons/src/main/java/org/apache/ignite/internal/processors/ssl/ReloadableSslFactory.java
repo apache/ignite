@@ -48,16 +48,6 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
     public long certificatesExpiry();
 
     /**
-     * Override to return {@code false} if the source of the factory allows loads only on request. Then hot reload skips
-     * the factory, and only the reload command reloads it.
-     *
-     * @return Whether the registry may reload the factory before its certificates expire.
-     */
-    public default boolean hotReloadAllowed() {
-        return true;
-    }
-
-    /**
      * @param store Loaded key store.
      * @return Earliest certificate expiry in the private key chains, or {@code 0} if the store has no private key
      *     with an X.509 certificate chain.

@@ -77,7 +77,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -240,7 +239,7 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testReloadableFactoryIsHotReloadedAndReloadedManually() {
-        ReloadableSslFactory rest = reloadableFactory();
+        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
 
         when(rest.certificatesExpiry()).thenReturn(due(), at(DAYS.toHours(30)));
 
@@ -368,7 +367,7 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testFailedReadOfHotReloadTimeIsRetriedWithoutFailingStart() throws Exception {
-        ReloadableSslFactory rest = reloadableFactory();
+        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
 
         when(rest.certificatesExpiry()).thenThrow(new IgniteException("Failed to read the certificates of the HTTPS connector"));
         writeCertificatesDueIn30Minutes(keys);
@@ -446,7 +445,7 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testCheckRightBeforeHotReloadTimeDoesNotDeferHotReload() {
-        ReloadableSslFactory rest = reloadableFactory();
+        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
 
         long expiry = System.currentTimeMillis() + DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY + MINUTES.toMillis(30);
 
@@ -674,30 +673,6 @@ public class SslFactoryRegistryTest {
         registry.reload(communication);
 
         assertTrue(communication.certificatesExpiry() > prevTime);
-    }
-
-    /**
-     * Given: hot reload is enabled on the node, and communication and the client connector have due certificates.
-     *     The client connector factory allows loads only on request.
-     * When: the registry starts, the client connector is reloaded manually, and the scheduled checks run.
-     * Then: only communication makes an automatic attempt: the client connector gets no scheduled check, either at start
-     *     or after its manual reload.
-     */
-    @Test
-    public void testFactoryThatAllowsOnlyManualReloadGetsNoChecks() throws Exception {
-        Path clientKeys = dir.resolve("client-keys.jks");
-        SslContextFactory clientConnector = factory(clientKeys, new ManualReloadOnlyFactory());
-
-        writeDueCertificates(keys);
-        writeDueCertificates(clientKeys);
-        registerTransport("communication", factory(keys));
-        registerTransport("client connector", clientConnector);
-        registry.onKernalStart(true);
-        registry.reload(clientConnector);
-        runChecks();
-
-        assertEquals(1, metric("AutomaticHotReloadAttempts"));
-        assertEquals(1, metric("ManualReloadAttempts"));
     }
 
     /**
@@ -1083,20 +1058,13 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Makes the factory mock look like a factory that allows hot reload and has loaded certificates expiring at the given
-     * time.
+     * Makes the factory mock look like a factory that has loaded certificates expiring at the given time.
      *
      * @param factory Factory mock.
      * @param expiry Expiry time of the loaded certificates.
      */
     private static void loaded(SslContextFactory factory, long expiry) {
-        when(factory.hotReloadAllowed()).thenReturn(true);
         when(factory.certificatesExpiry()).thenReturn(expiry);
-    }
-
-    /** @return Mock of a reloadable factory that keeps the default methods of {@link ReloadableSslFactory}. */
-    private static ReloadableSslFactory reloadableFactory() {
-        return mock(ReloadableSslFactory.class, CALLS_REAL_METHODS);
     }
 
     /** @return Time when the certificates that the factory has loaded are due for hot reload with the configured lead time. */
@@ -1168,17 +1136,6 @@ public class SslFactoryRegistryTest {
         /** {@inheritDoc} */
         @Override public boolean isDebugEnabled() {
             return true;
-        }
-    }
-
-    /** Factory whose source allows loads only on request. */
-    private static class ManualReloadOnlyFactory extends SslContextFactory {
-        /** */
-        private static final long serialVersionUID = 0;
-
-        /** {@inheritDoc} */
-        @Override public boolean hotReloadAllowed() {
-            return false;
         }
     }
 

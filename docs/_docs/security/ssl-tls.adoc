@@ -233,8 +233,8 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 === When Hot Reload Runs
 
-When the node starts with hot reload enabled, Ignite checks each factory that allows automatic reload.
-For each such factory, Ignite schedules the next check when its certificates become due or in one hour, whichever comes first.
+At startup, Ignite checks each factory.
+It checks each factory again when its certificates become due, but no later than an hour after the previous check.
 After a failed attempt, it retries an hour later.
 All checks run in one thread, so a slow certificate source can delay the checks of other factories.
 
@@ -250,7 +250,7 @@ If the loaded certificates are still due for hot reload, Ignite records a failed
 This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `sslHotReloadBeforeExpiry`.
 The loaded context remains in use until a later reload replaces it.
 
-After a manual reload of a factory on this schedule, Ignite uses the loaded certificates to schedule its next check.
+After a manual reload, Ignite schedules the next check from the loaded certificates.
 
 New connections use the loaded certificates; established connections remain open.
 To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.
@@ -290,8 +290,6 @@ On each load, call this method once with the key store and the key password that
 Ignite takes the hot reload date from that key store.
 A factory that does not call this method has no hot reload date, and the node logs a warning.
 A custom Jetty factory of the HTTP REST endpoint needs no such call: Ignite takes the date from the key store that the Jetty factory loads, for example in `loadKeyStore(Resource)`.
-If the source of a custom Ignite factory allows loads only on request, override `hotReloadAllowed()` to return `false`.
-Hot reload then skips the factory, and the reload command still reloads it.
 Limit request duration in custom sources: a blocked load delays other hot reloads and manual reload.
 
 == SslContextFactory Properties
