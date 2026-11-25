@@ -290,6 +290,8 @@ On each load, call this method once with the key store and the key password that
 Ignite takes the hot reload date from that key store.
 A factory that does not call this method has no hot reload date, and the node logs a warning.
 A custom Jetty factory of the HTTP REST endpoint needs no such call: Ignite takes the date from the key store that the Jetty factory loads, for example in `loadKeyStore(Resource)`.
+If the source of a custom Ignite factory allows loads only on request, override `hotReloadAllowed()` to return `false`.
+Hot reload then skips the factory, and the reload command still reloads it.
 Limit request duration in custom sources: a blocked load delays other hot reloads and manual reload.
 
 == SslContextFactory Properties
