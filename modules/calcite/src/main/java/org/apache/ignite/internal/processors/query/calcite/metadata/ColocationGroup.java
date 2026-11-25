@@ -346,8 +346,10 @@ public class ColocationGroup extends AbstractMessage {
         if (F.isEmpty(assignments) || primaryAssignment)
             return null;
 
-        if (partFilter >= 0)
-            return Objects.equals(nodeId, F.first(assignments.get(partFilter))) ? new int[] {partFilter} : U.EMPTY_INTS;
+        if (partFilter >= 0) {
+            return partFilter < assignments.size() && Objects.equals(nodeId, F.first(assignments.get(partFilter)))
+                ? new int[] {partFilter} : U.EMPTY_INTS;
+        }
 
         if (partsFilter != null) {
             GridIntList parts = new GridIntList(partsFilter.length);
