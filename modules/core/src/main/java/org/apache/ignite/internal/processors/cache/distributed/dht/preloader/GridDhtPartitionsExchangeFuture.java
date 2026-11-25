@@ -365,9 +365,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Register caches future. Initialized on exchange init. Must be waited on exchange end. */
     private IgniteInternalFuture<?> registerCachesFuture;
 
-    /** Latest (by update sequences) full message with exchangeId == null, need to be processed right after future is done. */
+    /** Full messages with exchangeId == null, one per topology version, processed after the future is done. */
     @GridToStringExclude
-    private GridDhtPartitionsFullMessage delayedLatestMsg;
+    private List<GridDhtPartitionsFullMessage> delayedMsgs;
 
     /** Time bag to measure and store exchange stages times. */
     @GridToStringExclude
@@ -5218,29 +5218,39 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone())
             return false;
 
-        GridDhtPartitionsFullMessage prev = delayedLatestMsg;
+        if (delayedMsgs == null) {
+            delayedMsgs = new ArrayList<>();
 
-        if (prev == null) {
-            delayedLatestMsg = fullMsg;
+            delayedMsgs.add(fullMsg);
 
             listen(f -> {
                 if (f.error() != null)
                     return;
 
-                GridDhtPartitionsFullMessage msg;
+                List<GridDhtPartitionsFullMessage> msgs;
 
                 synchronized (this) {
-                    msg = delayedLatestMsg;
+                    msgs = delayedMsgs;
 
-                    delayedLatestMsg = null;
+                    delayedMsgs = null;
                 }
 
-                if (msg != null)
+                for (GridDhtPartitionsFullMessage msg : msgs)
                     cctx.exchange().processFullPartitionUpdate(node, msg);
             });
+
+            return true;
         }
-        else
-            delayedLatestMsg.merge(fullMsg, cctx.discovery());
+
+        for (GridDhtPartitionsFullMessage msg : delayedMsgs) {
+            if (msg.topologyVersion().equals(fullMsg.topologyVersion())) {
+                msg.merge(fullMsg, cctx.discovery());
+
+                return true;
+            }
+        }
+
+        delayedMsgs.add(fullMsg);
 
         return true;
     }
