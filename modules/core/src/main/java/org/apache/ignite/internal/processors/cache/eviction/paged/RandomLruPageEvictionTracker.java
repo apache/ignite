@@ -14,7 +14,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package org.apache.ignite.internal.processors.cache.persistence.evict;
+
+package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
@@ -23,8 +24,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -32,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *
  */
-public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
+public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
     /** Evict attempts limit. */
     private static final int EVICT_ATTEMPTS_LIMIT = 30;
 
@@ -51,14 +54,16 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     /**
      * @param pageMem Page memory.
      * @param plcCfg Policy config.
+     * @param memMetrics Data region metrics.
      * @param sharedCtx Shared context.
      */
-    public Random2LruPageEvictionTracker(
-        PageMemoryNoStoreImpl pageMem,
+    public RandomLruPageEvictionTracker(
+        PageMemory pageMem,
         DataRegionConfiguration plcCfg,
+        DataRegionMetricsImpl memMetrics,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
-        super(pageMem, sharedCtx);
+        super((PageMemoryNoStoreImpl)pageMem, plcCfg, memMetrics, sharedCtx);
 
         DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 
@@ -69,9 +74,11 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 8L);
+        super.start();
 
-        GridUnsafe.zeroMemory(trackingArrPtr, trackingSize * 8L);
+        trackingArrPtr = GridUnsafe.allocateMemory(trackingSize * 4L);
+
+        GridUnsafe.zeroMemory(trackingArrPtr, trackingSize * 4L);
     }
 
     /** {@inheritDoc} */
@@ -81,45 +88,29 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
 
     /** {@inheritDoc} */
     @Override public void touchPage(long pageId) {
-        int pageIdx = PageIdUtils.pageIndex(pageId);
-        int trackingIdx = trackingIdx(pageIdx);
-        long trackingPtr = trackingArrPtr + trackingIdx * 8L;
+        long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L;
 
         boolean success;
 
         do {
-            long trackingData = GridUnsafe.getLongVolatile(null, trackingPtr);
+            int trackingData = GridUnsafe.getIntVolatile(null, trackingPtr);
 
-            int firstTs = first(trackingData);
-
-            if (firstTs <= 0) // Concurrently evicted.
+            if (trackingData <= 0) // Concurrently evicted.
                 return;
 
             long ts = compactTimestamp(U.currentTimeMillis());
 
             assert ts >= 0 && ts < Integer.MAX_VALUE;
 
-            int secondTs = second(trackingData);
-
-            long newTrackingData;
-
-            if (firstTs <= secondTs)
-                newTrackingData = U.toLong((int)ts, secondTs);
-            else
-                newTrackingData = U.toLong(firstTs, (int)ts);
-
-            success = GridUnsafe.compareAndSwapLong(null, trackingPtr, trackingData, newTrackingData);
-        }
-        while (!success);
+            success = GridUnsafe.compareAndSwapInt(null, trackingPtr, trackingData, (int)ts);
+        } while (!success);
     }
 
     /** */
     @Override protected void initPage(long pageId) {
         int ts = (int)compactTimestamp(U.currentTimeMillis());
 
-        long trackingPtr = trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 8L;
-
-        GridUnsafe.compareAndSwapLong(null, trackingPtr, 0, U.toLong(ts, 0));
+        GridUnsafe.compareAndSwapInt(null, trackingArrPtr + trackingIdx(PageIdUtils.pageIndex(pageId)) * 4L, 0, ts);
     }
 
     /** {@inheritDoc} */
@@ -138,32 +129,26 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
             int sampleSpinCnt = 0;
 
             while (dataPagesCnt < SAMPLE_SIZE) {
-                int trackingIdx = rnd.nextInt(trackingSize);
+                int sampleTrackingIdx = rnd.nextInt(trackingSize);
 
-                long trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
-                int firstTs = first(trackingData);
-
-                if (firstTs < 0) {
+                if (compactTs < 0) {
                     // For page containing fragmented row data timestamps stored in the row's head page are used.
                     // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
                     // head page. So head page is found no more than in two hops.
-                    trackingIdx = -firstTs;
+                    sampleTrackingIdx = -compactTs;
 
-                    trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
+                    compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
-                    firstTs = first(trackingData);
+                    if (compactTs < 0) {
+                        sampleTrackingIdx = -compactTs;
 
-                    if (firstTs < 0) {
-                        trackingIdx = -firstTs;
-
-                        trackingData = GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L);
-
-                        firstTs = first(trackingData);
+                        compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
                         // The link read above may be stale: a concurrently deleted row frees the head page, which can be
                         // re-used as an intermediate fragment holding a link again. Legal state: skip and resample.
-                        if (firstTs < 0) {
+                        if (compactTs < 0) {
                             sampleSpinCnt++;
 
                             if (sampleSpinCnt > SAMPLE_SPIN_LIMIT) {
@@ -177,18 +162,12 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
                     }
                 }
 
-                int secondTs = second(trackingData);
-
-                int minTs = Math.min(firstTs, secondTs);
-
-                int maxTs = Math.max(firstTs, secondTs);
-
-                if (maxTs != 0) {
+                if (compactTs != 0) {
                     // We chose data page with at least one touch.
-                    if (minTs < lruCompactTs) {
-                        lruTrackingIdx = trackingIdx;
+                    if (compactTs < lruCompactTs) {
+                        lruTrackingIdx = sampleTrackingIdx;
 
-                        lruCompactTs = minTs;
+                        lruCompactTs = compactTs;
                     }
 
                     dataPagesCnt++;
@@ -218,54 +197,36 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected boolean checkTouch(long pageId) {
         int trackingIdx = trackingIdx(PageIdUtils.pageIndex(pageId));
 
-        int firstTs = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + trackingIdx * 8L));
+        int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
-        return firstTs > 0;
+        return ts > 0;
     }
 
     /** {@inheritDoc} */
     @Override public void forgetPage(long pageId) {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
-        int trackingIdx = trackingIdx(pageIdx);
-
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + trackingIdx * 8L, 0L);
+        GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4L, 0);
     }
 
     /**
      * Link two pages containing fragments of row.
      * <p>
-     * Link is stored as a negated page tracking index in the first integer in the tracking data.
-     * Second integer in the tracking data is set to 0.
+     * Link is stored as a negated page tracking index.
      *
      * @param pageTrackingIdx     Page tracking index.
      * @param nextPageTrackingIdx Tracking index of page to link to.
      */
     @Override protected void linkFragmentPages(int pageTrackingIdx, int nextPageTrackingIdx) {
-        GridUnsafe.putLongVolatile(null, trackingArrPtr + pageTrackingIdx * 8L,
-            U.toLong(-nextPageTrackingIdx, 0));
+        GridUnsafe.putIntVolatile(null, trackingArrPtr + pageTrackingIdx * 4L, -nextPageTrackingIdx);
     }
 
     /** {@inheritDoc} */
     @Override protected int getFragmentLink(int pageTrackingIdx) {
-        int link = first(GridUnsafe.getLongVolatile(null, trackingArrPtr + pageTrackingIdx * 8L));
+        int link = GridUnsafe.getIntVolatile(null, trackingArrPtr + pageTrackingIdx * 4L);
 
         assert link <= 0 : "[link=" + link + "]";
 
         return -link;
-    }
-
-    /**
-     * Helper to extract first integer value.
-     */
-    private int first(long l) {
-        return (int)(l >> Integer.SIZE);
-    }
-
-    /**
-     * Helper to extract second integer value.
-     */
-    private int second(long l) {
-        return (int)l;
     }
 }

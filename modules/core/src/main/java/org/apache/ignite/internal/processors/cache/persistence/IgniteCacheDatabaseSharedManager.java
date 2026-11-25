@@ -60,12 +60,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
+import org.apache.ignite.internal.processors.cache.eviction.paged.FairFifoPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.eviction.paged.NoOpPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionTracker;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
-import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
@@ -1230,8 +1230,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @return {@code True} if {@link #reserveInRegion(DataRegion, long, boolean)} may reserve pages in the region.
      */
     public static boolean isReserveEnabled(@Nullable DataRegion memPlc) {
-        return memPlc != null && !memPlc.config().isPersistenceEnabled() &&
-            memPlc.config().getPageEvictionMode() != DataPageEvictionMode.DISABLED;
+        return memPlc != null && memPlc.evictionTracker().reserveEnabled();
     }
 
     /**
@@ -1240,7 +1239,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *
      * @param memPlc Data region.
      * @param rowSize Size of the row, or the total size of all rows of a batch.
-     * @param bestEffort {@code True} if the insert can not be safely refused (see {@link FreeList#reserve(long, boolean)}).
+     * @param bestEffort {@code True} if the insert can not be safely refused (see {@link PageEvictionTracker#reserve(long, boolean)}).
      * @return Number of reserved pages to be released via {@link #releaseInRegion(DataRegion, long)}, or {@code 0} if
      *      nothing is reserved: the reservation is not engaged for this region (see {@link #isReserveEnabled(DataRegion)})
      *      or a best-effort insert is admitted without a reservation.
@@ -1249,17 +1248,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      *      handling {@code IgniteCheckedException} (e.g. the futures that call {@code initialValue}) complete with the
      *      error instead of leaking it; nothing has been changed and the failure handler is not involved.
      */
-    public long reserveInRegion(@Nullable DataRegion memPlc, long rowSize, boolean bestEffort) throws IgniteCheckedException {
-        if (!isReserveEnabled(memPlc))
-            return 0;
-
-        FreeList<?> freeList = freeList(memPlc.config().getName());
-
-        if (freeList == null)
-            return 0;
-
+    public long reserveInRegion(DataRegion memPlc, long rowSize, boolean bestEffort) throws IgniteCheckedException {
         try {
-            return freeList.reserve(rowSize, bestEffort);
+            return memPlc.evictionTracker().reserve(rowSize, bestEffort);
         }
         catch (IgniteOutOfMemoryException e) {
             throw new IgniteCheckedException("Failed to reserve pages for a row insert: " + e.getMessage(), e);
@@ -1273,12 +1264,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param pages Number of pages to release.
      */
     public void releaseInRegion(@Nullable DataRegion memPlc, long pages) {
-        if (memPlc != null && pages != 0) {
-            FreeList<?> freeList = freeList(memPlc.config().getName());
-
-            if (freeList != null)
-                freeList.releaseReserved(pages);
-        }
+        if (memPlc != null && pages != 0)
+            memPlc.evictionTracker().releaseReserved(pages);
     }
 
     /**
@@ -1303,7 +1290,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         PageMemory pageMem = createPageMemory(createOrReuseMemoryProvider(plcCfg), memCfg, plcCfg, memMetrics,
             trackable, pmPageMgr);
 
-        return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
+        return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem, memMetrics));
     }
 
     /**
@@ -1349,8 +1336,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * @param plc data region Configuration.
      * @param pageMem Page memory.
+     * @param memMetrics Data region metrics.
      */
-    protected PageEvictionTracker createPageEvictionTracker(DataRegionConfiguration plc, PageMemory pageMem) {
+    protected PageEvictionTracker createPageEvictionTracker(
+        DataRegionConfiguration plc,
+        PageMemory pageMem,
+        DataRegionMetricsImpl memMetrics
+    ) {
         if (plc.getPageEvictionMode() == DataPageEvictionMode.DISABLED || plc.isPersistenceEnabled())
             return new NoOpPageEvictionTracker();
 
@@ -1359,13 +1351,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         PageMemoryNoStoreImpl pageMem0 = (PageMemoryNoStoreImpl)pageMem;
 
         if (Boolean.getBoolean("override.fair.fifo.page.eviction.tracker"))
-            return new FairFifoPageEvictionTracker(pageMem0, cctx);
+            return new FairFifoPageEvictionTracker(pageMem0, plc, memMetrics, cctx);
 
         switch (plc.getPageEvictionMode()) {
             case RANDOM_LRU:
-                return new RandomLruPageEvictionTracker(pageMem0, plc, cctx);
+                return new RandomLruPageEvictionTracker(pageMem0, plc, memMetrics, cctx);
             case RANDOM_2_LRU:
-                return new Random2LruPageEvictionTracker(pageMem0, plc, cctx);
+                return new Random2LruPageEvictionTracker(pageMem0, plc, memMetrics, cctx);
             default:
                 return new NoOpPageEvictionTracker();
         }
@@ -1508,9 +1500,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert cfg != null;
 
-        startDataRegions();
-
         initPageMemoryDataStructures(cfg);
+
+        startDataRegions();
 
         dataRegionsStarted = true;
 

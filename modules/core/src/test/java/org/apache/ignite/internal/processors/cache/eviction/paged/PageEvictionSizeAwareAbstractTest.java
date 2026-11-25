@@ -42,8 +42,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -116,7 +114,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         assertHonorsThreshold(demander);
 
-        assertEquals(0, reservedPages(defaultFreeList(demander)));
+        assertEquals(0, reservedPages(defaultRegion(demander)));
     }
 
     /** */
@@ -359,7 +357,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
         fillRegion(ignite, cache, 0.5);
 
         // The row alone takes all the pages below the threshold.
-        int largeValSize = (int)(totalPages(ignite) * EVICTION_THRESHOLD) * PAGE_PAYLOAD;
+        int largeValSize = (int)(totalPages(ignite) * EVICTION_THRESHOLD) * pagePayload(ignite);
 
         cache.put(-1, new byte[largeValSize]);
 
@@ -446,11 +444,11 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
         int entries = fillRegion(ignite, cache, 0.5);
 
-        FreeList<?> freeList = defaultFreeList(ignite);
+        PageEvictionTracker tracker = defaultRegion(ignite).evictionTracker();
 
         long claimPages = totalPages(ignite) - defaultRegion(ignite).config().getEmptyPagesPoolSize();
 
-        GridTestUtils.assertThrows(log, () -> freeList.reserve(claimPages * PAGE_PAYLOAD, false),
+        GridTestUtils.assertThrows(log, () -> tracker.reserve(claimPages * pagePayload(ignite), false),
             IgniteOutOfMemoryException.class, null);
 
         assertFalse("A refused claim must not start the eviction", isEvictionsStarted(ignite));
@@ -487,13 +485,13 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
             DataRegion region = defaultRegion(ignite);
 
-            AbstractFreeList<?> freeList = (AbstractFreeList<?>)db.freeList(region.config().getName());
+            PageAbstractEvictionTracker tracker = (PageAbstractEvictionTracker)region.evictionTracker();
 
             // A reservation that waits for the timeout takes at least the timeout (with the 10 ms clock error), a
             // reservation that gives up does not: the bound separates them far from the expected time of both.
             long bound = GUARD_TIMEOUT * 9 / 10;
 
-            assertFalse(freeList.stalled());
+            assertFalse(tracker.stalled());
 
             IgniteInternalFuture<Long> firstFut = GridTestUtils.runAsync(() -> db.reserveInRegion(region, largeValSize, true),
                 "size-aware-guard-first");
@@ -510,7 +508,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
 
             assertEquals(0, (long)firstFut.get(TIMEOUT));
 
-            assertTrue(freeList.stalled());
+            assertTrue(tracker.stalled());
 
             // A reservation that needs no eviction says nothing about it, so the stall stays.
             long smallReserved = db.reserveInRegion(region, 1, false);
@@ -518,14 +516,14 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             try {
                 assertEquals(1, smallReserved);
 
-                assertTrue(freeList.stalled());
+                assertTrue(tracker.stalled());
             }
             finally {
                 db.releaseInRegion(region, smallReserved);
             }
 
             // Reservations that gave up release their claims.
-            assertEquals(0, freeList.reservedPages());
+            assertEquals(0, tracker.reservedPages());
 
             // The stall is not a time window: once the timeout passes, best-effort reservations still do not wait.
             U.sleep(GUARD_TIMEOUT + 500);
@@ -553,7 +551,7 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             try {
                 assertTrue("Reservation must succeed once the entries are unlocked", reserved > 0);
 
-                assertFalse(freeList.stalled());
+                assertFalse(tracker.stalled());
             }
             finally {
                 db.releaseInRegion(region, reserved);
@@ -587,9 +585,9 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
             );
 
             assertTrue("The default timeout must not be waited for",
-                System.currentTimeMillis() - start < AbstractFreeList.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
+                System.currentTimeMillis() - start < PageAbstractEvictionTracker.DFLT_EVICTION_NO_PROGRESS_TIMEOUT_MILLIS);
 
-            assertEquals(0, reservedPages(defaultFreeList(ignite)));
+            assertEquals(0, reservedPages(defaultRegion(ignite)));
         }
         finally {
             release.countDown();
@@ -636,14 +634,6 @@ public abstract class PageEvictionSizeAwareAbstractTest extends PageEvictionAbst
         assertTrue("Timed out waiting for entries to be locked", ready.await(TIMEOUT, TimeUnit.MILLISECONDS));
 
         return lockerFut;
-    }
-
-    /**
-     * @param ignite Node.
-     * @return Free list of the default data region.
-     */
-    private static FreeList<?> defaultFreeList(IgniteEx ignite) throws IgniteCheckedException {
-        return ignite.context().cache().context().database().freeList(defaultRegion(ignite).config().getName());
     }
 
     /**
