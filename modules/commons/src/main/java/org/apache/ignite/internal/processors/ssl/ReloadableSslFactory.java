@@ -39,7 +39,8 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
 
     /**
      * The hot reload time comes from the certificate chains of the private keys that new connections use.
-     * Each certificate in these chains is due before it expires by a third of its lifetime, but by no more than 7 days.
+     * Each certificate in these chains becomes due when the time left before it expires drops to a third of its lifetime
+     * or to 7 days, whichever is shorter.
      * The factory is due when its first certificate is due. Keys without an X.509 certificate chain are ignored,
      * as TLS cannot use them.
      *
