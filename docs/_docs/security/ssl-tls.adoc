@@ -164,7 +164,7 @@ It also reloads the link:restapi#https[HTTP REST endpoint] when its Jetty connec
 External client applications reload their certificates separately.
 
 Follow the trust-first order below even if you do not plan to run the command.
-<<Automatic Certificate Hot Reload,Hot reload>> is always on, so a node can load a replaced key store by itself within an hour once its current certificates are due.
+<<Automatic Certificate Hot Reload,Hot reload>> is enabled by default, so a node can load a replaced key store by itself within an hour once its current certificates are due.
 If a peer does not trust the new certificate yet, its new connections to that node fail.
 
 . Back up the key and trust store files before replacing them.
@@ -196,10 +196,23 @@ If you configured `trustManagers` directly, the command reuses them instead of r
 == Automatic Certificate Hot Reload
 
 Automatic hot reload lets nodes load replacement certificates without a reload command.
-It is always on and needs no configuration.
 You must supply the replacements: Ignite reads them from the configured source and does not issue certificates.
 Hot reload covers the same transports as <<Upgrading Certificates,manual reload>>, including the HTTP REST endpoint.
 It does not update external client applications.
+
+=== Disable Hot Reload
+
+Hot reload is enabled by default.
+To disable it for a transport, disable it on the transport's factory before starting the node:
+
+[source,java]
+----
+factory.setHotReloadEnabled(false);
+----
+
+Changing this setting requires a node restart.
+The reload command still reloads the factory.
+The HTTP REST endpoint has no such setting: hot reload always covers it.
 
 === Supply Replacements
 
@@ -218,7 +231,7 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 === When Hot Reload Runs
 
-At startup, Ignite checks each factory.
+At startup, Ignite checks each factory with hot reload enabled.
 It checks each factory again when its certificates become due, but no later than an hour after the previous check.
 After a failed attempt, it retries an hour later.
 All checks run in one thread, so a slow certificate source can delay the checks of other factories.
@@ -258,7 +271,7 @@ To recover without waiting for the next retry:
 . Check the command result and verify a new connection with the replacement certificates.
 
 *What happens to automatic hot reload.*
-Automatic hot reload continues after manual reload, as described in <<When Hot Reload Runs>>.
+If enabled, automatic hot reload continues after manual reload, as described in <<When Hot Reload Runs>>.
 A failed automatic attempt does not undo the manual reload.
 
 *If the command cannot connect.*
@@ -302,6 +315,10 @@ Limit request duration in custom sources: a blocked load delays other hot reload
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`hotReloadEnabled`
+|Enables automatic certificate hot reload. See <<Automatic Certificate Hot Reload>>.
+|`true`
 
 |`trustStoreFilePath`
 |The path to the trust store file.

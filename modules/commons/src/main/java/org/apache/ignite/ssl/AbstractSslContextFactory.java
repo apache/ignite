@@ -57,10 +57,26 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /** */
+    private boolean hotReloadEnabled = true;
+
+    /** */
     private transient volatile long hotReloadTime;
 
     /** */
     private transient long pendingHotReloadTime;
+
+    /** {@inheritDoc} */
+    @Override public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
+    }
+
+    /**
+     * @param enabled Whether automatic certificate hot reload is enabled. It is enabled by default. Changes require
+     *     a node restart.
+     */
+    public void setHotReloadEnabled(boolean enabled) {
+        hotReloadEnabled = enabled;
+    }
 
     /** {@inheritDoc} */
     @Override public long getHotReloadTime() {

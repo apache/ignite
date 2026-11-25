@@ -40,6 +40,7 @@ import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManager;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.thread.context.OperationContext;
@@ -75,6 +76,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -192,6 +194,24 @@ public class SslFactoryRegistryTest {
     }
 
     /**
+     * Given: a factory with hot reload disabled and valid certificates.
+     * When: the registry starts.
+     * Then: no hot reload thread starts, and the failure metric reads zero.
+     */
+    @Test
+    public void testDisabledFactoryDoesNotStartHotReload() throws Exception {
+        SslContextFactory communication = factory(keys);
+
+        writeFreshCertificates(keys);
+        communication.setHotReloadEnabled(false);
+        registerTransport("communication", communication);
+        registry.onKernalStart(true);
+
+        executorFactory.verifyNoInteractions();
+        assertEquals(0, failures());
+    }
+
+    /**
      * Given: a transport registers a factory that only creates contexts and cannot reload them.
      * When: the registry starts.
      * Then: no hot reload thread starts, and the failure metric reads zero.
@@ -215,7 +235,7 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testReloadableFactoryIsHotReloadedAndReloadedManually() {
-        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
+        ReloadableSslFactory rest = httpRestFactory();
 
         when(rest.getHotReloadTime()).thenReturn(due(), at(DAYS.toHours(30)));
 
@@ -344,7 +364,7 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testFailedReadOfHotReloadTimeIsRetriedWithoutFailingStart() throws Exception {
-        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
+        ReloadableSslFactory rest = httpRestFactory();
 
         when(rest.getHotReloadTime()).thenThrow(new IgniteException("Failed to read the certificates of the HTTPS connector"));
         writeCertificatesDueIn30Minutes(keys);
@@ -392,7 +412,7 @@ public class SslFactoryRegistryTest {
      */
     @Test
     public void testCheckRightBeforeHotReloadTimeDoesNotDeferHotReload() {
-        ReloadableSslFactory rest = mock(ReloadableSslFactory.class);
+        ReloadableSslFactory rest = httpRestFactory();
 
         when(rest.getHotReloadTime()).thenReturn(System.currentTimeMillis() + MINUTES.toMillis(30), due());
 
@@ -468,7 +488,7 @@ public class SslFactoryRegistryTest {
         OperationContextAttribute<String> reqId = OperationContextAttribute.newInstance();
         CompletableFuture<String> reloadReqId = new CompletableFuture<>();
 
-        loaded(factory, due());
+        enableHotReload(factory, due());
         doAnswer(call -> {
             reloadReqId.complete(OperationContext.get(reqId));
 
@@ -495,7 +515,7 @@ public class SslFactoryRegistryTest {
         List<String> logged = captureLog();
         SslContextFactory clientConnector = factory(keys);
 
-        loaded(factory, due());
+        enableHotReload(factory, due());
         doThrow(new NoClassDefFoundError("Key store provider")).when(factory).init();
         writeDueCertificates(keys);
         registry.register("communication", factory);
@@ -621,15 +641,16 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory with certificates that are not due for hot reload.
+     * Given: a factory with hot reload disabled.
      * When: a manual reload succeeds, and a second one fails because the key store file is deleted.
      * Then: both count as manual attempts, and none counts as automatic.
      */
     @Test
-    public void testManualReloadCountsAppliedAndFailedLoads() throws Exception {
+    public void testManualReloadWithoutHotReloadCountsAppliedAndFailedLoads() throws Exception {
         SslContextFactory communication = factory(keys);
 
         writeFreshCertificates(keys);
+        communication.setHotReloadEnabled(false);
         registerTransport("communication", communication);
         registry.onKernalStart(true);
         registry.reload(communication);
@@ -640,6 +661,28 @@ public class SslFactoryRegistryTest {
 
         assertThrows(IgniteException.class, () -> registry.reload(communication));
         assertEquals(2, metric("ManualReloadAttempts"));
+        assertEquals(0, metric("AutomaticHotReloadAttempts"));
+    }
+
+    /**
+     * Given: communication has hot reload disabled and due certificates, and the client connector has hot reload enabled.
+     * When: communication is reloaded manually, and the scheduled checks run.
+     * Then: the checks make no automatic attempt, as communication gets no scheduled check.
+     */
+    @Test
+    public void testManualReloadDoesNotScheduleCheckOfDisabledFactory() throws Exception {
+        Path clientKeys = dir.resolve("client-keys.jks");
+        SslContextFactory communication = factory(keys);
+
+        writeDueCertificates(keys);
+        writeFreshCertificates(clientKeys);
+        communication.setHotReloadEnabled(false);
+        registerTransport("communication", communication);
+        registerTransport("client connector", factory(clientKeys));
+        registry.onKernalStart(true);
+        registry.reload(communication);
+        runChecks();
+
         assertEquals(0, metric("AutomaticHotReloadAttempts"));
     }
 
@@ -732,6 +775,47 @@ public class SslFactoryRegistryTest {
 
         assertTrue(X.hasCause(err, "key store file was not found", SSLException.class));
         assertEquals(1, failures());
+    }
+
+    /**
+     * Given: communication only reloads manually, and the client connector is due for hot reload.
+     * When: the scheduled check runs while communication is waiting for its certificate source.
+     * Then: the client connector loads its replacement before the manual reload finishes.
+     */
+    @Test
+    public void testManualOnlyFactoryDoesNotDelayHotReload() throws Exception {
+        SslContextFactory clientConnector = factory(keys);
+        CountDownLatch manualStarted = new CountDownLatch(1);
+        CountDownLatch finishManual = new CountDownLatch(1);
+
+        doAnswer(call -> {
+            manualStarted.countDown();
+            finishManual.await();
+
+            return null;
+        }).when(factory).init();
+
+        writeDueCertificates(keys);
+        registry.register("communication", factory);
+        registerTransport("client connector", clientConnector);
+        registry.onKernalStart(true);
+
+        long prevTime = clientConnector.getHotReloadTime();
+
+        writeFreshCertificates(keys);
+
+        IgniteInternalFuture<?> manual = runAsync(() -> registry.reload(factory));
+
+        try {
+            assertTrue(manualStarted.await(TIMEOUT_MS, MILLISECONDS));
+            runAsync(nextCheck()).get(TIMEOUT_MS);
+
+            assertTrue(clientConnector.getHotReloadTime() > prevTime);
+        }
+        finally {
+            finishManual.countDown();
+            manual.get(TIMEOUT_MS);
+        }
     }
 
     /**
@@ -841,7 +925,7 @@ public class SslFactoryRegistryTest {
         CountDownLatch attemptInterrupted = new CountDownLatch(1);
         CountDownLatch allowCompletion = new CountDownLatch(1);
 
-        loaded(factory, due());
+        enableHotReload(factory, due());
         doAnswer(call -> {
             attemptStarted.countDown();
 
@@ -882,7 +966,7 @@ public class SslFactoryRegistryTest {
     public void testAttemptFailingDuringStopIsNotCounted() {
         List<String> logged = captureLog(true);
 
-        loaded(factory, due());
+        enableHotReload(factory, due());
         doAnswer(call -> {
             when(executor.isShutdown()).thenReturn(true);
 
@@ -909,8 +993,8 @@ public class SslFactoryRegistryTest {
         SslContextFactory clientConnector = mock(SslContextFactory.class);
         AtomicInteger loads = new AtomicInteger();
 
-        loaded(factory, due());
-        loaded(clientConnector, due());
+        enableHotReload(factory, due());
+        enableHotReload(clientConnector, due());
 
         for (SslContextFactory sslFactory : List.of(factory, clientConnector)) {
             doAnswer(call -> {
@@ -1000,13 +1084,23 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Makes the factory mock look like a factory that has loaded certificates with the given hot reload date.
+     * Makes the factory mock look like a factory with hot reload enabled and loaded certificates with the given date.
+     * The mock returns {@code true} from {@code isHotReloadEnabled()} and the date from {@code getHotReloadTime()}.
      *
      * @param factory Factory mock.
      * @param hotReloadTime Hot reload time of the loaded certificates.
      */
-    private static void loaded(SslContextFactory factory, long hotReloadTime) {
+    private static void enableHotReload(SslContextFactory factory, long hotReloadTime) {
+        when(factory.isHotReloadEnabled()).thenReturn(true);
         when(factory.getHotReloadTime()).thenReturn(hotReloadTime);
+    }
+
+    /**
+     * @return Mock of a factory that is not an Ignite SSL context factory, such as the one of HTTP REST. It keeps the
+     *     default methods of {@link ReloadableSslFactory}, so hot reload is enabled for it.
+     */
+    private static ReloadableSslFactory httpRestFactory() {
+        return mock(ReloadableSslFactory.class, CALLS_REAL_METHODS);
     }
 
     /** @return Hot reload time that has already come. */

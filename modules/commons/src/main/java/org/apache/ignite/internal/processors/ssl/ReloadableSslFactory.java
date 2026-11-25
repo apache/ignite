@@ -49,6 +49,11 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
      */
     public long getHotReloadTime();
 
+    /** @return Whether the registry reloads the factory before its certificates expire. Manual reload works either way. */
+    public default boolean isHotReloadEnabled() {
+        return true;
+    }
+
     /**
      * Calculates the hot reload time that {@link #getHotReloadTime()} describes.
      *

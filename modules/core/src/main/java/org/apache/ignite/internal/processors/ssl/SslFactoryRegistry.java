@@ -103,7 +103,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             "Number of automatic hot reload attempts.");
 
         for (RegisteredFactory registered : factories) {
-            if (registered.reloadable == null)
+            if (registered.reloadable == null || !registered.reloadable.isHotReloadEnabled())
                 continue;
 
             if (executor == null)
@@ -130,9 +130,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /**
-     * Reloads a registered factory. Waits for its running check, resets its failure count and schedules its next check
-     * for the loaded certificates. If they are already due, the next check comes after {@link #CHECK_PERIOD}, because
-     * a hot reload right away would load the same certificates from the source.
+     * Reloads a registered factory. For a factory with hot reload enabled, waits for its running check, resets its failure
+     * count and schedules its next check for the loaded certificates. If they are already due, the next check comes after
+     * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source.
      *
      * @param factory Registered factory to reload.
      */
@@ -279,6 +279,9 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             manualReloadAttempts.incrementAndGet();
 
             reloadable.init();
+
+            if (!reloadable.isHotReloadEnabled())
+                return;
 
             failures.set(0);
 

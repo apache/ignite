@@ -83,14 +83,15 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: a key store with only a CA certificate.
+     * Given: a key store with only a CA certificate and the default hot reload setting.
      * When: the factory loads the store.
-     * Then: the load succeeds, and the factory has no hot reload date.
+     * Then: the load succeeds with hot reload enabled and no scheduled reload date.
      */
     @Test
-    public void testStoreWithOnlyCaCertificateHasNoHotReloadDate() throws Exception {
+    public void testDefaultSettingsAcceptStoreWithoutPrivateKeys() throws Exception {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.trustStore());
 
+        assertTrue(factory.isHotReloadEnabled());
         assertNotNull(factory.create());
         assertEquals(0, factory.getHotReloadTime());
     }
