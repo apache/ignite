@@ -33,9 +33,9 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
  * Hot reload follows {@link AbstractSslContextFactory#isHotReloadEnabled()} and
- * {@link AbstractSslContextFactory#getHotReloadBeforeExpiryMs()} of the SSL factory of the REST connector. If that
- * factory is not an {@link AbstractSslContextFactory}, hot reload is enabled and comes
- * {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS} before the certificates expire.
+ * {@link AbstractSslContextFactory#getHotReloadBeforeExpiryMs()} of the SSL factory of the REST connector. If there is
+ * no such factory, or it is not an {@link AbstractSslContextFactory}, hot reload is enabled with the lead time
+ * {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
  * <p>
  * Jetty's factory guards its TLS state with an internal lock: it loads the state under this lock, and new connections
  * take the state under it too. Before loading a replacement, Jetty clears the state. So that new connections never see
@@ -107,13 +107,16 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
             KeyStore store = factory.getKeyStore();
             long expiry = store == null ? 0 : ReloadableSslFactory.keyChainsExpiry(store);
 
-            long lead = hotReloadSettings == null ? DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS : hotReloadSettings.getHotReloadBeforeExpiryMs();
-
-            return expiry == 0 ? 0 : expiry - lead;
+            return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs();
         }
         catch (IllegalStateException | GeneralSecurityException e) {
             throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);
         }
+    }
+
+    /** @return How long before the certificates expire hot reload becomes due, in milliseconds. */
+    private long hotReloadBeforeExpiryMs() {
+        return hotReloadSettings == null ? DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS : hotReloadSettings.getHotReloadBeforeExpiryMs();
     }
 
     /**

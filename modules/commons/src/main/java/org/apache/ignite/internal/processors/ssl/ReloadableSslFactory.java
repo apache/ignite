@@ -36,8 +36,8 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
     public void init();
 
     /**
-     * The hot reload time comes a lead time of the factory before the earliest expiry among the certificate chains of the
-     * private keys that new connections use. A chain expires when any certificate in it expires.
+     * The hot reload time is the earliest expiry among the certificate chains of the private keys that new connections
+     * use, minus the lead time of the factory. A chain expires when any certificate in it expires.
      * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the factory gives no private key with
