@@ -130,7 +130,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
@@ -896,7 +895,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         GridDhtPartitionTopology viewerTop = cache != null
             ? cache.context().topology()
-            : viewer.context().cache().context().exchange().clientTopologyIfExists(CU.cacheId(cacheName));
+            : viewer.context().cache().context().exchange().clientTopologyIfExists(
+                viewer.context().cache().cacheDescriptor(cacheName).groupId());
 
         assertNotNull(viewer.name(), viewerTop);
 
