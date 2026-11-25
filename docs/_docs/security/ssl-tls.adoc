@@ -239,7 +239,7 @@ After a failed attempt, it retries an hour later.
 All checks run in one thread, so a slow certificate source can delay the checks of other factories.
 
 For each factory, hot reload becomes due `sslHotReloadBeforeExpiry` of the node configuration before the earliest certificate expiry in its private key chains.
-This includes issuing certificates. The default lead time is 7 days.
+This includes issuing certificates. The lead time is in milliseconds; the default is 7 days, `604800000`.
 For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded.
 The first check at or after that date attempts a reload, including the startup check.
 Allow enough time before expiry to supply the replacements and load the stores.
