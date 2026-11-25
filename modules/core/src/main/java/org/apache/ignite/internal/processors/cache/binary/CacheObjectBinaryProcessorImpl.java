@@ -132,6 +132,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** @see BinaryMetadataView */
     public static final String BINARY_METADATA_DESC = "Binary metadata";
 
+    /** Binary metadata metrics registry name. */
+    static final String BINARY_METADATA_METRICS = metricName("binary", "metadata");
+
     /** */
     private volatile boolean discoveryStarted;
 
@@ -200,7 +203,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             metadataFileStore.start();
         }
 
-        AtomicLongMetric metaNotFoundCnt = ctx.metric().registry(metricName("binary", "metadata")).longMetric("NotFoundCount",
+        AtomicLongMetric metaNotFoundCnt = ctx.metric().registry(BINARY_METADATA_METRICS).longMetric("NotFoundCount",
             "Total number of failed attempts to find metadata or schema for an object with compact footer.");
 
         BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {

@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAIT_SCHEMA_UPDATE;
+import static org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl.BINARY_METADATA_METRICS;
 
 /**
  *
@@ -264,7 +265,7 @@ public class BinaryMetadataRemoveTest extends GridCommonAbstractTest {
         for (IgniteEx ign : new IgniteEx[] {grid("srv0"), grid("cli0")}) {
             BinaryObject obj = ign.binary().builder("Type0").setField("f", 1).build();
 
-            LongMetric notFoundCnt = ign.context().metric().registry("binary.metadata").findMetric("NotFoundCount");
+            LongMetric notFoundCnt = ign.context().metric().registry(BINARY_METADATA_METRICS).findMetric("NotFoundCount");
 
             // Makes the read below look up the metadata instead of taking the schema cached by the builder.
             ign.context().cacheObjects().binaryContext().unregisterBinarySchemas();
