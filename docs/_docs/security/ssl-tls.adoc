@@ -164,7 +164,7 @@ It also reloads the link:restapi#https[HTTP REST endpoint] when its Jetty connec
 External client applications reload their certificates separately.
 
 Follow the trust-first order below even if you do not plan to run the command.
-<<Automatic Certificate Hot Reload,Hot reload>> is enabled by default, so a node can load a replaced key store by itself within an hour once its current certificates are due.
+<<Automatic Certificate Hot Reload,Hot reload>> is enabled by default, so a node can load a replaced key store on its next check once its current certificates are due.
 If a peer does not trust the new certificate yet, its new connections to that node fail.
 
 . Back up the key and trust store files before replacing them.
@@ -233,10 +233,10 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 === When Hot Reload Runs
 
-At startup, Ignite checks each factory.
-It checks each factory again when its certificates become due, but no later than an hour after the previous check.
-After a failed attempt, it retries an hour later.
-All checks run in one thread, so a slow certificate source can delay the checks of other factories.
+At startup, Ignite schedules a check for each factory.
+If a factory's certificates are not yet due, Ignite schedules its next check for the due date or one hour later, whichever comes first.
+After a failed attempt, Ignite schedules another check for one hour later.
+All checks share one thread, so a slow certificate source can delay checks for other factories.
 
 For each factory, hot reload becomes due `sslHotReloadBeforeExpiry` of the node configuration before the earliest certificate expiry in its private key chains.
 This includes issuing certificates. The lead time is in milliseconds; the default is 7 days, `604800000`.
@@ -251,6 +251,8 @@ This can happen when the certificates have not changed, only the trust store cha
 The loaded context remains in use until a later reload replaces it.
 
 After a manual reload, Ignite schedules the next check from the loaded certificates.
+If Ignite cannot read their expiry dates, the new certificates stay in use and the command continues.
+Ignite logs the error and schedules another check for one hour later.
 
 New connections use the loaded certificates; established connections remain open.
 To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.

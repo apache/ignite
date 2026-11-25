@@ -44,7 +44,7 @@ import static org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolEx
 
 /** SSL factories used by running transports. */
 public class SslFactoryRegistry extends GridProcessorAdapter {
-    /** Longest interval between two checks of a factory, and the delay of a retry after a failed check. */
+    /** Maximum delay when scheduling a check, also used for retries after a failed check. */
     private static final long CHECK_PERIOD = HOURS.toMillis(1);
 
     /** */
@@ -299,7 +299,19 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             failures.set(0);
 
-            long hotReloadTime = hotReloadTime();
+            long hotReloadTime;
+
+            try {
+                hotReloadTime = hotReloadTime();
+            }
+            catch (RuntimeException e) {
+                log.warning("TLS hot reload could not read certificate expiry after manual reload [transports=" + transports
+                    + ", nextCheck=" + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
+
+                scheduleCheck(CHECK_PERIOD);
+
+                return;
+            }
 
             logHotReloadTime(hotReloadTime);
 

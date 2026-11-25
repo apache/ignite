@@ -493,6 +493,25 @@ public class SslFactoryRegistryTest {
         assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
     }
 
+    /** A manual reload succeeds even if the factory can report certificate expiry only on the next check. */
+    @Test
+    public void testManualReloadRetriesFailedExpiryRead() {
+        long expiry = System.currentTimeMillis() + DFLT_SSL_HOT_RELOAD_BEFORE_EXPIRY + MINUTES.toMillis(30);
+
+        when(factory.certificatesExpiry()).thenThrow(new IgniteException("Certificate expiry unavailable")).thenReturn(expiry);
+
+        registry.register("communication", factory);
+        registry.onKernalStart(true);
+        registry.reload(factory);
+
+        assertEquals(HOURS.toMillis(1), nextCheckDelay());
+
+        runChecks();
+
+        assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
+        verify(factory).init();
+    }
+
     /**
      * Given: the registry has started, and the key store still holds certificates that are due for hot reload.
      * When: a manual reload loads them.
