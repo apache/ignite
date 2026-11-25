@@ -26,8 +26,6 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 
-import static java.util.concurrent.TimeUnit.DAYS;
-
 /** SSL context factory that the SSL factory registry can reload on request and before its certificates expire. */
 public interface ReloadableSslFactory extends Factory<SSLContext> {
     /**
@@ -38,11 +36,9 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
     public void init();
 
     /**
-     * The hot reload time comes from the certificate chains of the private keys that new connections use.
-     * Each certificate in these chains becomes due when the time left before it expires drops to a third of its lifetime
-     * or to 7 days, whichever is shorter.
-     * The factory is due when its first certificate is due. Keys without an X.509 certificate chain are ignored,
-     * as TLS cannot use them.
+     * The hot reload time comes a lead time of the factory before the earliest expiry among the certificate chains of the
+     * private keys that new connections use. A chain expires when any certificate in it expires.
+     * Keys without an X.509 certificate chain are ignored, as TLS cannot use them.
      *
      * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the factory gives no private key with
      *     an X.509 certificate chain.
@@ -56,21 +52,21 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
     }
 
     /**
-     * Calculates the hot reload time that {@link #getHotReloadTime()} describes.
-     *
      * @param store Loaded key store.
-     * @return Hot reload time in milliseconds since the epoch, or {@code 0} if the store has no private key
+     * @return Earliest certificate expiry in the private key chains, or {@code 0} if the store has no private key
      *     with an X.509 certificate chain.
      * @throws GeneralSecurityException If the key store cannot be read.
      */
-    public static long hotReloadTime(KeyStore store) throws GeneralSecurityException {
+    public static long keyChainsExpiry(KeyStore store) throws GeneralSecurityException {
         long earliest = Long.MAX_VALUE;
 
         for (Enumeration<String> aliases = store.aliases(); aliases.hasMoreElements(); ) {
             String alias = aliases.nextElement();
 
-            if (store.isKeyEntry(alias))
-                earliest = Math.min(earliest, chainHotReloadTime(store.getCertificateChain(alias)));
+            if (!store.isKeyEntry(alias))
+                continue;
+
+            earliest = Math.min(earliest, chainExpiry(store.getCertificateChain(alias)));
         }
 
         return earliest == Long.MAX_VALUE ? 0 : earliest;
@@ -78,25 +74,22 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
 
     /**
      * @param chain Certificate chain of a key entry, or {@code null} if the entry has none.
-     * @return Time when the first certificate in the chain is due, or {@link Long#MAX_VALUE} if there is no chain
-     *     or it holds a certificate other than X.509, as TLS ignores such keys.
+     * @return Earliest expiry in the chain, or {@link Long#MAX_VALUE} if there is no chain or it holds a certificate other
+     *     than X.509, as TLS ignores such keys.
      */
-    private static long chainHotReloadTime(Certificate[] chain) {
-        long time = Long.MAX_VALUE;
+    private static long chainExpiry(Certificate[] chain) {
+        long expiry = Long.MAX_VALUE;
 
         if (chain == null)
-            return time;
+            return expiry;
 
         for (Certificate cert : chain) {
             if (!(cert instanceof X509Certificate x509))
                 return Long.MAX_VALUE;
 
-            long notAfter = x509.getNotAfter().getTime();
-            long lifetime = notAfter - x509.getNotBefore().getTime();
-
-            time = Math.min(time, notAfter - Math.min(DAYS.toMillis(7), lifetime / 3));
+            expiry = Math.min(expiry, x509.getNotAfter().getTime());
         }
 
-        return time;
+        return expiry;
     }
 }

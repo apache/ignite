@@ -43,6 +43,7 @@ import org.junit.rules.TemporaryFolder;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.ssl.SslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.merge;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
@@ -97,29 +98,55 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: a certificate valid for 24 hours and a certificate valid for 90 days, both issued by a CA valid for 2 years.
-     * When: the factory loads each of them.
-     * Then: hot reload is due 8 hours, a third of the lifetime, before the first one expires, and 7 days before the
-     *     second one expires, as a third of 90 days exceeds 7 days.
+     * Given: a factory has loaded a certificate that expires in 10 days.
+     * When: the application increases the lead time from the default of 7 days to 14 days before starting the node.
+     * Then: the same certificate is already due for hot reload.
      */
     @Test
-    public void testHotReloadLeadIsThirdOfLifetimeUpToSevenDays() throws Exception {
-        assertHotReloadTime(at(4), authority.keyStore("node", at(-12), at(12)));
-        assertHotReloadTime(at(DAYS.toHours(30 - 7)), authority.keyStore("node", at(-DAYS.toHours(60)), at(DAYS.toHours(30))));
+    public void testHotReloadTimeUsesCurrentLeadTime() throws Exception {
+        Path keys = tmp.newFile("keys.jks").toPath();
+
+        save(authority.keyStore("node", at(-1), at(DAYS.toHours(10))), keys);
+
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreFilePath(keys.toString());
+        factory.setKeyStorePassword(PASSWORD);
+        factory.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+        factory.create();
+
+        assertEquals(at(DAYS.toHours(3)), factory.getHotReloadTime());
+
+        factory.setHotReloadBeforeExpiryMs(DAYS.toMillis(14));
+
+        assertEquals(at(-DAYS.toHours(4)), factory.getHotReloadTime());
     }
 
     /**
-     * Given: key stores in which the certificate due first was issued 30 hours ago and expires in 15 hours.
-     *     In one of them, that certificate is the issuer of a key certificate that expires sooner, in 5 hours, but is
-     *     due later, in 3 hours, a third of its 6-hour lifetime before it expires.
-     *     Other entries are a chain that is due later, a secret key and a key with a certificate chain that is not X.509.
-     * When: the factory loads each key store.
-     * Then: hot reload is due now, a third of the 45-hour lifetime before that certificate expires.
+     * Given: a factory with the default lead time.
+     * When: the application sets a zero or negative lead time.
+     * Then: the setter rejects it and keeps the default.
      */
     @Test
-    public void testHotReloadTimeComesFromCertificateDueFirst() throws Exception {
-        TestCertificateAuthority shortIssuer = new TestCertificateAuthority("short-issuer", at(-30), at(15));
-        KeyStore node = authority.keyStore("node", at(-30), at(15));
+    public void testNonPositiveHotReloadBeforeExpiryMsIsRejected() {
+        SslContextFactory factory = new SslContextFactory();
+
+        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiryMs(0));
+        assertThrows(IllegalArgumentException.class, () -> factory.setHotReloadBeforeExpiryMs(-1));
+        assertEquals(DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS, factory.getHotReloadBeforeExpiryMs());
+    }
+
+    /**
+     * Given: key stores in which the chain that expires first has 15 hours left.
+     *     In one of them, that chain gets its expiry from an issuer that expires before the key certificate.
+     *     Other entries are a chain that expires later, a secret key and a key with a certificate chain that is not X.509.
+     * When: the factory loads each key store.
+     * Then: hot reload is due now, 15 hours before the chain that expires first.
+     */
+    @Test
+    public void testHotReloadTimeComesFromEarliestExpiringChain() throws Exception {
+        TestCertificateAuthority shortIssuer = new TestCertificateAuthority("short-issuer", now - DAYS.toMillis(365), at(15));
+        KeyStore node = authority.keyStore("node", at(-85), at(15));
         KeyStore withUnusableKeys = KeyStore.getInstance("JCEKS");
 
         withUnusableKeys.load(null, PASSWORD);
@@ -128,11 +155,11 @@ public class SslContextFactoryHotReloadTest {
         withUnusableKeys.setKeyEntry("other", node.getKey("node", PASSWORD), PASSWORD,
             new Certificate[] {new OtherCertificate(node.getCertificate("node").getPublicKey())});
 
-        assertHotReloadTime(now, node);
-        assertHotReloadTime(now, shortIssuer.keyStore("node", at(-1), at(5)));
-        assertHotReloadTime(now, merge(authority.keyStore("first", at(-30), at(15)), authority.keyStore("second", at(-100), at(200))));
-        assertHotReloadTime(now, merge(authority.keyStore("first", at(-100), at(200)), authority.keyStore("second", at(-30), at(15))));
-        assertHotReloadTime(now, withUnusableKeys);
+        assertHotReloadIsDueNow(node);
+        assertHotReloadIsDueNow(shortIssuer.keyStore("node", at(-85), at(100)));
+        assertHotReloadIsDueNow(merge(authority.keyStore("first", at(-85), at(15)), authority.keyStore("second", at(-200), at(100))));
+        assertHotReloadIsDueNow(merge(authority.keyStore("first", at(-200), at(100)), authority.keyStore("second", at(-85), at(15))));
+        assertHotReloadIsDueNow(withUnusableKeys);
     }
 
     /**
@@ -150,10 +177,9 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Given: the issuer was valid for 99 hours and expired an hour ago, and the key certificate becomes valid in 99 hours.
+     * Given: the issuer expired an hour ago, and the key certificate becomes valid in 99 hours.
      * When: the factory loads the chain for the first time.
-     * Then: the load succeeds, and hot reload has been due since 33 hours, a third of the issuer's lifetime, before
-     *     the issuer expired.
+     * Then: the load succeeds, and hot reload has been due since 15 hours before the issuer expired.
      */
     @Test
     public void testFirstLoadAcceptsChainOutsideValidityPeriod() throws Exception {
@@ -162,7 +188,7 @@ public class SslContextFactoryHotReloadTest {
 
         factory.create();
 
-        assertEquals(at(-34), factory.getHotReloadTime());
+        assertEquals(at(-16), factory.getHotReloadTime());
     }
 
     /**
@@ -270,14 +296,14 @@ public class SslContextFactoryHotReloadTest {
 
         save(authority.trustStore(), trust);
 
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-80), at(10)));
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
         factory.useTrustStore(trust.toString());
 
         SSLContext ctx = factory.create();
         long hotReloadTime = factory.getHotReloadTime();
 
-        factory.keyStore = authority.keyStore("node", at(-1), at(101));
+        factory.keyStore = authority.keyStore("node", at(-1), at(99));
         Files.delete(trust);
 
         IgniteException err = assertThrows(IgniteException.class, factory::init);
@@ -290,7 +316,7 @@ public class SslContextFactoryHotReloadTest {
         factory.init();
 
         assertNotSame(ctx, factory.create());
-        assertEquals(at(67), factory.getHotReloadTime());
+        assertEquals(at(84), factory.getHotReloadTime());
     }
 
     /**
@@ -335,28 +361,28 @@ public class SslContextFactoryHotReloadTest {
     }
 
     /**
-     * Creates a factory that has loaded certificates due for hot reload 20 hours ago.
-     * It reads both stores from memory. The certificates were issued 80 hours ago and expire in 10 hours.
+     * Creates a factory that has loaded certificates due for hot reload 5 hours ago.
+     * It reads both stores from memory. The certificates expire in 10 hours.
      */
     private InMemorySslContextFactory dueFactory() throws Exception {
-        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-80), at(10)));
+        InMemorySslContextFactory factory = new InMemorySslContextFactory(authority.keyStore("node", at(-90), at(10)));
 
         factory.trustStore = authority.trustStore();
         factory.useTrustStore("memory-trust");
         factory.create();
 
-        assertEquals(at(-20), factory.getHotReloadTime());
+        assertEquals(at(-5), factory.getHotReloadTime());
 
         return factory;
     }
 
-    /** Checks the hot reload time of a factory that has loaded the given key store. */
-    private static void assertHotReloadTime(long expected, KeyStore keys) {
+    /** */
+    private void assertHotReloadIsDueNow(KeyStore keys) {
         InMemorySslContextFactory factory = new InMemorySslContextFactory(keys);
 
         factory.create();
 
-        assertEquals(expected, factory.getHotReloadTime());
+        assertEquals(now, factory.getHotReloadTime());
     }
 
     /**
@@ -405,6 +431,7 @@ public class SslContextFactoryHotReloadTest {
      * A factory that reads its key store from a field instead of a file and counts the reads.
      * Tests change the field to put new certificates into the source.
      * By default the factory trusts all peers. Tests can configure a trust store from memory or a file.
+     * Hot reload is due 15 hours before expiry, so the tests count certificate dates in hours.
      */
     private static class InMemorySslContextFactory extends SslContextFactory {
         /** */
@@ -426,6 +453,7 @@ public class SslContextFactoryHotReloadTest {
             setKeyStoreFilePath("memory");
             setKeyStorePassword(PASSWORD);
             setTrustManagers(getDisabledTrustManager());
+            setHotReloadBeforeExpiryMs(HOURS.toMillis(15));
         }
 
         /** Selects the trust store that supplies the factory's trust managers. */

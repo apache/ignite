@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -34,8 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Base class for SSL context factories that cache their {@link SSLContext}. {@link #init()} loads a new context, and
- * {@link #create()} returns the last one that it loaded, loading one on the first call. The hot reload time comes from
- * the key store that the factory passes to {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])}.
+ * {@link #create()} returns the last one that it loaded, loading one on the first call. The hot reload time comes
+ * {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry in the key store that the factory passed to
+ * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during the last successful load.
  */
 public abstract class AbstractSslContextFactory implements ReloadableSslFactory {
     /** */
@@ -43,6 +45,9 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /** Default lead time for certificate hot reload: 7 days. */
+    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -60,10 +65,13 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     private boolean hotReloadEnabled = true;
 
     /** */
-    private transient volatile long hotReloadTime;
+    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
-    private transient long pendingHotReloadTime;
+    private transient volatile long earliestExpiry;
+
+    /** */
+    private transient long pendingExpiry;
 
     /** {@inheritDoc} */
     @Override public boolean isHotReloadEnabled() {
@@ -78,9 +86,28 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
         hotReloadEnabled = enabled;
     }
 
+    /**
+     * @return How long before the certificates expire hot reload becomes due, in milliseconds.
+     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+     */
+    public long getHotReloadBeforeExpiryMs() {
+        return hotReloadBeforeExpiryMs;
+    }
+
+    /**
+     * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
+     */
+    public void setHotReloadBeforeExpiryMs(long millis) {
+        A.ensure(millis > 0, "millis > 0");
+
+        hotReloadBeforeExpiryMs = millis;
+    }
+
     /** {@inheritDoc} */
     @Override public long getHotReloadTime() {
-        return hotReloadTime;
+        long expiry = earliestExpiry;
+
+        return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;
     }
 
     /**
@@ -148,7 +175,7 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     private SSLContext createSslContext() throws SSLException {
         checkParameters();
 
-        pendingHotReloadTime = 0;
+        pendingExpiry = 0;
 
         KeyManager[] keyMgrs = createKeyManagers();
 
@@ -171,7 +198,7 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
 
             ctx.init(keyMgrs, trustMgrs, null);
 
-            hotReloadTime = pendingHotReloadTime;
+            earliestExpiry = pendingExpiry;
 
             return ctx;
         }
@@ -220,7 +247,7 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
         throws GeneralSecurityException {
         keyMgrFactory.init(store, pwd);
 
-        pendingHotReloadTime = ReloadableSslFactory.hotReloadTime(store);
+        pendingExpiry = ReloadableSslFactory.keyChainsExpiry(store);
 
         return keyMgrFactory.getKeyManagers();
     }

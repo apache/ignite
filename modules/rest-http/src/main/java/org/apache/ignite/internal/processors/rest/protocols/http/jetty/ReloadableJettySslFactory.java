@@ -24,11 +24,15 @@ import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
+ * Hot reload comes {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS} before the certificates expire.
  * <p>
  * Jetty's factory guards its TLS state with an internal lock: it loads the state under this lock, and new connections
  * take the state under it too. Before loading a replacement, Jetty clears the state. So that new connections never see
@@ -86,8 +90,9 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     @Override public long getHotReloadTime() {
         try {
             KeyStore store = factory.getKeyStore();
+            long expiry = store == null ? 0 : ReloadableSslFactory.keyChainsExpiry(store);
 
-            return store == null ? 0 : ReloadableSslFactory.hotReloadTime(store);
+            return expiry == 0 ? 0 : expiry - DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
         }
         catch (IllegalStateException | GeneralSecurityException e) {
             throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);

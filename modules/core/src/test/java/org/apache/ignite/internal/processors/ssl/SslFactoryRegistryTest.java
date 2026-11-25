@@ -695,7 +695,7 @@ public class SslFactoryRegistryTest {
     public void testScheduledReloadUsesCustomFactoryKeyStoreAndPassword() throws Exception {
         SourceSslContextFactory custom = new SourceSslContextFactory();
 
-        custom.setKeys(authority.keyStore("node", at(-30), at(10)), PASSWORD);
+        custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
 
         SSLContext initCtx = custom.create();
 
@@ -712,7 +712,7 @@ public class SslFactoryRegistryTest {
 
         long expiry = ((X509Certificate)replacement.getCertificate("node")).getNotAfter().getTime();
 
-        assertEquals(expiry - DAYS.toMillis(7), custom.getHotReloadTime());
+        assertEquals(expiry - custom.getHotReloadBeforeExpiryMs(), custom.getHotReloadTime());
     }
 
     /**
@@ -724,7 +724,7 @@ public class SslFactoryRegistryTest {
     public void testLoadWithoutKeyStoreClearsHotReloadDate() throws Exception {
         SourceSslContextFactory custom = new SourceSslContextFactory();
 
-        custom.setKeys(authority.keyStore("node", at(-30), at(10)), PASSWORD);
+        custom.setKeys(authority.keyStore("node", at(-1), at(10)), PASSWORD);
         custom.create();
 
         assertTrue(custom.getHotReloadTime() > 0);
@@ -1127,7 +1127,7 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Writes a key store that is already due for hot reload.
+     * Writes a key store that is already due for hot reload with the default lead time.
      * Its certificate expires in 10 hours.
      */
     private void writeDueCertificates(Path keyStore) throws Exception {
@@ -1135,13 +1135,13 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Writes a key store whose certificate became valid 30 minutes ago and expires in an hour, so it is due for hot reload
-     * in 30 minutes, a third of its lifetime before it expires.
+     * Writes a key store that is due for hot reload in 30 minutes with the default lead time.
+     * Its certificate became valid an hour ago and expires in 7 days and 30 minutes.
      */
     private void writeCertificatesDueIn30Minutes(Path keyStore) throws Exception {
         long now = System.currentTimeMillis();
 
-        save(authority.keyStore("node", now - MINUTES.toMillis(30), now + MINUTES.toMillis(60)), keyStore);
+        save(authority.keyStore("node", now - HOURS.toMillis(1), now + DAYS.toMillis(7) + MINUTES.toMillis(30)), keyStore);
     }
 
     /** @return Whether the delay ends within the next 30 minutes, but no more than a minute earlier. */
@@ -1150,7 +1150,7 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Writes a key store that is due for hot reload in 23 days.
+     * Writes a key store that is due for hot reload in 23 days with the default lead time.
      * Its certificate became valid an hour ago and expires in 30 days.
      */
     private void writeFreshCertificates(Path keyStore) throws Exception {

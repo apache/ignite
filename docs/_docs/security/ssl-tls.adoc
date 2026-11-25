@@ -236,15 +236,16 @@ It checks each factory again when its certificates become due, but no later than
 After a failed attempt, it retries an hour later.
 All checks run in one thread, so a slow certificate source can delay the checks of other factories.
 
-Each certificate in the private key chains, including issuing certificates, becomes due when the time left before it expires drops to a third of its lifetime or to 7 days, whichever is shorter.
-For example, a certificate valid for 24 hours is due 8 hours before it expires, and a certificate valid for 90 days is due 7 days before.
-A factory is due when its first certificate is due.
-For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded.
+For each factory, hot reload becomes due `hotReloadBeforeExpiryMs` before the earliest certificate expiry in its private key chains.
+This includes issuing certificates. The default lead time is 7 days.
+For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded, and the lead time is always 7 days.
 The first check at or after that date attempts a reload, including the startup check.
-Supply the replacements before the current certificates are due, so that the next check loads them.
+Allow enough time before expiry to supply the replacements and load the stores.
+Keep the lead time shorter than the lifetime of the replacement certificates, or they will already be due when loaded.
+See link:{javadoc_base_url}/org/apache/ignite/ssl/AbstractSslContextFactory.html#getHotReloadTime()[getHotReloadTime(), window=_blank] for the calculation.
 
 If the loaded certificates are still due for hot reload, Ignite records a failed hot reload attempt even though it installed them.
-This can happen when the certificates have not changed, only the trust store changed, or the replacements are already due when loaded.
+This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.
 The loaded context remains in use until a later reload replaces it.
 
 After a manual reload, Ignite schedules the next check from the loaded certificates.
@@ -319,6 +320,10 @@ Limit request duration in custom sources: a blocked load delays other hot reload
 |`hotReloadEnabled`
 |Enables automatic certificate hot reload. See <<Automatic Certificate Hot Reload>>.
 |`true`
+
+|`hotReloadBeforeExpiryMs`
+|How long before the certificates expire hot reload becomes due, in milliseconds. See <<When Hot Reload Runs>>.
+|`604800000` (7 days)
 
 |`trustStoreFilePath`
 |The path to the trust store file.

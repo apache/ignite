@@ -209,7 +209,8 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a custom Jetty factory has loaded certificate A, valid for 30 days.
      * When: the factory reloads by itself and gets certificate B, which was issued 20 hours ago and expires in an hour.
      *     Then its source fails, and Ignite reloads the factory.
-     * Then: the hot reload date is 23 days ahead for A and 6 hours ago for B, and the failed reload keeps B's date.
+     * Then: the hot reload date comes 7 days before the certificate in use expires: 23 days ahead for A, 7 days before
+     *     the expiry of B for B. The failed reload keeps B's date.
      */
     @Test
     public void testHotReloadTimeFollowsKeysInUse() throws Exception {
@@ -225,9 +226,11 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
             jettyFactory.reload(f -> { });
 
-            assertEquals(now - HOURS.toMillis(6), factory.getHotReloadTime());
+            long dueB = now + HOURS.toMillis(1) - DAYS.toMillis(7);
+
+            assertEquals(dueB, factory.getHotReloadTime());
             assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
-            assertEquals(now - HOURS.toMillis(6), factory.getHotReloadTime());
+            assertEquals(dueB, factory.getHotReloadTime());
         }
         finally {
             jettyFactory.stop();
