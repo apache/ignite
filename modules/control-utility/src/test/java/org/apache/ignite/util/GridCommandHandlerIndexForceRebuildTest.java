@@ -591,7 +591,7 @@ public class GridCommandHandlerIndexForceRebuildTest extends GridCommandHandlerA
             }
 
             IgniteInternalFuture<Boolean> destroyCacheFut = n.context().cache()
-                .dynamicDestroyCache(cacheName2, false, true, false, null);
+                .dynamicDestroyCache(cacheName2, false, true);
 
             SchemaIndexCacheFuture intlRebIdxFut = schemaIndexCacheFuture(n, CU.cacheId(cacheName2));
             assertNotNull(intlRebIdxFut);

@@ -168,6 +168,17 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
 
     /** */
     @Test
+    public void testNonExistentPartition() {
+        long expCnt = cacheSize("T1_CACHE", parts);
+
+        parts = Arrays.copyOf(parts, parts.length + 1);
+        parts[parts.length - 1] = 1024;
+
+        assertEquals(expCnt, sql("SELECT * FROM T1").size());
+    }
+
+    /** */
+    @Test
     public void testReplicated() {
         Stream.of(Pair.of("select * from DICT", X.EMPTY_OBJECT_ARRAY),
                   Pair.of("select * from DICT where id < ?", ENTRIES_COUNT))

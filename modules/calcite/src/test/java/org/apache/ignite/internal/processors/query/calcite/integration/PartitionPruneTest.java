@@ -39,6 +39,7 @@ import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -395,6 +396,22 @@ public class PartitionPruneTest extends AbstractBasicIntegrationTest {
             },
             123, 125
         );
+    }
+
+    /** */
+    @Test
+    public void testJoinRehash() {
+        sql("CREATE TABLE T3(ID INT, AFF INT, PRIMARY KEY(ID, AFF)) WITH affinity_key=AFF,cache_name=t3_cache");
+        sql("INSERT INTO T3(ID, AFF) VALUES (123, 125)");
+
+        assertQuery("SELECT T1.VAL FROM T3 JOIN T1 ON T3.ID = T1.ID WHERE T1.ID = ? AND T3.ID = ? AND T3.AFF = ?")
+            .withParams(123, 123, 125)
+            .matches(QueryChecker.containsSubPlan("IgniteExchange(distribution=[affinity"))
+            .returns("name_123")
+            .check();
+
+        assertPartitions(partition("T1_CACHE", 123), partition("T3_CACHE", 125));
+        assertNodes(node("T1_CACHE", 123), node("T3_CACHE", 125));
     }
 
     /** */

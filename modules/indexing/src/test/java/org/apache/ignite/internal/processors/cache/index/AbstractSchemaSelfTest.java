@@ -641,7 +641,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
      * @return Future that will be completed when cache is destroyed.
      */
     protected IgniteInternalFuture<Boolean> destroySqlCacheFuture(Ignite node) {
-        return ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true, false, null);
+        return ((IgniteEx)node).context().cache().dynamicDestroyCache(CACHE_NAME, true, true);
     }
 
     /**

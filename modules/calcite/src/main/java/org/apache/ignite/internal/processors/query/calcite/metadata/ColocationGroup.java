@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,6 +64,12 @@ public class ColocationGroup extends AbstractMessage {
      * In case of {@code true} value we can skip assignment marshalling and calc assignment on remote nodes.
      */
     private boolean primaryAssignment;
+
+    /** The single partition the assignments are filtered by, {@code -1} if none. */
+    private int partFilter = -1;
+
+    /** Partitions the assignments are filtered by, unless it is a single partition. */
+    private @Nullable int[] partsFilter;
 
     /** Marshalled assignments serialization call holder. */
     @Order(2)
@@ -267,32 +274,60 @@ public class ColocationGroup extends AbstractMessage {
 
     /** */
     public ColocationGroup filterByPartitions(int[] parts) {
-        if (!F.isEmpty(assignments)) {
-            List<List<UUID>> assignments = new ArrayList<>(this.assignments.size());
-            Set<UUID> nodes = new HashSet<>();
+        List<List<UUID>> assignments = this.assignments;
 
-            if (parts == null)
-                return this;
+        if (F.isEmpty(assignments) || parts == null)
+            return this;
 
-            if (parts.length > 0) {
-                for (int i = 0; i < this.assignments.size(); ++i) {
-                    UUID first = Arrays.binarySearch(parts, i) >= 0 ? F.first(this.assignments.get(i)) : null;
+        if (parts.length == 1)
+            return filterByPartition(parts[0]);
 
-                    if (first != null)
-                        nodes.add(first);
+        Set<UUID> nodes = new HashSet<>();
 
-                    assignments.add(first != null ? this.assignments.get(i) : Collections.emptyList());
-                }
-            }
-            else {
-                for (int i = 0; i < this.assignments.size(); ++i)
-                    assignments.add(Collections.emptyList());
-            }
+        for (int part : parts) {
+            UUID first = part < assignments.size() ? F.first(assignments.get(part)) : null;
 
-            return new ColocationGroup(srcIds, new ArrayList<>(nodes), assignments);
+            if (first != null)
+                nodes.add(first);
         }
 
-        return this;
+        // Avoids a pass over all partitions on every query execution.
+        ColocationGroup res = new ColocationGroup(srcIds, new ArrayList<>(nodes), new AbstractList<>() {
+            @Override public List<UUID> get(int part) {
+                return Arrays.binarySearch(parts, part) >= 0 ? assignments.get(part) : Collections.emptyList();
+            }
+
+            @Override public int size() {
+                return assignments.size();
+            }
+        });
+
+        res.partsFilter = parts;
+
+        return res;
+    }
+
+    /** */
+    private ColocationGroup filterByPartition(int part) {
+        int size = assignments.size();
+
+        List<UUID> assignment = part < size ? assignments.get(part) : Collections.emptyList();
+
+        List<UUID> nodes = F.isEmpty(assignment) ? Collections.emptyList() : Collections.singletonList(assignment.get(0));
+
+        ColocationGroup res = new ColocationGroup(srcIds, nodes, new AbstractList<>() {
+            @Override public List<UUID> get(int idx) {
+                return idx == part ? assignment : Collections.emptyList();
+            }
+
+            @Override public int size() {
+                return size;
+            }
+        });
+
+        res.partFilter = part;
+
+        return res;
     }
 
     /** */
@@ -310,6 +345,22 @@ public class ColocationGroup extends AbstractMessage {
         // All primary partitions: the scan reserves them as a group.
         if (F.isEmpty(assignments) || primaryAssignment)
             return null;
+
+        if (partFilter >= 0) {
+            return partFilter < assignments.size() && Objects.equals(nodeId, F.first(assignments.get(partFilter)))
+                ? new int[] {partFilter} : U.EMPTY_INTS;
+        }
+
+        if (partsFilter != null) {
+            GridIntList parts = new GridIntList(partsFilter.length);
+
+            for (int p : partsFilter) {
+                if (p < assignments.size() && Objects.equals(nodeId, F.first(assignments.get(p))))
+                    parts.add(p);
+            }
+
+            return parts.arrayCopy();
+        }
 
         GridIntList parts = new GridIntList(assignments.size());
 

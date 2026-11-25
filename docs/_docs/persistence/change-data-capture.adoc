@@ -118,7 +118,7 @@ The consumer of change events.  It should be implemented by the user.
 
 `ignite-cdc.sh` uses the same link:monitoring-metrics/new-metrics-system#metric-exporters[metric exporters] as an Ignite node.
 They are configured by the `metricExporterSpi` property of `CdcConfiguration`, the JMX exporter is used by default.
-The application registers its metrics in the `cdc` register.
+The application registers its metrics in the `cdc` register and also exports the link:monitoring-metrics/new-metrics#binary-metadata[`binary.metadata`] register.
 The `cdc.consumer` register is passed to `CdcConsumer.start(MetricRegistry)` and is reserved for the consumer-specific metrics.
 
 Register name: `cdc`
