@@ -41,6 +41,7 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSyntax;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.fun.SqlTrimFunction;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -59,6 +60,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Optionality;
+import org.apache.calcite.util.TimestampString;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -246,6 +248,28 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
         sql("create or replace view my_view as select to_number(val_str) val_str from my_table");
 
         assertQuery("SELECT val_str from my_view").returns(new BigDecimal("0")).check();
+    }
+
+    /** Tests a call to a plugin function without parentheses in a view. */
+    @Test
+    public void testSysdateWithoutParenthesesInView() {
+        Timestamp dayStart = Timestamp.valueOf("2021-01-01 00:00:00");
+
+        assertQuery("SELECT TRUNC(SYSDATE) AS DAY_START FROM DUAL").returns(dayStart).check();
+
+        try {
+            sql("CREATE VIEW V_SYSDATE_WITH_PARENTHESES AS SELECT TRUNC(SYSDATE()) AS \"DayStart\" FROM DUAL");
+
+            assertQuery("SELECT \"DayStart\" FROM V_SYSDATE_WITH_PARENTHESES").returns(dayStart).check();
+
+            sql("CREATE OR REPLACE VIEW V_SYSDATE_DEMO AS SELECT TRUNC(SYSDATE) AS DAY_START FROM DUAL");
+
+            assertQuery("SELECT DAY_START FROM V_SYSDATE_DEMO").returns(dayStart).check();
+        }
+        finally {
+            sql("DROP VIEW IF EXISTS V_SYSDATE_DEMO");
+            sql("DROP VIEW IF EXISTS V_SYSDATE_WITH_PARENTHESES");
+        }
     }
 
     /** */
@@ -444,6 +468,21 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
                 SqlFunctionCategory.TIMEDATE);
 
         /** */
+        public static final SqlFunction SYSDATE = new SqlFunction(
+            "SYSDATE",
+            SqlKind.OTHER_FUNCTION,
+            ReturnTypes.explicit(SqlTypeName.TIMESTAMP, 0),
+            null,
+            OperandTypes.NILADIC,
+            SqlFunctionCategory.TIMEDATE
+        ) {
+            /** {@inheritDoc} */
+            @Override public SqlSyntax getSyntax() {
+                return SqlSyntax.FUNCTION_ID;
+            }
+        };
+
+        /** */
         public static final SqlFunction TO_NUMBER =
             new SqlFunction(
                 "TO_NUMBER",
@@ -508,6 +547,8 @@ public class OperatorsExtensionIntegrationTest extends AbstractBasicIntegrationT
             addAlias(OperatorTable.SUBSTR, SqlStdOperatorTable.SUBSTRING);
             // Tests operator extension via covnertlet.
             registerOp(OperatorTable.TRUNC, new TruncConvertlet());
+            registerOp(OperatorTable.SYSDATE, (cx, call) ->
+                cx.getRexBuilder().makeTimestampLiteral(new TimestampString("2021-01-01 01:02:03"), 0));
         }
 
         /**
