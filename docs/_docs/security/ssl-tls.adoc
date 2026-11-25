@@ -233,8 +233,8 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 === When Hot Reload Runs
 
-At startup, Ignite checks each factory.
-It checks each factory again when its certificates become due, but no later than an hour after the previous check.
+When the node starts with hot reload enabled, Ignite checks each factory that allows automatic reload.
+For each such factory, Ignite schedules the next check when its certificates become due or in one hour, whichever comes first.
 After a failed attempt, it retries an hour later.
 All checks run in one thread, so a slow certificate source can delay the checks of other factories.
 
@@ -250,7 +250,7 @@ If the loaded certificates are still due for hot reload, Ignite records a failed
 This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `sslHotReloadBeforeExpiry`.
 The loaded context remains in use until a later reload replaces it.
 
-After a manual reload, Ignite schedules the next check from the loaded certificates.
+After a manual reload of a factory on this schedule, Ignite uses the loaded certificates to schedule its next check.
 
 New connections use the loaded certificates; established connections remain open.
 To confirm a replacement, open a new TLS connection to each affected endpoint and compare its peer certificate with the replacement.
