@@ -112,8 +112,9 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
 
     /**
      * Two servers fail while a client transaction is open, so both leave in one merged exchange, and the coordinator
-     * becomes the only new owner. A server outside the node filter defers the maps it gets during the exchange. Then it
-     * starts the cache and copies the partition map it kept without the cache.
+     * becomes the only new owner. A server outside the node filter defers the maps it gets during the exchange: the
+     * coordinator's resend with the initial version and its send at the end of the exchange with the result version.
+     * Then it starts the cache and copies the partition map it kept without the cache.
      *
      * @throws Exception If failed.
      */
@@ -121,6 +122,23 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     public void testLostPartitionOwnedInMergedExchange() throws Exception {
         plc = IGNORE;
 
+        // The server outside the node filter defers the map sent at the end of the exchange only if the map comes before
+        // that server finishes its own exchange, so the scenario repeats until it does.
+        for (int i = 0; i < 10; i++) {
+            if (checkMergedExchange())
+                return;
+
+            stopAllGrids();
+        }
+
+        fail("The server outside the node filter deferred fewer than two maps in every run");
+    }
+
+    /**
+     * @return Whether the server outside the node filter deferred at least two maps during the merged exchange.
+     * @throws Exception If failed.
+     */
+    private boolean checkMergedExchange() throws Exception {
         IgniteEx crd = startGrids(3);
         IgniteEx cln = startClientGrid(3);
         IgniteEx noData = startGrid(NO_DATA);
@@ -148,11 +166,14 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
         GridDhtPartitionsExchangeFuture exchFut = crd.context().cache().context().exchange().lastFinishedFuture();
 
         assertTrue(exchFut.initialVersion().before(exchFut.topologyVersion()));
-        assertTrue(deferredMaps.check());
+
+        boolean deferred = deferredMaps.check();
 
         noData.cache(CACHE);
 
         awaitPartitionMapsMatchLocalStates(CACHE);
+
+        return deferred;
     }
 
     /**
