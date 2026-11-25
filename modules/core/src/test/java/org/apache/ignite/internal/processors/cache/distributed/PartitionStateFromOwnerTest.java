@@ -55,8 +55,8 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     /** Partition loss policy of the cache. */
     private PartitionLossPolicy plc;
 
-    /** Full maps the server outside the node filter defers during an exchange. */
-    private final LogListener deferredMaps =
+    /** Matches when the server outside the node filter has deferred at least two full maps during an exchange. */
+    private final LogListener deferLsnr =
         LogListener.matches("Delay process full message without exchange id").atLeast(2).build();
 
     /** {@inheritDoc} */
@@ -67,7 +67,7 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
             .setUserAttributes(Collections.singletonMap(DATA_ATTR, data));
 
         if (!data)
-            return cfg.setGridLogger(new ListeningTestLogger(log, deferredMaps));
+            return cfg.setGridLogger(new ListeningTestLogger(log, deferLsnr));
 
         // A node with the cache in its configuration starts it on join, even outside the node filter.
         return cfg.setCacheConfiguration(new CacheConfiguration<Integer, Integer>(CACHE)
@@ -111,7 +111,7 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Two servers fail while a client transaction is open, so both leave in one merged exchange, and the coordinator
+     * Two servers stop while a client transaction is open, so they leave in one merged exchange, and the coordinator
      * becomes the only new owner. A server outside the node filter defers the maps it gets during the exchange: the
      * coordinator's resend with the initial version and its send at the end of the exchange with the result version.
      * Then it starts the cache and copies the partition map it kept without the cache.
@@ -122,8 +122,8 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
     public void testLostPartitionOwnedInMergedExchange() throws Exception {
         plc = IGNORE;
 
-        // The server outside the node filter defers the map sent at the end of the exchange only if the map comes before
-        // that server finishes its own exchange, so the scenario repeats until it does.
+        // The server outside the node filter defers the map sent at the end of the exchange only if the map comes
+        // before that server finishes its own exchange, so the scenario repeats until it does.
         for (int i = 0; i < 10; i++) {
             if (checkMergedExchange())
                 return;
@@ -145,11 +145,12 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        deferredMaps.reset();
+        deferLsnr.reset();
 
         Integer key = primaryKey(crd.cache(CACHE));
 
-        // The exchange waits for the transaction, so the second failure merges into it.
+        // The exchange waits for the transaction, so the second departure merges into it, and the coordinator's
+        // scheduled resend reaches the server outside the node filter while that server is still in the exchange.
         try (Transaction tx = cln.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cln.cache(CACHE).put(key, key);
 
@@ -165,9 +166,10 @@ public class PartitionStateFromOwnerTest extends GridCommonAbstractTest {
 
         GridDhtPartitionsExchangeFuture exchFut = crd.context().cache().context().exchange().lastFinishedFuture();
 
-        assertTrue(exchFut.initialVersion().before(exchFut.topologyVersion()));
+        assertTrue("The departures didn't merge into one exchange",
+            exchFut.initialVersion().before(exchFut.topologyVersion()));
 
-        boolean deferred = deferredMaps.check();
+        boolean deferred = deferLsnr.check();
 
         noData.cache(CACHE);
 
