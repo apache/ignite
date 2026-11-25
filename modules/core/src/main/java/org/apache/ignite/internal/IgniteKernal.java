@@ -99,7 +99,7 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -995,7 +995,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             startManager(new GridCheckpointManager(ctx));
 
             startManager(new GridEventStorageManager(ctx));
-            startManager(new GridDeploymentManager(ctx));
+            startProcessor(new GridDeploymentProcessor(ctx));
             startManager(new GridLoadBalancerManager(ctx));
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));

@@ -81,7 +81,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         try {
             IgniteEx ignite = startGrid(0);
 
-            LocalDeploymentSpi depSpi = GridTestUtils.<LocalDeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
+            LocalDeploymentSpi depSpi = GridTestUtils.<LocalDeploymentSpi>getFieldValue(ignite.context().deploy(), "locStore", "spi");
 
             depSpi.register(clsLdr, cls);
 
@@ -96,7 +96,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
 
             IgniteEx ignite1 = startGrid(1);
 
-            depSpi = GridTestUtils.<LocalDeploymentSpi[]>getFieldValue(ignite1.context().deploy(), "spis")[0];
+            depSpi = GridTestUtils.<LocalDeploymentSpi>getFieldValue(ignite1.context().deploy(), "locStore", "spi");
 
             depSpi.register(clsLdr, cls);
 
@@ -146,7 +146,7 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
         try {
             IgniteEx ignite = startGrid(0);
 
-            final LocalDeploymentSpi depSpi = GridTestUtils.<LocalDeploymentSpi[]>getFieldValue(ignite.context().deploy(), "spis")[0];
+            final LocalDeploymentSpi depSpi = GridTestUtils.<LocalDeploymentSpi>getFieldValue(ignite.context().deploy(), "locStore", "spi");
 
             depSpi.register(clsLdr, srvc.getClass());
 

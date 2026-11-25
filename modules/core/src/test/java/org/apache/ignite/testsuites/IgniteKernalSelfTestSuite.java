@@ -44,7 +44,7 @@ import org.apache.ignite.internal.ThreadNameValidationTest;
 import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
 import org.apache.ignite.internal.managers.deployment.DeploymentRequestOfUnknownClassProcessingTest;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessorStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttributesSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerWalModeConsistencyTest;
@@ -88,7 +88,7 @@ import org.junit.runners.Suite;
     GridEventStorageManagerInternalEventsSelfTest.class,
     GridCommunicationSendMessageSelfTest.class,
     GridCacheMessageSelfTest.class,
-    GridDeploymentManagerStopSelfTest.class,
+    GridDeploymentProcessorStopSelfTest.class,
     GridManagerStopSelfTest.class,
     GridDiscoveryManagerAttributesSelfTest.class,
     GridDiscoveryManagerAliveCacheSelfTest.class,

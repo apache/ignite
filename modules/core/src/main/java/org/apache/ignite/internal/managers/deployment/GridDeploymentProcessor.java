@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -45,9 +45,9 @@ import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
 /**
- * Deployment manager.
+ * Deployment processor.
  */
-public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi> {
+public class GridDeploymentProcessor extends GridProcessorAdapter {
     /** Local deployment storage. */
     private GridDeploymentStore locStore;
 
@@ -66,8 +66,8 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
     /**
      * @param ctx Grid kernal context.
      */
-    public GridDeploymentManager(GridKernalContext ctx) {
-        super(ctx, new LocalDeploymentSpi());
+    public GridDeploymentProcessor(GridKernalContext ctx) {
+        super(ctx);
 
         if (!ctx.config().isPeerClassLoadingEnabled()) {
             locDep = new LocalDeployment(
@@ -88,19 +88,14 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
         if (ctx.config().isPeerClassLoadingEnabled())
             assertParameter(ctx.config().getNetworkTimeout() > 0, "networkTimeout > 0");
 
-        startSpi();
-
         comm = new GridDeploymentCommunication(ctx, log);
 
         comm.start();
 
         startStores();
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Local deployment: " + locDep);
-
-            log.debug(startInfo());
-        }
     }
 
     /** {@inheritDoc} */
@@ -125,26 +120,23 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
 
         if (comm != null)
             comm.stop();
-
-        stopSpi();
-
-        if (log.isDebugEnabled())
-            log.debug(stopInfo());
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart0() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         storesOnKernalStart();
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStop0(boolean cancel) {
+    @Override public void onKernalStop(boolean cancel) {
         storesOnKernalStop();
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean enabled() {
-        return super.enabled() && locDep == null;
+    /**
+     * @return {@code True} if peer class loading is enabled and deployment stores are in use.
+     */
+    public boolean enabled() {
+        return locDep == null;
     }
 
     /**
@@ -633,7 +625,7 @@ public class GridDeploymentManager extends GridManagerAdapter<LocalDeploymentSpi
      * @throws IgniteCheckedException If failed.
      */
     private void startStores() throws IgniteCheckedException {
-        locStore = new GridDeploymentLocalStore(getSpi(), ctx, comm);
+        locStore = new GridDeploymentLocalStore(ctx, comm);
         ldrStore = new GridDeploymentPerLoaderStore(ctx, comm);
         verStore = new GridDeploymentPerVersionStore(ctx, comm);
 

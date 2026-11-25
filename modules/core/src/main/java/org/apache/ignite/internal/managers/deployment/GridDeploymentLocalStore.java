@@ -64,16 +64,13 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     private final LocalDeploymentSpi spi;
 
     /**
-     * @param spi Deployment SPI.
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentLocalStore(LocalDeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
+    GridDeploymentLocalStore(GridKernalContext ctx, GridDeploymentCommunication comm) {
         super(ctx, comm);
 
-        assert spi != null;
-
-        this.spi = spi;
+        spi = new LocalDeploymentSpi(ctx.log(LocalDeploymentSpi.class));
     }
 
     /** {@inheritDoc} */
@@ -96,6 +93,8 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
         for (ClassLoader ldr : ldrs)
             undeploy(ldr);
+
+        spi.stop();
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());

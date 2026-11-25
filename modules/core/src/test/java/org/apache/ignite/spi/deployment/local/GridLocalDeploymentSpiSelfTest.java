@@ -35,33 +35,35 @@ import org.apache.ignite.internal.managers.deployment.DeploymentResource;
 import org.apache.ignite.internal.managers.deployment.LocalDeploymentSpi;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.apache.ignite.testframework.junits.spi.GridSpiTest;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.Test;
 
 /**
  * Local deployment SPI test.
  */
-@GridSpiTest(spi = LocalDeploymentSpi.class, group = "Deployment SPI")
-public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDeploymentSpi> {
+public class GridLocalDeploymentSpiSelfTest extends GridCommonAbstractTest {
+    /** */
+    private LocalDeploymentSpi spi;
+
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
         Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        getSpi().setListener(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        getSpi().setListener((ldr) -> tasks.remove(ldr));
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         tasks.clear();
+
+        spi = new LocalDeploymentSpi(log);
+
+        spi.setListener((ldr) -> tasks.remove(ldr));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        spi.setListener(null);
+
+        spi.stop();
     }
 
     /**
@@ -69,7 +71,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
      * @throws Exception If failed.
      */
     private void deploy(Class<? extends ComputeTask<?, ?>> taskCls) throws Exception {
-        getSpi().register(taskCls.getClassLoader(), taskCls);
+        spi.register(taskCls.getClassLoader(), taskCls);
 
         Set<Class<? extends ComputeTask<?, ?>>> clss = new HashSet<>(1);
 
@@ -97,7 +99,7 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         deploy(task);
 
-        checkResourceRegisteredInSpi(task.getClassLoader(), taskName, getSpi(), true);
+        checkResourceRegisteredInSpi(task.getClassLoader(), taskName, spi, true);
 
         Map<String, String> rcsMap = new HashMap<>(2);
         rcsMap.put(taskName, task.getName());
@@ -105,8 +107,8 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         // Note we use task name instead of class name.
         DeploymentResource t1 = U.invoke(
-            getSpi().getClass(),
-            getSpi(),
+            spi.getClass(),
+            spi,
             "findResource0",
             rcsMap,
             taskName,
@@ -119,12 +121,12 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
 
         assertEquals(t1.getName(), taskName);
 
-        getSpi().unregister(taskName);
+        spi.unregister(taskName);
 
         checkUndeployed(task);
 
-        checkResourceRegisteredInSpi(task.getClassLoader(), taskName, getSpi(), false);
-        checkResourceRegisteredInSpi(task.getClassLoader(), task.getName(), getSpi(), false);
+        checkResourceRegisteredInSpi(task.getClassLoader(), taskName, spi, false);
+        checkResourceRegisteredInSpi(task.getClassLoader(), task.getName(), spi, false);
     }
 
     /**
@@ -150,11 +152,11 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
             // No-op.
         }
 
-        getSpi().unregister("GridDeploymentTestTask");
+        spi.unregister("GridDeploymentTestTask");
 
         checkUndeployed(t1);
 
-        checkResourceRegisteredInSpi(t1.getClassLoader(), "GridDeploymentTestTask", getSpi(), false);
+        checkResourceRegisteredInSpi(t1.getClassLoader(), "GridDeploymentTestTask", spi, false);
 
         tasks.clear();
 
@@ -169,12 +171,12 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
             // No-op.
         }
 
-        getSpi().unregister(t1.getName());
+        spi.unregister(t1.getName());
 
         checkUndeployed(t1);
 
-        checkResourceRegisteredInSpi(t1.getClassLoader(), taskName, getSpi(), false);
-        checkResourceRegisteredInSpi(t1.getClassLoader(), t1.getName(), getSpi(), false);
+        checkResourceRegisteredInSpi(t1.getClassLoader(), taskName, spi, false);
+        checkResourceRegisteredInSpi(t1.getClassLoader(), t1.getName(), spi, false);
     }
 
     /**

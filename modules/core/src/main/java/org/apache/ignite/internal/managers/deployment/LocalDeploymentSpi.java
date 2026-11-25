@@ -34,10 +34,7 @@ import org.apache.ignite.internal.util.GridAnnotationsCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -57,12 +54,8 @@ import org.jsr166.ConcurrentLinkedHashMap;
  * There is no point to explicitly configure {@code GridLocalDeploymentSpi}
  * with {@link org.apache.ignite.configuration.IgniteConfiguration} as it is used by default and has no
  * configuration parameters.
- * @deprecated Will be replaced with the
- * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
  */
-@IgniteSpiMultipleInstancesSupport(true)
-@Deprecated
-public class LocalDeploymentSpi extends IgniteSpiAdapter {
+public class LocalDeploymentSpi {
     /** Enables additional check for resource name on resources removal. */
     @SystemProperty(value = "Enables an additional check of a resource name on resources removal")
     public static final String IGNITE_DEPLOYMENT_ADDITIONAL_CHECK = "IGNITE.DEPLOYMENT.ADDITIONAL.CHECK";
@@ -72,8 +65,7 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
         IgniteSystemProperties.getBoolean(IGNITE_DEPLOYMENT_ADDITIONAL_CHECK);
 
     /** */
-    @LoggerResource
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Map of all resources. */
     private volatile ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = new ConcurrentLinkedHashMap<>();
@@ -81,24 +73,19 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
     /** Deployment SPI listener. */
     private volatile Consumer<ClassLoader> unregisterLsnr;
 
-    /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
-        // Start SPI start stopwatch.
-        startStopwatch();
-
-        if (log.isDebugEnabled())
-            log.debug(startInfo());
+    /**
+     * @param log Logger.
+     */
+    public LocalDeploymentSpi(IgniteLogger log) {
+        this.log = log;
     }
 
-    /** {@inheritDoc} */
-    @Override public void spiStop() throws IgniteSpiException {
-        unregisterMBean();
-
+    /**
+     * Releases all registered class loaders.
+     */
+    public void stop() {
         for (ClassLoader ldr : ldrRsrcs.descendingKeySet())
             onClassLoaderReleased(ldr);
-
-        if (log.isDebugEnabled())
-            log.debug(stopInfo());
     }
 
     /**
@@ -443,13 +430,6 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter {
      */
     public void setListener(Consumer<ClassLoader> lsnr) {
         this.unregisterLsnr = lsnr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public LocalDeploymentSpi setName(String name) {
-        super.setName(name);
-
-        return this;
     }
 
     /** {@inheritDoc} */

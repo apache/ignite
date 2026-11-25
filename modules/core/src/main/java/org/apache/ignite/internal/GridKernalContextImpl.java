@@ -46,7 +46,7 @@ import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -142,7 +142,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridDeploymentManager depMgr;
+    private GridDeploymentProcessor depMgr;
 
     /** */
     @GridToStringExclude
@@ -497,8 +497,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
          * ========
          */
 
-        if (comp instanceof GridDeploymentManager)
-            depMgr = (GridDeploymentManager)comp;
+        if (comp instanceof GridDeploymentProcessor)
+            depMgr = (GridDeploymentProcessor)comp;
         else if (comp instanceof GridIoManager)
             ioMgr = (GridIoManager)comp;
         else if (comp instanceof GridDiscoveryManager)
@@ -769,7 +769,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridDeploymentManager deploy() {
+    @Override public GridDeploymentProcessor deploy() {
         return depMgr;
     }
 

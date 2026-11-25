@@ -67,9 +67,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     ) throws Exception {
         IgniteEx node = (IgniteEx)super.startGrid(igniteInstanceName, cfg, ctx);
 
-        LocalDeploymentSpi[] spis0 = GridTestUtils.getFieldValue(node.context().deploy(), "spis");
-
-        spis.put(igniteInstanceName, spis0[0]);
+        spis.put(igniteInstanceName, GridTestUtils.getFieldValue(node.context().deploy(), "locStore", "spi"));
 
         return node;
     }

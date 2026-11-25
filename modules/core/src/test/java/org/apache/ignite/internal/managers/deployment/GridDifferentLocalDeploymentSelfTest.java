@@ -137,7 +137,7 @@ public class GridDifferentLocalDeploymentSelfTest extends GridCommonAbstractTest
 
         client.compute().execute(taskCls21.newInstance(), server.localNode().id());
 
-        GridDeploymentManager deploymentMgr = client.context().deploy();
+        GridDeploymentProcessor deploymentMgr = client.context().deploy();
 
         GridDeploymentStore store = GridTestUtils.getFieldValue(deploymentMgr, "locStore");
 

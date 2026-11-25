@@ -25,10 +25,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
 
 /**
- * Grid deployment manager stop test.
+ * Grid deployment processor stop test.
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
+public class GridDeploymentProcessorStopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
@@ -41,10 +41,10 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         ctx.add(resProc);
 
-        GridComponent mgr = new GridDeploymentManager(ctx);
+        GridComponent proc = new GridDeploymentProcessor(ctx);
 
         try {
-            mgr.onKernalStop(true);
+            proc.onKernalStop(true);
         }
         catch (Exception e) {
             error("Error during onKernalStop() callback.", e);

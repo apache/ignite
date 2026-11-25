@@ -29,7 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
@@ -169,7 +169,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridSystemViewManager(ctx));
         ctx.add(new IgnitePluginProcessor(ctx, ctx.config(), Collections.emptyList()));
-        ctx.add(new GridDeploymentManager(ctx));
+        ctx.add(new GridDeploymentProcessor(ctx));
 
         ctx.add(new GridDiscoveryManager(ctx) {
             @Override public @Nullable ClusterNode node(UUID nodeId) {

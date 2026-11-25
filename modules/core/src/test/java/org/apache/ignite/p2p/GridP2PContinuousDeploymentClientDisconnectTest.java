@@ -38,7 +38,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -318,7 +318,7 @@ public class GridP2PContinuousDeploymentClientDisconnectTest extends GridCommonA
     private void blockClassLoadingRequest(IgniteEx node) {
         GridKernalContext ctx = node.context();
 
-        GridDeploymentManager deploymentMgr = ctx.deploy();
+        GridDeploymentProcessor deploymentMgr = ctx.deploy();
 
         Object comm = GridTestUtils.getFieldValue(deploymentMgr, "comm");
 
