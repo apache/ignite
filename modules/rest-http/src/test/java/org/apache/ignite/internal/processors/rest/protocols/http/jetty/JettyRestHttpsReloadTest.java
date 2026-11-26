@@ -40,8 +40,8 @@ import org.apache.ignite.internal.management.api.CommandInvoker;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadCommand;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
-import org.apache.ignite.ssl.ReloadableJettySslFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
+import org.apache.ignite.ssl.jetty.ReloadableJettySslFactory;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.resource.Resource;
@@ -246,7 +246,8 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: binary REST and HTTPS use separate factories and key stores, and the Jetty XML file disables hot reload
      *     of the HTTPS factory. Both serve certificate A. A of HTTPS is due for hot reload at start, and A of binary
      *     REST in 5 seconds, so a check of HTTPS would run before the one of binary REST. Both sources hold
-     *     replacement B.
+     *     replacement B. The HTTPS source fails any load after the second one, so an automatic load of HTTPS before
+     *     the command makes the command fail.
      * When: hot reload loads B for binary REST, and then the operator runs the reload command.
      * Then: after hot reload, a new binary REST client sees B, and a new HTTPS client still sees A. After the command,
      *     a new HTTPS client sees B.
@@ -266,7 +267,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         binaryFactory.setTrustManagers(org.apache.ignite.ssl.SslContextFactory.getDisabledTrustManager());
         binaryFactory.create();
         save(binaryB, binaryKeys);
-        SourceSslContextFactory.supply(httpsA, httpsB);
+        SourceSslContextFactory.supply(httpsA, httpsB, new AssertionError("Unexpected third key store load"));
 
         IgniteConfiguration cfg = jettyConfig("jetty/https-source-manual.xml");
 

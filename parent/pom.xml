@@ -393,7 +393,7 @@
                             </group>
                             <group>
                                 <title>Security APIs</title>
-                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl:org.apache.ignite.spi.encryption*</packages>
+                                <packages>org.apache.ignite.plugin.security:org.apache.ignite.ssl*:org.apache.ignite.spi.encryption*</packages>
                             </group>
                             <group>
                                 <title>Maintenance and Monitoring APIs</title>

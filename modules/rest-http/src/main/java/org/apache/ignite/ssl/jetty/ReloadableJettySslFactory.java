@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ssl;
+package org.apache.ignite.ssl.jetty;
+
+import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 /**
  * Hot reload settings of a Jetty SSL context factory that serves HTTPS for the HTTP REST endpoint. To change the settings

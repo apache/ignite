@@ -112,7 +112,7 @@ Both the standard Jetty factory and custom subclasses of `SslContextFactory.Serv
 After you replace the stores, run the link:tools/control-script#reloading-tls-certificates[`--ssl reload` command].
 The node also reloads the stores automatically before its certificates expire, as described in link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload].
 By default, hot reload of the Jetty factory is enabled and becomes due 7 days before the earliest certificate expiry in its private key chains.
-To change these settings for a factory, configure it with your own subclass of `SslContextFactory.Server` that implements `org.apache.ignite.ssl.ReloadableJettySslFactory` from the `ignite-rest-http` module.
+To change these settings for a factory, configure it with your own subclass of `SslContextFactory.Server` that implements `org.apache.ignite.ssl.jetty.ReloadableJettySslFactory` from the `ignite-rest-http` module.
 The interface has getters for two properties: `hotReloadEnabled` and `hotReloadBeforeExpiryMs`, the lead time in milliseconds, which must be positive.
 Add setters for them, so that the Jetty XML file can set them:
 
@@ -136,6 +136,9 @@ public class MySslContextFactory extends SslContextFactory.Server implements Rel
     }
 
     public void setHotReloadBeforeExpiryMs(long hotReloadBeforeExpiryMs) {
+        if (hotReloadBeforeExpiryMs <= 0)
+            throw new IllegalArgumentException("hotReloadBeforeExpiryMs must be positive: " + hotReloadBeforeExpiryMs);
+
         this.hotReloadBeforeExpiryMs = hotReloadBeforeExpiryMs;
     }
 }

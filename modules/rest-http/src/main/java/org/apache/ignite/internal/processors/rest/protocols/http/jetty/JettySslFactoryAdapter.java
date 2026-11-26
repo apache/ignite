@@ -25,7 +25,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.apache.ignite.ssl.ReloadableJettySslFactory;
+import org.apache.ignite.ssl.jetty.ReloadableJettySslFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
