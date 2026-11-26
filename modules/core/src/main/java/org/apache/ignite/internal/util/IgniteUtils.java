@@ -7736,4 +7736,23 @@ public abstract class IgniteUtils extends CommonUtils {
 
         return new GridNioSslFilter(sslCtxFactory, directBuf, order, log, handshakeDuration, rejectedSesCnt);
     }
+
+    /**
+     * @param name Name of the class.
+     * @return {@code True} if locally excluded.
+     */
+    public static boolean isLocallyExcluded(String[] p2pExclude, String name) {
+        if (p2pExclude != null) {
+            for (String path : p2pExclude) {
+                // Remove star (*) at the end.
+                if (path.endsWith("*"))
+                    path = path.substring(0, path.length() - 1);
+
+                if (name.startsWith(path))
+                    return true;
+            }
+        }
+
+        return false;
+    }
 }

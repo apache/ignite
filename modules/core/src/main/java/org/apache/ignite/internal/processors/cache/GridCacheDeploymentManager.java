@@ -570,7 +570,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         /** {@inheritDoc} */
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
             // Try local deployment first.
-            if (!isLocallyExcluded(name)) {
+            if (!U.isLocallyExcluded(p2pExclude, name)) {
                 GridDeployment d = cctx.gridDeploy().getLocalDeployment(name);
 
                 if (d != null) {
@@ -647,25 +647,6 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 participants);
 
             return d != null ? d.deployedClass(name) : null;
-        }
-
-        /**
-         * @param name Name of the class.
-         * @return {@code True} if locally excluded.
-         */
-        private boolean isLocallyExcluded(String name) {
-            if (p2pExclude != null) {
-                for (String path : p2pExclude) {
-                    // Remove star (*) at the end.
-                    if (path.endsWith("*"))
-                        path = path.substring(0, path.length() - 1);
-
-                    if (name.startsWith(path))
-                        return true;
-                }
-            }
-
-            return false;
         }
     }
 

@@ -138,17 +138,12 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * method is invoked. This may result in a security exception.
      *
      * @param id Class loader ID.
-     * @param usrVer User version.
-     * @param depMode Deployment mode.
+     * @param meta Deployment metadata.
      * @param singleNode {@code True} for single node.
      * @param ctx Kernal context.
      * @param parent Parent class loader.
-     * @param clsLdrId Remote class loader identifier.
-     * @param nodeId ID of node that have initiated task.
      * @param comm Communication manager loader will work through.
-     * @param p2pTimeout Timeout for class-loading requests.
      * @param log Logger.
-     * @param p2pExclude List of P2P loaded packages.
      * @param missedResourcesCacheSize Size of the missed resources cache.
      * @param clsBytesCacheEnabled Flag to enable class byte cache.
      * @param quiet {@code True} to omit output to log.
@@ -158,48 +153,41 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      */
     GridDeploymentClassLoader(
         IgniteUuid id,
-        String usrVer,
-        DeploymentMode depMode,
+        GridDeploymentMetadata meta,
         boolean singleNode,
         GridKernalContext ctx,
         ClassLoader parent,
-        IgniteUuid clsLdrId,
-        UUID nodeId,
         GridDeploymentCommunication comm,
-        long p2pTimeout,
         IgniteLogger log,
-        String[] p2pExclude,
         int missedResourcesCacheSize,
         boolean clsBytesCacheEnabled,
         boolean quiet) throws SecurityException {
         super(parent);
 
         assert id != null;
-        assert depMode != null;
         assert ctx != null;
         assert comm != null;
-        assert p2pTimeout > 0;
+        assert ctx.config().getNetworkTimeout() > 0;
         assert log != null;
-        assert clsLdrId != null;
-        assert nodeId.equals(clsLdrId.globalId());
+        assert meta.senderNodeId().equals(meta.classLoaderId().globalId());
 
         this.id = id;
-        this.usrVer = usrVer;
-        this.depMode = depMode;
+        this.usrVer = meta.userVersion();
+        this.depMode = meta.deploymentMode();
         this.singleNode = singleNode;
         this.ctx = ctx;
         this.comm = comm;
-        this.p2pTimeout = p2pTimeout;
+        this.p2pTimeout = ctx.config().getNetworkTimeout();
         this.log = log;
-        this.p2pExclude = p2pExclude;
+        this.p2pExclude = ctx.config().getPeerClassLoadingLocalClassPathExclude();
 
         nodeList = new LinkedList<>();
 
-        nodeList.add(nodeId);
+        nodeList.add(meta.senderNodeId());
 
         Map<UUID, IgniteUuid> map = U.newHashMap(1);
 
-        map.put(nodeId, clsLdrId);
+        map.put(meta.senderNodeId(), meta.classLoaderId());
 
         nodeLdrMap = singleNode ? Collections.unmodifiableMap(map) : map;
 
@@ -219,17 +207,12 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      * method is invoked. This may result in a security exception.
      *
      * @param id Class loader ID.
-     * @param usrVer User version.
-     * @param depMode Deployment mode.
+     * @param meta Deployment metadata (user version and deployment mode).
      * @param singleNode {@code True} for single node.
      * @param ctx Kernal context.
      * @param parent Parent class loader.
-     * @param participants Participating nodes class loader map.
      * @param comm Communication manager loader will work through.
-     * @param p2pTimeout Timeout for class-loading requests.
      * @param log Logger.
-     * @param p2pExclude List of P2P loaded packages.
-     * @param missedResourcesCacheSize Size of the missed resources cache.
      * @param clsBytesCacheEnabled Flag to enable class byte cache.
      * @param quiet {@code True} to omit output to log.
      * @throws SecurityException If a security manager exists and its
@@ -238,45 +221,39 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      */
     GridDeploymentClassLoader(
         IgniteUuid id,
-        String usrVer,
-        DeploymentMode depMode,
+        GridDeploymentMetadata meta,
         boolean singleNode,
         GridKernalContext ctx,
         ClassLoader parent,
-        Map<UUID, IgniteUuid> participants,
         GridDeploymentCommunication comm,
-        long p2pTimeout,
         IgniteLogger log,
-        String[] p2pExclude,
-        int missedResourcesCacheSize,
         boolean clsBytesCacheEnabled,
         boolean quiet) throws SecurityException {
         super(parent);
 
         assert id != null;
-        assert depMode != null;
         assert ctx != null;
         assert comm != null;
-        assert p2pTimeout > 0;
+        assert ctx.config().getNetworkTimeout() > 0;
         assert log != null;
-        assert participants != null;
+        assert meta.participants() != null;
 
         this.id = id;
-        this.usrVer = usrVer;
-        this.depMode = depMode;
+        this.usrVer = meta.userVersion();
+        this.depMode = meta.deploymentMode();
         this.singleNode = singleNode;
         this.ctx = ctx;
         this.comm = comm;
-        this.p2pTimeout = p2pTimeout;
+        this.p2pTimeout = ctx.config().getNetworkTimeout();
         this.log = log;
-        this.p2pExclude = p2pExclude;
+        this.p2pExclude = ctx.config().getPeerClassLoadingLocalClassPathExclude();
 
-        nodeList = new LinkedList<>(participants.keySet());
+        nodeList = new LinkedList<>(meta.participants().keySet());
 
-        nodeLdrMap = new HashMap<>(participants);
+        nodeLdrMap = new HashMap<>(meta.participants());
 
-        missedRsrcs = missedResourcesCacheSize > 0 ?
-            new GridBoundedLinkedHashSet<String>(missedResourcesCacheSize) : null;
+        missedRsrcs = ctx.config().getPeerClassLoadingMissedResourcesCacheSize() > 0 ?
+            new GridBoundedLinkedHashSet<String>(ctx.config().getPeerClassLoadingMissedResourcesCacheSize()) : null;
 
         byteMap = clsBytesCacheEnabled ? new ConcurrentHashMap<String, byte[]>() : null;
 
@@ -434,25 +411,6 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
         }
     }
 
-    /**
-     * @param name Name of the class.
-     * @return {@code True} if locally excluded.
-     */
-    private boolean isLocallyExcluded(String name) {
-        if (p2pExclude != null) {
-            for (String path : p2pExclude) {
-                // Remove star (*) at the end.
-                if (path.endsWith("*"))
-                    path = path.substring(0, path.length() - 1);
-
-                if (name.startsWith(path))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public Class<?> loadClass(String name) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
@@ -464,7 +422,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         try {
             if (!"org.apache.ignite.compute.ComputeJob".equals(name)) {
-                if (isLocallyExcluded(name))
+                if (U.isLocallyExcluded(p2pExclude, name))
                     // P2P loaded class.
                     cls = p2pLoadClass(name, true);
             }
@@ -525,7 +483,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
     @Nullable @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
-        if (!isLocallyExcluded(name)) {
+        if (!U.isLocallyExcluded(p2pExclude, name)) {
             // This is done for URI deployment in which case the parent loader
             // does not have the requested resource, but it is still locally
             // available.
