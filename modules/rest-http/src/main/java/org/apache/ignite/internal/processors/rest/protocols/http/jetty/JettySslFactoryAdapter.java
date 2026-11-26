@@ -92,7 +92,10 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
 
     /** {@inheritDoc} */
     @Override public boolean isAutoReloadEnabled() {
-        return !(factory instanceof AutoReloadJettySslFactory reloadable) || reloadable.isAutoReloadEnabled();
+        if (factory instanceof AutoReloadJettySslFactory autoReloadFactory)
+            return autoReloadFactory.isAutoReloadEnabled();
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -115,9 +118,10 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
 
     /** @return How long before the certificates expire automatic reload becomes due, in milliseconds. */
     private long autoReloadBeforeExpiryMs() {
-        return factory instanceof AutoReloadJettySslFactory reloadable
-            ? reloadable.getAutoReloadBeforeExpiryMs()
-            : DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
+        if (factory instanceof AutoReloadJettySslFactory autoReloadFactory)
+            return autoReloadFactory.getAutoReloadBeforeExpiryMs();
+
+        return DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
     }
 
     /**
