@@ -294,7 +294,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             }
             catch (RuntimeException e) {
                 log.warning("TLS hot reload could not read certificate expiry after manual reload [transports=" + transports
-                    + ", nextCheck=" + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
+                    + ", nextAttempt=" + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
 
                 scheduleCheck(CHECK_PERIOD);
 

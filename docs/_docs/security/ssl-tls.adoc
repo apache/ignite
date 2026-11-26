@@ -203,7 +203,8 @@ It does not update external client applications.
 === Disable Hot Reload
 
 Hot reload is enabled by default.
-To disable it for a transport, disable it on the transport's factory before starting the node:
+To disable it, call `setHotReloadEnabled(false)` on the factory before starting the node.
+Hot reload stops for every transport that uses this factory, and other factories keep it:
 
 [source,java]
 ----

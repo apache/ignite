@@ -76,7 +76,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -458,26 +457,28 @@ public class SslFactoryRegistryTest {
     }
 
     /**
-     * Given: a factory fails to report its hot reload time once, and then reports one that comes in 30 minutes.
+     * Given: the HTTP REST factory fails to read its certificates once, and then reports a hot reload time that comes
+     *     in 30 minutes.
      * When: a manual reload loads the factory, and the next check runs.
      * Then: the reload succeeds and schedules a check in an hour, and that check schedules the next one in 30 minutes.
      */
     @Test
     public void testManualReloadRetriesFailedReadOfHotReloadTime() {
-        when(factory.isHotReloadEnabled()).thenReturn(true);
-        when(factory.hotReloadTime()).thenThrow(new IgniteException("Certificate expiry unavailable"))
+        ReloadableSslFactory rest = httpRestFactory();
+
+        when(rest.hotReloadTime()).thenThrow(new IgniteException("Failed to read the certificates of the HTTPS connector"))
             .thenReturn(System.currentTimeMillis() + MINUTES.toMillis(30));
 
-        registry.register("communication", factory);
+        registry.register("HTTP REST", rest);
         registry.onKernalStart(true);
-        registry.reload(factory);
+        registry.reload(rest);
 
         assertEquals(HOURS.toMillis(1), nextCheckDelay());
 
         runChecks();
 
         assertTrue(scheduled.toString(), isAbout30Minutes(nextCheckDelay()));
-        verify(factory).init();
+        verify(rest).init();
     }
 
     /**
@@ -1117,12 +1118,13 @@ public class SslFactoryRegistryTest {
         when(factory.hotReloadTime()).thenReturn(hotReloadTime);
     }
 
-    /**
-     * @return Mock of a factory that is not an Ignite SSL context factory, such as the one of HTTP REST. It keeps the
-     *     default methods of {@link ReloadableSslFactory}, so hot reload is enabled for it.
-     */
+    /** @return Mock of a factory with hot reload enabled that is not an Ignite SSL context factory, such as the one of HTTP REST. */
     private static ReloadableSslFactory httpRestFactory() {
-        return mock(ReloadableSslFactory.class, CALLS_REAL_METHODS);
+        ReloadableSslFactory factory = mock(ReloadableSslFactory.class);
+
+        when(factory.isHotReloadEnabled()).thenReturn(true);
+
+        return factory;
     }
 
     /** @return Hot reload time that has already come. */
