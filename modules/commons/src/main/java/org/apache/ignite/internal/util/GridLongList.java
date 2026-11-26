@@ -171,6 +171,16 @@ public class GridLongList implements Externalizable {
     }
 
     /**
+     * @param i Index.
+     * @param x Value.
+     */
+    public void set(int i, long x) {
+        assert i < idx : i;
+
+        arr[i] = x;
+    }
+
+    /**
      * @return Size.
      */
     public int size() {

@@ -65,7 +65,8 @@ public class NearCacheUpdates extends AbstractMessage {
     }
 
     /**
-     * Adds value to be put in near cache on originating node.
+     * Adds value to be put in near cache on originating node. The values must be added in ascending order of the key
+     * index, because the originating node reads them in this order.
      *
      * @param keyIdx Key index.
      * @param val Value.
@@ -88,34 +89,39 @@ public class NearCacheUpdates extends AbstractMessage {
     }
 
     /**
+     * Stores the TTL and the expire time at the index of the key. The originating node reads them by this index,
+     * so unlike the near values they can be added in any order.
+     *
      * @param keyIdx Key index.
      * @param ttl TTL for near cache update.
      * @param expireTime Expire time for near cache update.
      */
     void addNearTtl(int keyIdx, long ttl, long expireTime) {
-        if (ttl >= 0) {
-            if (nearTtls == null) {
-                nearTtls = new GridLongList(16);
-
-                for (int i = 0; i < keyIdx; i++)
-                    nearTtls.add(-1L);
-            }
-        }
+        if (ttl >= 0 && nearTtls == null)
+            nearTtls = new GridLongList(16);
 
         if (nearTtls != null)
-            nearTtls.add(ttl);
+            setAt(nearTtls, keyIdx, ttl);
 
-        if (expireTime >= 0) {
-            if (nearExpireTimes == null) {
-                nearExpireTimes = new GridLongList(16);
-
-                for (int i = 0; i < keyIdx; i++)
-                    nearExpireTimes.add(-1);
-            }
-        }
+        if (expireTime >= 0 && nearExpireTimes == null)
+            nearExpireTimes = new GridLongList(16);
 
         if (nearExpireTimes != null)
-            nearExpireTimes.add(expireTime);
+            setAt(nearExpireTimes, keyIdx, expireTime);
+    }
+
+    /**
+     * Sets the value at the index. Indexes before it that have no value yet get {@code -1}.
+     *
+     * @param list List.
+     * @param idx Index.
+     * @param val Value.
+     */
+    private static void setAt(GridLongList list, int idx, long val) {
+        while (list.size() <= idx)
+            list.add(-1L);
+
+        list.set(idx, val);
     }
 
     /**
