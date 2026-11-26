@@ -202,19 +202,21 @@ It does not update external client applications.
 
 === Disable Hot Reload
 
-Hot reload is enabled by default for all transports of a node.
-To disable it, set `sslHotReloadEnabled` to `false` in the node configuration before starting the node:
+Hot reload is enabled by default.
+To disable it for a transport, disable it on the transport's factory before starting the node:
 
 [source,java]
 ----
-igniteCfg.setSslHotReloadEnabled(false);
+factory.setHotReloadEnabled(false);
 ----
 
 Changing this setting requires a node restart.
-The reload command still reloads the factories.
+The reload command still reloads the factory.
+The HTTP REST endpoint follows this setting of the REST connector's SSL factory, as described in link:restapi#https[HTTPS].
 
-The `IgniteConfiguration` of Ignite.NET has no properties for hot reload.
-To set `sslHotReloadEnabled` or `sslHotReloadBeforeExpiry` for a .NET node, use the Spring XML file set by `IgniteConfiguration.SpringConfigUrl`.
+The `SslContextFactory` of Ignite.NET has no `hotReloadEnabled` or `hotReloadBeforeExpiryMs` property.
+To set them for a .NET node, define the SSL factory in the Spring XML file set by `IgniteConfiguration.SpringConfigUrl`.
+Leave `IgniteConfiguration.SslContextFactory` unset: it replaces the factory from the XML file.
 
 === Supply Replacements
 
@@ -233,21 +235,21 @@ Ignite loads the replacements automatically when hot reload is due; no reload co
 
 === When Hot Reload Runs
 
-At startup, Ignite schedules a check for each factory.
+At startup, Ignite schedules a check for each factory with hot reload enabled.
 If a factory's certificates are not yet due, Ignite schedules its next check for the due date or one hour later, whichever comes first.
 After a failed attempt, Ignite schedules another check for one hour later.
 All checks share one thread, so a slow certificate source can delay checks for other factories.
 
-For each factory, hot reload becomes due `sslHotReloadBeforeExpiry` of the node configuration before the earliest certificate expiry in its private key chains.
-This includes issuing certificates. The lead time is in milliseconds; the default is 7 days, `604800000`.
-For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded.
+For each factory, hot reload becomes due `hotReloadBeforeExpiryMs` before the earliest certificate expiry in its private key chains.
+This includes issuing certificates. The default lead time is 7 days.
+For the HTTP REST endpoint, Ignite takes the certificates from the key store that the Jetty factory has loaded, and the lead time from the REST connector's SSL factory, as described in link:restapi#https[HTTPS].
 The first check at or after that date attempts a reload, including the startup check.
 Allow enough time before expiry to supply the replacements and load the stores.
 Keep the lead time shorter than the lifetime of the replacement certificates, or they will already be due when loaded.
-See link:{javadoc_base_url}/org/apache/ignite/configuration/IgniteConfiguration.html#setSslHotReloadBeforeExpiry(long)[setSslHotReloadBeforeExpiry(long), window=_blank] for the calculation.
+See link:{javadoc_base_url}/org/apache/ignite/ssl/AbstractSslContextFactory.html#hotReloadTime()[hotReloadTime(), window=_blank] for the calculation.
 
 If the loaded certificates are still due for hot reload, Ignite records a failed hot reload attempt even though it installed them.
-This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `sslHotReloadBeforeExpiry`.
+This can happen when the certificates have not changed, only the trust store changed, or the replacements expire within `hotReloadBeforeExpiryMs`.
 The loaded context remains in use until a later reload replaces it.
 
 After a manual reload, Ignite schedules the next check from the loaded certificates.
@@ -321,6 +323,14 @@ Limit request duration in custom sources: a blocked load delays other hot reload
 |`protocol`
 |The protocol for secure transport. https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#sslcontext-algorithms[Supported algorithms,window=_blank].
 |`TLS`
+
+|`hotReloadEnabled`
+|Enables automatic certificate hot reload. See <<Automatic Certificate Hot Reload>>.
+|`true`
+
+|`hotReloadBeforeExpiryMs`
+|How long before the certificates expire hot reload becomes due, in milliseconds. See <<When Hot Reload Runs>>.
+|`604800000` (7 days)
 
 |`trustStoreFilePath`
 |The path to the trust store file.

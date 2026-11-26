@@ -172,7 +172,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         Collection<ReloadableJettySslFactory> sslFactories = connector.getContainedBeans(SslConnectionFactory.class).stream()
             .map(SslConnectionFactory::getSslContextFactory)
             .distinct()
-            .map(ReloadableJettySslFactory::new)
+            .map(factory -> new ReloadableJettySslFactory(factory, sslContextFactory()))
             .toList();
 
         for (port = initPort; port <= lastPort; port++) {

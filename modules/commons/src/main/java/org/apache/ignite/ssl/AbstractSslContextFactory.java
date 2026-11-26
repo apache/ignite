@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -34,9 +35,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Base class for SSL context factories that cache their {@link SSLContext}. {@link #init()} loads a new context, and
- * {@link #create()} returns the last one that it loaded, loading one on the first call. The certificates expiry comes
- * from the key store that the factory passed to {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during
- * the last successful load.
+ * {@link #create()} returns the last one that it loaded, loading one on the first call. The hot reload time comes
+ * {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry in the key store that the factory passed to
+ * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during the last successful load.
  */
 public abstract class AbstractSslContextFactory implements ReloadableSslFactory {
     /** */
@@ -44,6 +45,9 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
+
+    /** Default lead time for certificate hot reload: 7 days. */
+    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -58,14 +62,52 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /** */
+    private boolean hotReloadEnabled = true;
+
+    /** */
+    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+
+    /** */
     private transient volatile long earliestExpiry;
 
     /** */
     private transient long pendingExpiry;
 
     /** {@inheritDoc} */
-    @Override public long certificatesExpiry() {
-        return earliestExpiry;
+    @Override public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
+    }
+
+    /**
+     * @param enabled Whether automatic certificate hot reload is enabled. It is enabled by default. Changes require
+     *     a node restart.
+     */
+    public void setHotReloadEnabled(boolean enabled) {
+        hotReloadEnabled = enabled;
+    }
+
+    /**
+     * @return How long before the certificates expire hot reload becomes due, in milliseconds.
+     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+     */
+    public long getHotReloadBeforeExpiryMs() {
+        return hotReloadBeforeExpiryMs;
+    }
+
+    /**
+     * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
+     */
+    public void setHotReloadBeforeExpiryMs(long millis) {
+        A.ensure(millis > 0, "millis > 0");
+
+        hotReloadBeforeExpiryMs = millis;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long hotReloadTime() {
+        long expiry = earliestExpiry;
+
+        return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;
     }
 
     /**

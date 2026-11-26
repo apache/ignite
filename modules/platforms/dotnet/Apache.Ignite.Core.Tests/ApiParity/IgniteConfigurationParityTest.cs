@@ -89,9 +89,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "NetworkCompressionLevel",
             "PluginProviders",
             "MetricExporterSpi",
-            "TracingSpi",
-            "isSslHotReloadEnabled",
-            "SslHotReloadBeforeExpiry"
+            "TracingSpi"
         };
 
         /// <summary>

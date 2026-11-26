@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -103,11 +102,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
             "Number of automatic hot reload attempts.");
 
-        if (!ctx.config().isSslHotReloadEnabled())
-            return;
-
         for (RegisteredFactory registered : factories) {
-            if (registered.reloadable == null)
+            if (registered.reloadable == null || !registered.reloadable.isHotReloadEnabled())
                 continue;
 
             if (executor == null)
@@ -134,9 +130,11 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /**
-     * Reloads a registered factory. If hot reload is enabled, waits for the running check of the factory, resets its failure
+     * Reloads a registered factory. For a factory with hot reload enabled, waits for its running check, resets its failure
      * count and schedules its next check for the loaded certificates. If they are already due, the next check comes after
-     * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source.
+     * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source. If the
+     * factory cannot give the hot reload time of the loaded certificates, the reload still succeeds, and the next check
+     * comes after {@link #CHECK_PERIOD}.
      *
      * @param factory Registered factory to reload.
      */
@@ -213,7 +211,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private long reloadIfDue() {
-            long hotReloadTime = hotReloadTime();
+            long hotReloadTime = reloadable.hotReloadTime();
 
             logHotReloadTime(hotReloadTime);
 
@@ -232,7 +230,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            hotReloadTime = hotReloadTime();
+            hotReloadTime = reloadable.hotReloadTime();
             nextCheckDelay = nextCheckDelay(hotReloadTime);
 
             if (nextCheckDelay == 0) {
@@ -248,16 +246,6 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             logHotReloadTime(hotReloadTime);
 
             return nextCheckDelay;
-        }
-
-        /**
-         * @return Time when the loaded certificates are due for hot reload: {@link IgniteConfiguration#getSslHotReloadBeforeExpiry()}
-         *     before they expire, or {@code 0} if the factory gives no private key with an X.509 certificate chain.
-         */
-        private long hotReloadTime() {
-            long expiry = reloadable.certificatesExpiry();
-
-            return expiry == 0 ? 0 : expiry - ctx.config().getSslHotReloadBeforeExpiry();
         }
 
         /**
@@ -294,7 +282,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            if (!ctx.config().isSslHotReloadEnabled())
+            if (!reloadable.isHotReloadEnabled())
                 return;
 
             failures.set(0);
@@ -302,7 +290,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
             long hotReloadTime;
 
             try {
-                hotReloadTime = hotReloadTime();
+                hotReloadTime = reloadable.hotReloadTime();
             }
             catch (RuntimeException e) {
                 log.warning("TLS hot reload could not read certificate expiry after manual reload [transports=" + transports
