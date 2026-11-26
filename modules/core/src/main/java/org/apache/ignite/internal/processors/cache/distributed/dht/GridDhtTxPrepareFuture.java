@@ -45,7 +45,6 @@ import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -93,7 +92,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
@@ -103,6 +101,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.EntryProcessorMode.PREPARE;
 import static org.apache.ignite.internal.util.lang.GridFunc.isEmpty;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
@@ -424,46 +423,13 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                             KeyCacheObject key = txEntry.key();
 
-                            Object procRes = null;
-                            Exception err = null;
-
-                            boolean modified = false;
-
                             txEntry.oldValueOnPrimary(val != null);
 
-                            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
-                                    txEntry.cached().version(), keepBinary, txEntry.cached());
+                            IgniteTxEntry.EntryProcessorChainResult chain =
+                                txEntry.runEntryProcessors(val, cached.version(), null, PREPARE);
+                            boolean modified = chain.modified();
 
-                                EntryProcessor<Object, Object, Object> proc = t.get1();
-
-                                IgniteThread.onEntryProcessorEntered(false);
-
-                                if (cctx.kernalContext().deploy().enabled() &&
-                                    cctx.kernalContext().deploy().isGlobalLoader(proc.getClass().getClassLoader())) {
-                                    U.restoreDeploymentContext(cctx.kernalContext(), cctx.kernalContext()
-                                        .deploy().getClassLoaderId(proc.getClass().getClassLoader()));
-                                }
-
-                                try {
-                                    procRes = proc.process(invokeEntry, t.get2());
-
-                                    val = cacheCtx.toCacheObject(invokeEntry.getValue(true));
-
-                                    if (val != null) // no validation for remove case
-                                        cacheCtx.validateKeyAndValue(key, val);
-                                }
-                                catch (Exception e) {
-                                    err = e;
-
-                                    break;
-                                }
-                                finally {
-                                    IgniteThread.onEntryProcessorLeft();
-                                }
-
-                                modified |= invokeEntry.modified();
-                            }
+                            val = (CacheObject)chain.value();
 
                             if (modified)
                                 val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
@@ -490,8 +456,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             txEntry.noop(op == NOOP);
 
                             if (retVal) {
-                                if (err != null || procRes != null)
-                                    ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err, keepBinary);
+                                if (chain.error() != null || chain.result() != null) {
+                                    ret.addEntryProcessResult(
+                                        cacheCtx, key, null, chain.result(), chain.error(), keepBinary);
+                                }
                                 else
                                     ret.invokeResult(true);
                             }

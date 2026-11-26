@@ -36,7 +36,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -69,7 +68,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -91,6 +89,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.EntryProcessorMode.INVOKE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -1271,7 +1270,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         GridCacheContext ctx = txEntry.context();
 
         Object key0 = null;
-        Object val0 = null;
 
         IgniteThread.onEntryProcessorEntered(true);
 
@@ -1279,26 +1277,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             U.restoreDeploymentContext(cctx.kernalContext(), deploymentLdrId);
 
         try {
-            Object res = null;
+            IgniteTxEntry.EntryProcessorChainResult chain = txEntry.runEntryProcessors(cacheVal, ver, null, INVOKE);
 
-            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
-                    val0, ver, txEntry.keepBinary(), txEntry.cached());
+            key0 = chain.key();
 
-                EntryProcessor<Object, Object, ?> entryProc = t.get1();
+            if (chain.error() != null)
+                throw chain.error();
 
-                res = entryProc.process(invokeEntry, t.get2());
-
-                val0 = invokeEntry.getValue(txEntry.keepBinary());
-
-                key0 = invokeEntry.key();
-            }
+            Object val0 = chain.value();
 
             if (val0 != null) // no validation for remove case
                 ctx.validateKeyAndValue(txEntry.key(), ctx.toCacheObject(val0));
 
-            if (res != null)
-                ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());
+            if (chain.result() != null)
+                ret.addEntryProcessResult(ctx, txEntry.key(), key0, chain.result(), null, txEntry.keepBinary());
         }
         catch (Exception e) {
             ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e, txEntry.keepBinary());

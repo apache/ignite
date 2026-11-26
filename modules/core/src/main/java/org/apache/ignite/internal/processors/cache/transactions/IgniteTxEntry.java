@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.MarshallableMessage;
 import org.apache.ignite.internal.Marshalled;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
@@ -37,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
@@ -901,7 +903,6 @@ public class IgniteTxEntry extends AbstractMessage implements GridPeerDeployAwar
      * @param cacheVal Value.
      * @return New value.
      */
-    @SuppressWarnings("unchecked")
     public CacheObject applyEntryProcessors(CacheObject cacheVal) {
         GridCacheVersion ver;
 
@@ -914,34 +915,106 @@ public class IgniteTxEntry extends AbstractMessage implements GridPeerDeployAwar
             ver = null;
         }
 
+        return ctx.toCacheObject(runEntryProcessors(cacheVal, ver, null, EntryProcessorMode.REPLAY).value());
+    }
+
+    /**
+     * @param cacheVal Initial value of the entry.
+     * @param ver Version of the entry before the processors are applied.
+     * @param ret Optional collector of individual results during commit.
+     * @param mode Invocation mode.
+     * @return Final entry state and processor result. In prepare mode the value is a cache object.
+     */
+    public EntryProcessorChainResult runEntryProcessors(
+        @Nullable CacheObject cacheVal,
+        @Nullable GridCacheVersion ver,
+        @Nullable GridCacheReturn ret,
+        EntryProcessorMode mode
+    ) {
+        boolean primary = mode == EntryProcessorMode.PREPARE;
+        boolean manageThreadState = mode != EntryProcessorMode.INVOKE;
+        GridDeploymentManager dep = primary ? ctx.kernalContext().deploy() : null;
         Object val = null;
         Object keyVal = null;
+        Object res = null;
+        Exception err = null;
+        CacheObject valObj = cacheVal;
+        boolean modified = false;
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
-            IgniteThread.onEntryProcessorEntered(true);
+            CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, keyVal, valObj, val,
+                ver, keepBinary(), cached());
+            EntryProcessor<Object, Object, Object> proc = t.get1();
+            err = null;
+            res = null;
+
+            if (manageThreadState)
+                IgniteThread.onEntryProcessorEntered(!primary);
+
+            if (dep != null && dep.enabled() && dep.isGlobalLoader(proc.getClass().getClassLoader()))
+                U.restoreDeploymentContext(ctx.kernalContext(), dep.getClassLoaderId(proc.getClass().getClassLoader()));
 
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
-                    ver, keepBinary(), cached());
+                res = proc.process(invokeEntry, t.get2());
 
-                EntryProcessor proc = t.get1();
+                if (primary) {
+                    valObj = ctx.toCacheObject(invokeEntry.getValue(true));
 
-                proc.process(invokeEntry, t.get2());
+                    if (valObj != null)
+                        ctx.validateKeyAndValue(key, valObj);
+                }
+                else {
+                    val = invokeEntry.getValue();
+                    keyVal = invokeEntry.key();
 
-                val = invokeEntry.getValue();
-
-                keyVal = invokeEntry.key();
+                    // The next processor uses the current value, which can be null after removal.
+                    valObj = null;
+                }
             }
-            catch (Exception ignore) {
-                // No-op.
+            catch (Exception e) {
+                err = e;
+
+                if (mode != EntryProcessorMode.REPLAY)
+                    break;
             }
             finally {
-                IgniteThread.onEntryProcessorLeft();
+                if (manageThreadState)
+                    IgniteThread.onEntryProcessorLeft();
             }
+
+            if (ret != null) {
+                if (err != null || res != null)
+                    ret.addEntryProcessResult(ctx, key, null, res, err, keepBinary());
+                else
+                    ret.invokeResult(true);
+            }
+
+            modified |= invokeEntry.modified();
         }
 
-        return ctx.toCacheObject(val);
+        return new EntryProcessorChainResult(keyVal, primary ? valObj : val, res, err, modified);
     }
+
+    /** Policies used when executing processors in a transaction. */
+    public enum EntryProcessorMode {
+        /** Compute the result of an invoke call with thread state set by the caller. */
+        INVOKE,
+
+        /** Compute the visible value for a read or a commit. */
+        REPLAY,
+
+        /** Compute and validate the value during primary prepare. */
+        PREPARE
+    }
+
+    /** State of an entry after running its processors. */
+    public record EntryProcessorChainResult(
+        Object key,
+        Object value,
+        Object result,
+        Exception error,
+        boolean modified
+    ) {}
 
     /**
      * @param entryProcessorsCol Collection of entry processors.

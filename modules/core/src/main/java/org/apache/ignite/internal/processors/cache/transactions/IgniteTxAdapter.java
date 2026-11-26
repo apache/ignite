@@ -32,7 +32,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -78,7 +76,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
@@ -97,6 +94,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.EntryProcessorMode.REPLAY;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -1633,12 +1631,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     keepBinary);
             }
 
-            boolean modified = false;
-
-            Object val = null;
-
-            Object key = null;
-
             GridCacheVersion ver;
 
             try {
@@ -1653,43 +1645,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 ver = null;
             }
 
-            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
-                    txEntry.key(), key, cacheVal, val, ver, keepBinary, txEntry.cached());
-
-                Object procRes = null;
-                Exception err = null;
-
-                IgniteThread.onEntryProcessorEntered(true);
-
-                try {
-                    EntryProcessor<Object, Object, Object> proc = t.get1();
-
-                    procRes = proc.process(invokeEntry, t.get2());
-
-                    val = invokeEntry.getValue();
-
-                    key = invokeEntry.key();
-                }
-                catch (Exception e) {
-                    err = e;
-                }
-                finally {
-                    IgniteThread.onEntryProcessorLeft();
-                }
-
-                if (ret != null) {
-                    if (err != null || procRes != null)
-                        ret.addEntryProcessResult(txEntry.context(), txEntry.key(), null, procRes, err, keepBinary);
-                    else
-                        ret.invokeResult(true);
-                }
-
-                modified |= invokeEntry.modified();
-            }
+            IgniteTxEntry.EntryProcessorChainResult chain = txEntry.runEntryProcessors(cacheVal, ver, ret, REPLAY);
+            boolean modified = chain.modified();
 
             if (modified)
-                cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
+                cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(chain.value()));
 
             GridCacheOperation op = modified ? (cacheVal == null ? DELETE : UPDATE) : NOOP;
 
