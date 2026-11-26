@@ -608,7 +608,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         GridNearAtomicCache near = (GridNearAtomicCache)cctx.dht().near();
 
-        near.processNearAtomicUpdateResponse(req, res);
+        near.processNearAtomicUpdateResponse(req, res, this);
     }
 
     /** {@inheritDoc} */
@@ -754,6 +754,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
                     assert !mappings0.isEmpty() || size == 0 : this;
                 }
+            }
+
+            if (singleReq0 != null)
+                reserveNearCacheEntries(singleReq0.req, topVer);
+            else {
+                for (PrimaryRequestState reqState : mappings0.values())
+                    reserveNearCacheEntries(reqState.req, topVer);
             }
 
             synchronized (this) {

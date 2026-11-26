@@ -380,7 +380,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         GridNearAtomicCache near = (GridNearAtomicCache)cctx.dht().near();
 
-        near.processNearAtomicUpdateResponse(req, res);
+        near.processNearAtomicUpdateResponse(req, res, this);
     }
 
     /** {@inheritDoc} */
@@ -426,6 +426,8 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
 
         try {
             reqState0 = mapSingleUpdate(topVer, futId);
+
+            reserveNearCacheEntries(reqState0.req, topVer);
 
             synchronized (this) {
                 assert topVer.topologyVersion() > 0 : topVer;
