@@ -53,15 +53,11 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.isIns
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
  * {@link org.apache.ignite.configuration.IgniteConfiguration} to override some default configuration. Below is an
- * example on how to start grid with custom configuration for <strong>URI deployment</strong>.
+ * example on how to start grid with custom configuration for <strong>peer class loading</strong>.
  * <pre name="code" class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
- * GridUriDeployment deploySpi = new GridUriDeployment();
- *
- * deploySpi.setUriList(Collections.singletonList("classes://tmp/output/classes"));
- *
- * cfg.setDeploymentSpi(deploySpi);
+ * cfg.setPeerClassLoadingEnabled(true);
  *
  * Ignition.start(cfg);
  * </pre>

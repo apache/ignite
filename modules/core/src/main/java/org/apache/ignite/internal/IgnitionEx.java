@@ -105,7 +105,6 @@ import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi;
 import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
@@ -1660,7 +1659,6 @@ public class IgnitionEx {
 
             // Ensure that SPIs support multiple grid instances, if required.
             if (!startCtx.single()) {
-                ensureMultiInstanceSupport(cfg.getDeploymentSpi());
                 ensureMultiInstanceSupport(cfg.getCommunicationSpi());
                 ensureMultiInstanceSupport(cfg.getDiscoverySpi());
                 ensureMultiInstanceSupport(cfg.getCheckpointSpi());
@@ -2019,9 +2017,6 @@ public class IgnitionEx {
 
             if (cfg.getCommunicationSpi() == null)
                 cfg.setCommunicationSpi(new TcpCommunicationSpi());
-
-            if (cfg.getDeploymentSpi() == null)
-                cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
             if (cfg.getEventStorageSpi() == null)
                 cfg.setEventStorageSpi(new NoopEventStorageSpi());

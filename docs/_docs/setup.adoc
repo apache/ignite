@@ -235,8 +235,6 @@ Refer to the link:machine-learning/machine-learning[Machine Learning] documentat
 
 |ignite-tensorflow | The Ignite TensorFlow Integration Module allows using TensorFlow with Ignite. In this scenario Ignite will be a datasource for any TensorFlow model training.
 
-|ignite-urideploy | Ignite URI Deploy module provides capabilities to deploy tasks from different sources such as File System, HTTP, or even Email.
-
 |ignite-visor-console |Open source command line management and monitoring tool
 
 |ignite-web | Ignite Web allows you to start nodes inside any web container based on servlet and servlet context listener. In addition, this module provides capabilities to cache web sessions in an Ignite cache.

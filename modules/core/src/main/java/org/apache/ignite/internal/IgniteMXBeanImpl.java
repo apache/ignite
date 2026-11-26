@@ -131,11 +131,6 @@ public class IgniteMXBeanImpl implements IgniteMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public String getDeploymentSpiFormatted() {
-        return kernal.deploymentSpiFormatted();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getDiscoverySpiFormatted() {
         return kernal.discoverySpiFormatted();
     }

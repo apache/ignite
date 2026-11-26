@@ -500,7 +500,6 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             log.debug("Grid checkpoint SPI       : " + Arrays.toString(cfg.getCheckpointSpi()));
             log.debug("Grid collision SPI        : " + cfg.getCollisionSpi());
             log.debug("Grid communication SPI    : " + cfg.getCommunicationSpi());
-            log.debug("Grid deployment SPI       : " + cfg.getDeploymentSpi());
             log.debug("Grid discovery SPI        : " + cfg.getDiscoverySpi());
             log.debug("Grid event storage SPI    : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI         : " + Arrays.toString(cfg.getFailoverSpi()));

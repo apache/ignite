@@ -88,6 +88,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -98,7 +99,7 @@ import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -281,7 +282,6 @@ import static org.apache.ignite.mxbean.IgniteMXBean.COLLISION_SPI_FORMATTED_DESC
 import static org.apache.ignite.mxbean.IgniteMXBean.COMMUNICATION_SPI_FORMATTED_DESC;
 import static org.apache.ignite.mxbean.IgniteMXBean.COPYRIGHT_DESC;
 import static org.apache.ignite.mxbean.IgniteMXBean.CUR_COORDINATOR_FORMATTED_DESC;
-import static org.apache.ignite.mxbean.IgniteMXBean.DEPLOYMENT_SPI_FORMATTED_DESC;
 import static org.apache.ignite.mxbean.IgniteMXBean.DISCOVERY_SPI_FORMATTED_DESC;
 import static org.apache.ignite.mxbean.IgniteMXBean.EVT_STORAGE_SPI_FORMATTED_DESC;
 import static org.apache.ignite.mxbean.IgniteMXBean.EXECUTOR_SRVC_FORMATTED_DESC;
@@ -630,13 +630,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         assert cfg != null;
 
         return cfg.getCommunicationSpi().toString();
-    }
-
-    /** @return String representation of the deployment SPI. */
-    String deploymentSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getDeploymentSpi().toString();
     }
 
     /** @return String representation of the discovery SPI. */
@@ -1002,7 +995,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             startManager(new GridCheckpointManager(ctx));
 
             startManager(new GridEventStorageManager(ctx));
-            startManager(new GridDeploymentManager(ctx));
+            startProcessor(new GridDeploymentProcessor(ctx));
             startManager(new GridLoadBalancerManager(ctx));
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
@@ -1017,6 +1010,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Start the encryption manager after assigning the discovery manager to context, so it will be
             // able to register custom event listener.
             startManager(new GridEncryptionManager(ctx));
+            startProcessor(new ClassPathProcessor(ctx));
 
             startProcessor(new PdsConsistentIdProcessor(ctx));
 
@@ -1368,7 +1362,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // All SPIs should be non-null.
         A.notNull(cfg.getCheckpointSpi(), "cfg.getCheckpointSpi()");
         A.notNull(cfg.getCommunicationSpi(), "cfg.getCommunicationSpi()");
-        A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
         A.notNull(cfg.getDiscoverySpi(), "cfg.getDiscoverySpi()");
         A.notNull(cfg.getEventStorageSpi(), "cfg.getEventStorageSpi()");
         A.notNull(cfg.getCollisionSpi(), "cfg.getCollisionSpi()");
@@ -1622,7 +1615,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         addSpiAttributes(cfg.getEventStorageSpi());
         addSpiAttributes(cfg.getCheckpointSpi());
         addSpiAttributes(cfg.getLoadBalancingSpi());
-        addSpiAttributes(cfg.getDeploymentSpi());
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
@@ -3386,9 +3378,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         reg.register("communicationSpiFormatted", this::communicationSpiFormatted, String.class,
             COMMUNICATION_SPI_FORMATTED_DESC);
-
-        reg.register("deploymentSpiFormatted", this::deploymentSpiFormatted, String.class,
-            DEPLOYMENT_SPI_FORMATTED_DESC);
 
         reg.register("checkpointSpiFormatted", this::checkpointSpiFormatted, String.class,
             CHECKPOINT_SPI_FORMATTED_DESC);

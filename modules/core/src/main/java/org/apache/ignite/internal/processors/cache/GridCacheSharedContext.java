@@ -36,7 +36,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.systemview.ScanQuerySystemView;
@@ -799,7 +799,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Grid deployment manager.
      */
-    public GridDeploymentManager gridDeploy() {
+    public GridDeploymentProcessor gridDeploy() {
         return kernalCtx.deploy();
     }
 

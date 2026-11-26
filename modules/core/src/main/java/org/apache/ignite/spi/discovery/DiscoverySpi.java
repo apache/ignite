@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * with default configuration which allows all nodes in local network
  * (with enabled multicast) to discover each other.
  * <p>
- * Ignite provides the following {@code GridDeploymentSpi} implementation:
+ * Ignite provides the following {@code DiscoverySpi} implementation:
  * <ul>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}</li>
  * </ul>

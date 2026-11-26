@@ -40,6 +40,7 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
+import org.apache.ignite.internal.managers.deployment.LocalDeploymentRegistry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -54,7 +55,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConfiguration;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
@@ -88,7 +88,7 @@ public final class CommandLineStartup {
     static final List<Class<?>> PROPS_CLS = new ArrayList<>(Arrays.asList(
         IgniteSystemProperties.class,
         GridCacheMapEntry.class,
-        LocalDeploymentSpi.class,
+        LocalDeploymentRegistry.class,
         GridCacheDatabaseSharedManager.class,
         PartitionsEvictManager.class,
         PagesList.class,

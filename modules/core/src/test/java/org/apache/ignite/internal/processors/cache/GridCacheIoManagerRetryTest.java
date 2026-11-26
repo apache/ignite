@@ -29,7 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -145,7 +144,6 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
 
         // Necessary to init GridKernalContext.
         ctx.config().setPeerClassLoadingEnabled(true);
-        ctx.config().setDeploymentSpi(new LocalDeploymentSpi());
         ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
 
         ctx.config().setNetworkSendRetryCount(retryCnt);
@@ -171,7 +169,7 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
         ctx.add(new PoolProcessor(ctx));
         ctx.add(new GridSystemViewManager(ctx));
         ctx.add(new IgnitePluginProcessor(ctx, ctx.config(), Collections.emptyList()));
-        ctx.add(new GridDeploymentManager(ctx));
+        ctx.add(new GridDeploymentProcessor(ctx));
 
         ctx.add(new GridDiscoveryManager(ctx) {
             @Override public @Nullable ClusterNode node(UUID nodeId) {

@@ -96,10 +96,6 @@ public interface IgniteMXBean {
         " implementation.";
 
     /** */
-    public String DEPLOYMENT_SPI_FORMATTED_DESC = "Formatted instance of fully configured deployment SPI" +
-        " implementation.";
-
-    /** */
     public String CHECKPOINT_SPI_FORMATTED_DESC = "Formatted instance of configured checkpoint SPI implementation.";
 
     /** */
@@ -141,12 +137,6 @@ public interface IgniteMXBean {
 
     /** */
     public static final String CLUSTER_STATE_DESC = "Checks cluster state.";
-
-    /** */
-    public String READ_ONLY_MODE_DESC = "Cluster read-only mode status.";
-
-    /** */
-    public String READ_ONLY_MODE_DURATION_DESC = "Duration of read-only mode enabled on cluster.";
 
     /**
      * Gets string presentation of the version.
@@ -475,16 +465,6 @@ public interface IgniteMXBean {
     @Deprecated
     @MXBeanDescription(COMMUNICATION_SPI_FORMATTED_DESC)
     public String getCommunicationSpiFormatted();
-
-    /**
-     * Gets a formatted instance of fully configured deployment SPI implementation.
-     *
-     * @return Grid deployment SPI implementation.
-     * @deprecated Check the {@link ReadOnlyMetricRegistry} with "name=ignite.deploymentSpiFormatted" instead.
-     */
-    @Deprecated
-    @MXBeanDescription(DEPLOYMENT_SPI_FORMATTED_DESC)
-    public String getDeploymentSpiFormatted();
 
     /**
      * Gets a formatted instance of configured checkpoint SPI implementation.

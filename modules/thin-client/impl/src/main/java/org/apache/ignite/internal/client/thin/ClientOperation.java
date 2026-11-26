@@ -294,6 +294,9 @@ public enum ClientOperation {
     /** IgniteSet.iterator page. */
     OP_SET_ITERATOR_GET_PAGE(9023),
 
+    /** File upload. */
+    FILE_UPLOAD(9030),
+
     /** Stop warmup. */
     OP_STOP_WARMUP(10000);
 

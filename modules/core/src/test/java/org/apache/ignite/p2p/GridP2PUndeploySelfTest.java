@@ -26,9 +26,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.deployment.LocalDeploymentRegistry;
+import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -49,22 +52,24 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     private static final String TEST_TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** */
-    private Map<String, LocalDeploymentSpi> spis = new HashMap<>();
+    private Map<String, LocalDeploymentRegistry> spis = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
-        IgniteTestResources rsrcs) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName, rsrcs);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName, IgniteTestResources rsrcs) throws Exception {
+        return super.getConfiguration(igniteInstanceName, rsrcs).setDeploymentMode(depMode);
+    }
 
-        LocalDeploymentSpi spi = new LocalDeploymentSpi();
+    /** {@inheritDoc} */
+    @Override protected Ignite startGrid(
+        String igniteInstanceName,
+        IgniteConfiguration cfg,
+        GridSpringResourceContext ctx
+    ) throws Exception {
+        IgniteEx node = (IgniteEx)super.startGrid(igniteInstanceName, cfg, ctx);
 
-        spis.put(igniteInstanceName, spi);
+        spis.put(igniteInstanceName, GridTestUtils.getFieldValue(node.context().deploy(), "locStore", "spi"));
 
-        cfg.setDeploymentSpi(spi);
-
-        cfg.setDeploymentMode(depMode);
-
-        return cfg;
+        return node;
     }
 
     /**
@@ -92,8 +97,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             ignite2.compute().execute(task1.getName(), 2);
 
-            LocalDeploymentSpi spi1 = spis.get(ignite1.name());
-            LocalDeploymentSpi spi2 = spis.get(ignite2.name());
+            LocalDeploymentRegistry spi1 = spis.get(ignite1.name());
+            LocalDeploymentRegistry spi2 = spis.get(ignite2.name());
 
             assert spi1.findResource(task1.getName()) != null;
             assert spi2.findResource(task1.getName()) != null;
@@ -133,7 +138,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param registered True id the resource registered, false otherwise.
      */
     private void checkResourceRegisteredInSpi(ClassLoader tstClsLdr, Class<? extends ComputeTask<?, ?>> task,
-        LocalDeploymentSpi spi, boolean registered) {
+        LocalDeploymentRegistry spi, boolean registered) {
         ConcurrentLinkedHashMap<ClassLoader, ConcurrentMap<String, String>> ldrRsrcs = U.field(spi, "ldrRsrcs");
 
         ConcurrentMap<String, String> rcsAliasMap = ldrRsrcs.get(tstClsLdr);
@@ -169,8 +174,8 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
             ignite1.compute().execute(task1.getName(), ignite2.cluster().localNode().id());
 
-            LocalDeploymentSpi spi1 = spis.get(ignite1.name());
-            LocalDeploymentSpi spi2 = spis.get(ignite2.name());
+            LocalDeploymentRegistry spi1 = spis.get(ignite1.name());
+            LocalDeploymentRegistry spi2 = spis.get(ignite2.name());
 
             checkResourceRegisteredInSpi(ldr, task1, spi1, true);
 

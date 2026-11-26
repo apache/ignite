@@ -70,8 +70,6 @@ import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
@@ -388,9 +386,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
     /** Collision SPI. */
     private CollisionSpi colSpi;
 
-    /** Deployment SPI. */
-    private DeploymentSpi deploySpi;
-
     /** Checkpoint SPI. */
     private CheckpointSpi[] cpSpi;
 
@@ -604,7 +599,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
         // SPIs.
         discoSpi = cfg.getDiscoverySpi();
         commSpi = cfg.getCommunicationSpi();
-        deploySpi = cfg.getDeploymentSpi();
         evtSpi = cfg.getEventStorageSpi();
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
@@ -2109,35 +2103,6 @@ public class IgniteConfiguration implements IgniteConfigurationDefaults {
      */
     public IgniteConfiguration setCollisionSpi(CollisionSpi colSpi) {
         this.colSpi = colSpi;
-
-        return this;
-    }
-
-    /**
-     * Should return fully configured deployment SPI implementation. If not provided,
-     * {@link LocalDeploymentSpi} will be used.
-     *
-     * @return Grid deployment SPI implementation or {@code null} to use default implementation.
-     * @deprecated Will be replaced with the
-     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
-     */
-    @Deprecated
-    public DeploymentSpi getDeploymentSpi() {
-        return deploySpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link DeploymentSpi}.
-     *
-     * @param deploySpi Fully configured instance of {@link DeploymentSpi}.
-     * @see IgniteConfiguration#getDeploymentSpi()
-     * @return {@code this} for chaining.
-     * @deprecated Will be replaced with the
-     * <a href="https://cwiki.apache.org/confluence/display/IGNITE/IEP-144+IgniteClassPath">IgniteClassPath</a> in the next versions.
-     */
-    @Deprecated
-    public IgniteConfiguration setDeploymentSpi(DeploymentSpi deploySpi) {
-        this.deploySpi = deploySpi;
 
         return this;
     }

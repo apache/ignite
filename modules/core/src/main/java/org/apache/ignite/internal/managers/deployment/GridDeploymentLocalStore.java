@@ -38,9 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.deployment.DeploymentListener;
-import org.apache.ignite.spi.deployment.DeploymentResource;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
@@ -63,18 +60,22 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Mutex. */
     private final Object mux = new Object();
 
+    /** Deployment SPI. */
+    private final LocalDeploymentRegistry spi;
+
     /**
-     * @param spi Deployment SPI.
      * @param ctx Grid kernal context.
      * @param comm Deployment communication.
      */
-    GridDeploymentLocalStore(DeploymentSpi spi, GridKernalContext ctx, GridDeploymentCommunication comm) {
-        super(spi, ctx, comm);
+    GridDeploymentLocalStore(GridKernalContext ctx, GridDeploymentCommunication comm) {
+        super(ctx, comm);
+
+        spi = new LocalDeploymentRegistry(ctx.log(LocalDeploymentRegistry.class));
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        spi.setListener(new LocalDeploymentListener());
+        spi.setListener(this::undeploy);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -92,6 +93,8 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
         for (ClassLoader ldr : ldrs)
             undeploy(ldr);
+
+        spi.stop();
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -592,18 +595,5 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDeploymentLocalStore.class, this);
-    }
-
-    /**
-     *
-     */
-    private class LocalDeploymentListener implements DeploymentListener {
-        /** {@inheritDoc} */
-        @Override public void onUnregistered(ClassLoader ldr) {
-            if (log.isDebugEnabled())
-                log.debug("Received callback from SPI to unregister class loader: " + ldr);
-
-            undeploy(ldr);
-        }
     }
 }

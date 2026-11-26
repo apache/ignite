@@ -35,4 +35,9 @@ public interface ClientListenerRequest {
     default boolean beforeStartupRequest() {
         return false;
     }
+
+    /** @return {@code True} if request can be executed only by control.sh client. */
+    default boolean internal() {
+        return false;
+    }
 }

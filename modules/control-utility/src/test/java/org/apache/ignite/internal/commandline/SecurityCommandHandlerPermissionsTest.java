@@ -43,6 +43,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.classpath.ClassPathTestUtils;
 import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
@@ -195,6 +196,17 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     @Test
     public void testCacheClear() throws Exception {
         checkCommandPermissions(asList("--cache", "clear", "--caches", DEFAULT_CACHE_NAME), cachePermission(CACHE_REMOVE));
+    }
+
+    /** */
+    @Test
+    public void testClassPathCreate() throws Exception {
+        String files = String.join(",", ClassPathTestUtils.fileArg(ClassPathTestUtils.files()));
+
+        checkCommandPermissions(
+            asList("--class-path", "create", "--name", "secured_app", "--files", files),
+            systemPermissions(ADMIN_OPS)
+        );
     }
 
     /** */

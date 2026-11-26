@@ -23,6 +23,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentMessageCount
 import org.apache.ignite.internal.managers.deployment.GridDifferentLocalDeploymentSelfTest;
 import org.apache.ignite.internal.managers.deployment.P2PCacheOperationIntoComputeTest;
 import org.apache.ignite.internal.managers.deployment.P2PClassLoadingIssuesTest;
+import org.apache.ignite.p2p.ClassLoadingProblemExceptionTest;
+import org.apache.ignite.p2p.ClassLoadingProblemExtendedLoggingTest;
 import org.apache.ignite.p2p.DeploymentClassLoaderCallableTest;
 import org.apache.ignite.p2p.GridP2PClassLoadingSelfTest;
 import org.apache.ignite.p2p.GridP2PClientDeploymentSourceTest;
@@ -89,6 +91,8 @@ import org.junit.runners.Suite;
     GridP2PComputeExceptionTest.class,
     GridDeploymentLocalStoreReuseTest.class,
     GridP2PClientDeploymentSourceTest.class,
+    ClassLoadingProblemExceptionTest.class,
+    ClassLoadingProblemExtendedLoggingTest.class,
 })
 public class IgniteP2PSelfTestSuite {
 }

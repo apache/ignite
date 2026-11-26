@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
@@ -39,8 +39,6 @@ import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.deployment.DeploymentSpi;
-import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
@@ -148,14 +146,8 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testStopDeploymentManager() throws Exception {
-        DeploymentSpi spi = new LocalDeploymentSpi();
-
-        injectLogger(spi);
-
-        ctx.config().setDeploymentSpi(spi);
-
-        GridDeploymentManager mgr = new GridDeploymentManager(ctx);
+    public void testStopDeploymentProcessor() throws Exception {
+        GridDeploymentProcessor mgr = new GridDeploymentProcessor(ctx);
 
         mgr.stop(true);
     }

@@ -62,7 +62,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -988,7 +988,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Grid deployment manager.
      */
-    public GridDeploymentManager gridDeploy() {
+    public GridDeploymentProcessor gridDeploy() {
         return ctx.deploy();
     }
 

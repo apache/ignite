@@ -41,11 +41,12 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.apache.ignite.internal.classpath.ClassPathProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
@@ -141,7 +142,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridDeploymentManager depMgr;
+    private GridDeploymentProcessor depMgr;
 
     /** */
     @GridToStringExclude
@@ -368,6 +369,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private RollingUpgradeProcessor rollUpProc;
 
+    /** Classpath processor. */
+    @GridToStringExclude
+    private ClassPathProcessor classPathProc;
+
     /** */
     private Thread.UncaughtExceptionHandler hnd;
 
@@ -492,8 +497,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
          * ========
          */
 
-        if (comp instanceof GridDeploymentManager)
-            depMgr = (GridDeploymentManager)comp;
+        if (comp instanceof GridDeploymentProcessor)
+            depMgr = (GridDeploymentProcessor)comp;
         else if (comp instanceof GridIoManager)
             ioMgr = (GridIoManager)comp;
         else if (comp instanceof GridDiscoveryManager)
@@ -599,6 +604,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof RollingUpgradeProcessor)
             rollUpProc = (RollingUpgradeProcessor)comp;
+        else if (comp instanceof ClassPathProcessor)
+            classPathProc = (ClassPathProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -762,7 +769,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridDeploymentManager deploy() {
+    @Override public GridDeploymentProcessor deploy() {
         return depMgr;
     }
 
@@ -1118,6 +1125,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public RollingUpgradeProcessor rollingUpgrade() {
         return rollUpProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassPathProcessor classPath() {
+        return classPathProc;
     }
 
     /** {@inheritDoc} */

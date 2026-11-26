@@ -39,8 +39,8 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoMessage;
-import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMetadata;
+import org.apache.ignite.internal.managers.deployment.GridDeploymentProcessor;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentStore;
 import org.apache.ignite.internal.managers.deployment.GridTestDeployment;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
@@ -140,7 +140,7 @@ public class ClassLoadingProblemExceptionTest extends GridCommonAbstractTest imp
 
         awaitPartitionMapExchange();
 
-        GridDeploymentManager deploymentMgr = client2.context().deploy();
+        GridDeploymentProcessor deploymentMgr = client2.context().deploy();
 
         GridDeploymentStore store = GridTestUtils.getFieldValue(deploymentMgr, "locStore");
 
