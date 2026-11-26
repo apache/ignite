@@ -22,11 +22,16 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.node;
 import static org.apache.ignite.internal.management.api.CommandUtils.servers;
 
-/** Command to clear CDC directory. */
+/**
+ * Command to clear CDC directory.
+ *
+ * @see CoreFeatureRegistry#CDC_CLEAR_FEATURE
+ */
 public class CdcClearCommand implements ComputeCommand<CdcClearCommandArg, Void> {
     /** {@inheritDoc} */
     @Override public String description() {

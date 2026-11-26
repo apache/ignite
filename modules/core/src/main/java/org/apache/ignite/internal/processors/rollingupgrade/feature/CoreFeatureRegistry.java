@@ -132,4 +132,7 @@ public class CoreFeatureRegistry {
 
     /** Feature that deprecates {@code DynamicCacheChangeRequest#disabledAfterStart}. */
     public static final IgniteFeature CACHE_DISABLED_AFTER_START_DEPRECATED_FEATURE = new IgniteCoreFeature(10);
+
+    /** Feature that introduces the CDC clear command. */
+    public static final IgniteFeature CDC_CLEAR_FEATURE = new IgniteCoreFeature(11);
 }

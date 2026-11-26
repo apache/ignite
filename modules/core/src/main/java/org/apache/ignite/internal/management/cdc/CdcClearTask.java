@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -33,11 +35,13 @@ import org.apache.ignite.internal.cdc.CdcFileLockHolder;
 import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,9 +51,21 @@ public class CdcClearTask extends VisorMultiNodeTask<CdcClearCommandArg, Void, V
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    public static final String FEATURE_NOT_ACTIVE_ERR_MSG = "Won't clear CDC directory. " +
+        "The CDC clear feature isn't activated yet. The Rolling Upgrade has to be finished.";
+
     /** {@inheritDoc} */
     @Override protected VisorJob<CdcClearCommandArg, Void> job(CdcClearCommandArg arg) {
         return new CdcClearJob(arg, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Collection<UUID> jobNodes(VisorTaskArgument<CdcClearCommandArg> arg) {
+        if (!ignite.context().rollingUpgrade().features().isActive(CoreFeatureRegistry.CDC_CLEAR_FEATURE))
+            throw new IgniteException(FEATURE_NOT_ACTIVE_ERR_MSG);
+
+        return super.jobNodes(arg);
     }
 
     /** {@inheritDoc} */
