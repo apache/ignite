@@ -22,23 +22,22 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 import org.apache.ignite.internal.marshaller.ClassLoaderUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class defines custom JDK object input stream.
  */
 class JdkMarshallerObjectInputStream extends ObjectInputStream {
-    /** */
-    private final ClassLoader clsLdr;
+    /** Class loader to resolve classes with, {@code null} means the loader Ignite was loaded by. */
+    private final @Nullable ClassLoader clsLdr;
 
     /**
      * @param in Parent input stream.
-     * @param clsLdr Custom class loader.
+     * @param clsLdr Class loader to resolve classes with or {@code null} to use the loader Ignite was loaded by.
      * @throws IOException If initialization failed.
      */
-    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
+    JdkMarshallerObjectInputStream(InputStream in, @Nullable ClassLoader clsLdr) throws IOException {
         super(in);
-
-        assert clsLdr != null;
 
         this.clsLdr = clsLdr;
 
