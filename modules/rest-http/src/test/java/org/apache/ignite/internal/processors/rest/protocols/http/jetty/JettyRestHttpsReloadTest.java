@@ -244,10 +244,10 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
     /**
      * Given: binary REST and HTTPS use separate factories and key stores, and the Jetty XML file disables hot reload
-     *     of the HTTPS factory. Both serve certificate A. A of HTTPS is due for hot reload at start, and A of binary
-     *     REST in 5 seconds, so a check of HTTPS would run before the one of binary REST. Both sources hold
-     *     replacement B. The HTTPS source fails any load after the second one, so an automatic load of HTTPS before
-     *     the command makes the command fail.
+     *     of the HTTPS factory. Both serve certificate A. A of HTTPS is due for hot reload at start. A of binary REST
+     *     becomes due 5 seconds after the test creates it, so on a usual start binary REST reloads after any check of
+     *     HTTPS at start. Both sources hold replacement B. The HTTPS source fails any load after the second one, so
+     *     an automatic load of HTTPS before the command makes the command fail.
      * When: hot reload loads B for binary REST, and then the operator runs the reload command.
      * Then: after hot reload, a new binary REST client sees B, and a new HTTPS client still sees A. After the command,
      *     a new HTTPS client sees B.
