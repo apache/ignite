@@ -365,6 +365,7 @@ Register name: `index.{schema_name}.{table_name}.{index_name}`
 |Name | Type | Description
 |{opType}Count | long | Count of {opType} operations.
 |{opType}Time | long | Total time of {opType} operations (nanoseconds).
+|FullRowSearchCount | long | Number of full index row lookups during search caused by insufficient inline data.
 |===
 
 == Hash Indexes I/O Statistics

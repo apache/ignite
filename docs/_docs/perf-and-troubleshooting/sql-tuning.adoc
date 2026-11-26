@@ -226,6 +226,10 @@ Ideally this size should be enough to store full indexed entry in serialized for
 When values are not fully included in the index, Ignite may need to perform additional data page reads during index lookup,
 which can impair performance if persistence is enabled.
 
+Use the link:monitoring-metrics/new-metrics#sorted-indexes-operations[FullRowSearchCount] metric to identify indexes
+whose inline size is insufficient. The metric counts full index row lookups caused by insufficient inline data during search.
+It is a logical lookup count: the counter can increase even when the row is returned from the index row cache without a physical data page read.
+
 //If a value type allows, Ignite includes indexed values in the index itself to optimize querying and data updates.
 
 

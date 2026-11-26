@@ -74,6 +74,9 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
  * BPlusTree where nodes stores inlined index keys.
  */
 public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
+    /** Name of the metric that counts full index row lookups during search. */
+    public static final String FULL_ROW_SEARCH_COUNT = "FullRowSearchCount";
+
     /**
      * Default sql index size for types with variable length (such as String or byte[]).
      * Note that effective length will be lower, because 3 bytes will be taken for the inner representation of variable type.
@@ -97,6 +100,12 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
     /** Cache group context. */
     private final CacheGroupContext grpCtx;
+
+    /** Cache context. */
+    @Nullable private final GridCacheContext<?, ?> cctx;
+
+    /** Full index row lookups during search caused by insufficient inline data. */
+    @Nullable private final LongAdderMetric fullRowSearchCntr;
 
     /** Statistics holder used by underlying BPlusTree. */
     @Nullable private final IoStatisticsHolder stats;
@@ -153,6 +162,19 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         created = initNew;
 
         this.def = def;
+
+        cctx = def == null ? null : def.cacheInfo().cacheContext();
+
+        if (cctx == null || IgniteSystemProperties.getBoolean(IGNITE_BPLUS_TREE_DISABLE_METRICS))
+            fullRowSearchCntr = null;
+        else {
+            MetricRegistryImpl mreg = cctx.shared().kernalContext().metric().registry(
+                metricName(INDEX_METRIC_PREFIX, def.idxName().fullName()));
+
+            fullRowSearchCntr = mreg.longAdderMetric(
+                FULL_ROW_SEARCH_COUNT,
+                "Number of full index row lookups during search caused by insufficient inline data.");
+        }
 
         this.idxRowCache = idxRowCache;
 
@@ -254,7 +276,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         throws IgniteCheckedException {
 
         if (inlineSize == 0) {
-            IndexRow currRow = getRow(io, pageAddr, idx);
+            IndexRow currRow = row.indexPlainRow() ? getRowForSearch(io, pageAddr, idx) : getRow(io, pageAddr, idx);
 
             return compareFullRows(currRow, row, 0, rowHandler(), def.rowComparator());
         }
@@ -303,8 +325,9 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         if (keyIdx < keyDefs.size()) {
             recommender.recommend(row, inlineSize, pageSize());
 
-            if (currRow == null)
-                currRow = getRow(io, pageAddr, idx);
+            if (currRow == null) {
+                currRow = row.indexPlainRow() ? getRowForSearch(io, pageAddr, idx) : getRow(io, pageAddr, idx);
+            }
 
             return compareFullRows(currRow, row, keyIdx, rowHandler(), def.rowComparator());
         }
@@ -377,6 +400,16 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         throws IgniteCheckedException {
 
         return io.getLookupRow(this, pageAddr, idx);
+    }
+
+    /**
+     * Gets a full index row for a search after inline data was insufficient for comparison.
+     */
+    public IndexRow getRowForSearch(BPlusIO<IndexRow> io, long pageAddr, int idx) throws IgniteCheckedException {
+        if (fullRowSearchCntr != null && cctx.statisticsEnabled())
+            fullRowSearchCntr.increment();
+
+        return getRow(io, pageAddr, idx);
     }
 
     /** */
