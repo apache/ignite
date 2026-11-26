@@ -649,7 +649,7 @@ public class CoreMessagesProvider extends AbstractMessageFactoryProvider {
         register(GridJobExecuteResponse.class);
         register(GridJobSiblingsRequest.class);
         register(GridJobSiblingsResponse.class);
-        register(GridTaskCancelRequest.class);
+        msgIdx++; // Former 'GridTaskCancelRequest'
         register(GridTaskSessionRequest.class);
         register(GridTaskResultRequest.class);
         register(GridTaskResultResponse.class);

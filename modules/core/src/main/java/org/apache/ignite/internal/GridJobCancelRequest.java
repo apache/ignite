@@ -38,6 +38,10 @@ public class GridJobCancelRequest extends AbstractMessage {
     @Order(2)
     boolean system;
 
+    /** Reason for cancelling the job. */
+    @Order(3)
+    byte reasonCode;
+
     /**
      * Default constructor.
      */
