@@ -25,6 +25,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
+import org.apache.ignite.ssl.ReloadableJettySslFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,10 +33,8 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
 
 /**
  * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
- * Hot reload follows {@link AbstractSslContextFactory#isHotReloadEnabled()} and
- * {@link AbstractSslContextFactory#getHotReloadBeforeExpiryMs()} of the SSL factory of the REST connector. If there is
- * no such factory, or it is not an {@link AbstractSslContextFactory}, hot reload is enabled with the lead time
- * {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+ * Hot reload follows the settings of the Jetty factory if it implements {@link ReloadableJettySslFactory}. Otherwise
+ * hot reload is enabled with the lead time {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
  * <p>
  * Jetty's factory guards its TLS state with an internal lock: it loads the state under this lock, and new connections
  * take the state under it too. Before loading a replacement, Jetty clears the state. So that new connections never see
@@ -53,7 +52,7 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
  * these settings. So the adapter cannot keep a context or store that code sets on the running factory: a failed reload
  * drops it.
  */
-class ReloadableJettySslFactory implements ReloadableSslFactory {
+class JettySslFactoryAdapter implements ReloadableSslFactory {
     /** The adapter is serializable only because {@link Factory} is. Serializing it fails, as Jetty's factory is not serializable. */
     private static final long serialVersionUID = 0L;
 
@@ -63,20 +62,19 @@ class ReloadableJettySslFactory implements ReloadableSslFactory {
     /** State set in {@code jetty.xml}. The factory loads a {@code null} part from its configured source. */
     private final TlsState configured;
 
-    /** SSL factory of the REST connector with the hot reload settings, or {@code null} to use the defaults. */
-    @Nullable private final AbstractSslContextFactory hotReloadSettings;
+    /** Hot reload settings of the factory, or {@code null} to use the defaults. */
+    @Nullable private final ReloadableJettySslFactory hotReloadSettings;
 
     /**
      * @param factory TLS factory of the HTTPS connector before startup, when its getters return the state set in {@code jetty.xml}.
-     * @param connectorFactory SSL factory of the REST connector.
      */
-    ReloadableJettySslFactory(SslContextFactory factory, @Nullable Factory<SSLContext> connectorFactory) {
+    JettySslFactoryAdapter(SslContextFactory factory) {
         assert !factory.isStarted();
 
         this.factory = factory;
 
         configured = new TlsState(factory);
-        hotReloadSettings = connectorFactory instanceof AbstractSslContextFactory sslFactory ? sslFactory : null;
+        hotReloadSettings = factory instanceof ReloadableJettySslFactory settings ? settings : null;
     }
 
     /** {@inheritDoc} */

@@ -111,8 +111,53 @@ Both the standard Jetty factory and custom subclasses of `SslContextFactory.Serv
 
 After you replace the stores, run the link:tools/control-script#reloading-tls-certificates[`--ssl reload` command].
 The node also reloads the stores automatically before its certificates expire, as described in link:security/ssl-tls#automatic-certificate-hot-reload[Automatic Certificate Hot Reload].
-Hot reload of the endpoint follows the `hotReloadEnabled` and `hotReloadBeforeExpiryMs` settings of the REST connector's SSL factory: the one set by `ConnectorConfiguration.setSslFactory(...)`, or the node's `IgniteConfiguration.setSslContextFactory(...)` if the connector sets none.
-If there is no such factory, or it does not extend `AbstractSslContextFactory`, hot reload is enabled with a lead time of 7 days.
+By default, hot reload of the Jetty factory is enabled and becomes due 7 days before the earliest certificate expiry in its private key chains.
+To change these settings for a factory, configure it with your own subclass of `SslContextFactory.Server` that implements `org.apache.ignite.ssl.ReloadableJettySslFactory` from the `ignite-rest-http` module.
+The interface has getters for two properties: `hotReloadEnabled` and `hotReloadBeforeExpiryMs`, the lead time in milliseconds, which must be positive.
+Add setters for them, so that the Jetty XML file can set them:
+
+[source,java]
+----
+public class MySslContextFactory extends SslContextFactory.Server implements ReloadableJettySslFactory {
+    private boolean hotReloadEnabled = true;
+
+    private long hotReloadBeforeExpiryMs = AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+
+    @Override public boolean isHotReloadEnabled() {
+        return hotReloadEnabled;
+    }
+
+    public void setHotReloadEnabled(boolean hotReloadEnabled) {
+        this.hotReloadEnabled = hotReloadEnabled;
+    }
+
+    @Override public long getHotReloadBeforeExpiryMs() {
+        return hotReloadBeforeExpiryMs;
+    }
+
+    public void setHotReloadBeforeExpiryMs(long hotReloadBeforeExpiryMs) {
+        this.hotReloadBeforeExpiryMs = hotReloadBeforeExpiryMs;
+    }
+}
+----
+
+Then set the properties on the factory in the Jetty XML file:
+
+[source,xml]
+----
+<Arg name="sslContextFactory">
+    <New class="com.example.MySslContextFactory">
+        <Set name="keyStorePath">/opt/ignite/config/https.jks</Set>
+        <Set name="keyStorePassword">changeit</Set>
+        <Set name="hotReloadEnabled">false</Set>
+    </New>
+</Arg>
+----
+
+These settings apply only to this factory: other transports keep their own hot reload settings.
+Changing them requires a node restart.
+The reload command reloads the factory either way.
+
 Each reload asks the Jetty factory to load its stores again.
 New connections use the replacement certificates; established connections stay open.
 If loading fails, the endpoint keeps its current keys and trust settings, and new connections keep working with them.
