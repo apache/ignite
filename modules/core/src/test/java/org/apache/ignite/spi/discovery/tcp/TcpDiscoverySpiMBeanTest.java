@@ -134,9 +134,11 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
                 assertEquals(0L, bean.getNodesFailed());
                 assertEquals(0, discoReg.<IntMetric>findMetric("FailedNodes").value());
+                assertEquals(0, discoReg.<IntMetric>findMetric("FailedClientNodes").value());
 
                 assertEquals(0L, bean.getNodesLeft());
                 assertEquals(0, discoReg.<IntMetric>findMetric("LeftNodes").value());
+                assertEquals(0, discoReg.<IntMetric>findMetric("LeftClientNodes").value());
 
                 assertTrue(bean.getTotalReceivedMessages() > 0);
                 assertTrue(discoReg.<IntMetric>findMetric("TotalReceivedMessages").value() > 0);
@@ -195,6 +197,8 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
                 assertTrue(waitForCondition(
                     () -> bean.getNodesLeft() == 1 && discoReg.<IntMetric>findMetric("LeftNodes").value() == 1,
                     getTestTimeout()));
+
+                assertEquals(0, discoReg.<IntMetric>findMetric("LeftClientNodes").value());
             }
         }
         finally {

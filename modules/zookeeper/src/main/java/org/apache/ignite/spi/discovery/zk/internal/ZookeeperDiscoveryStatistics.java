@@ -44,6 +44,14 @@ public class ZookeeperDiscoveryStatistics {
     private final LongAdderMetric joinedClientNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "JoinedClientNodes"),
         "Joined client nodes count.");
 
+    /** */
+    private final LongAdderMetric failedClientNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "FailedClientNodes"),
+        "Failed client nodes count.");
+
+    /** */
+    private final LongAdderMetric leftClientNodesCnt = new LongAdderMetric(metricName(DISCO_METRICS, "LeftClientNodes"),
+        "Left client nodes count.");
+
     /** Communication error count. */
     private final LongAdderMetric commErrCnt = new LongAdderMetric(metricName(DISCO_METRICS, "CommunicationErrors"),
         "Communication errors count");
@@ -58,8 +66,10 @@ public class ZookeeperDiscoveryStatistics {
     public void registerMetrics(MetricRegistryImpl discoReg) {
         discoReg.register(joinedNodesCnt);
         discoReg.register(failedNodesCnt);
-        discoReg.register(joinedClientNodesCnt);
         discoReg.register(leftNodesCnt);
+        discoReg.register(joinedClientNodesCnt);
+        discoReg.register(failedClientNodesCnt);
+        discoReg.register(leftClientNodesCnt);
         discoReg.register(commErrCnt);
         discoReg.register(topVer);
     }
@@ -90,11 +100,6 @@ public class ZookeeperDiscoveryStatistics {
     }
 
     /** */
-    public void onClientNodeJoined() {
-        joinedClientNodesCnt.increment();
-    }
-
-    /** */
     public void onNodeFailed() {
         failedNodesCnt.increment();
     }
@@ -102,6 +107,21 @@ public class ZookeeperDiscoveryStatistics {
     /** */
     public void onNodeLeft() {
         leftNodesCnt.increment();
+    }
+
+    /** */
+    public void onClientNodeJoined() {
+        joinedClientNodesCnt.increment();
+    }
+
+    /** */
+    public void onClientNodeFailed() {
+        failedClientNodesCnt.increment();
+    }
+
+    /** */
+    public void onClientNodeLeft() {
+        leftClientNodesCnt.increment();
     }
 
     /** */

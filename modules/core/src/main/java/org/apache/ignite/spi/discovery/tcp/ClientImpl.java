@@ -2382,6 +2382,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     notifyDiscovery(EVT_NODE_LEFT, msg.topologyVersion(), node, top);
 
                     spi.stats.onNodeLeft();
+
+                    if (node.isClient())
+                        spi.stats.onClientNodeLeft();
                 }
                 else {
                     if (log.isDebugEnabled())
@@ -2446,6 +2449,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);
 
                     spi.stats.onNodeFailed();
+
+                    if (node.isClient())
+                        spi.stats.onClientNodeFailed();
                 }
             }
             else {
