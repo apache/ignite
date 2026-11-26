@@ -48,15 +48,15 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
     /**
      * Given: the factory has loaded due certificates of one CA, and the files then get certificates of another CA.
-     * When: the node starts, and its hot reload attempt runs.
+     * When: the node starts, and its automatic reload attempt runs.
      * Then: the node installs the new certificates, and a client that trusts and presents only them connects.
      */
     @Test
-    public void testNodeHotReloadsCertificatesForNewConnections() throws Exception {
+    public void testNodeAutoReloadsCertificatesForNewConnections() throws Exception {
         long now = System.currentTimeMillis();
         TestCertificateAuthority ca1 = new TestCertificateAuthority("ca1", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
         TestCertificateAuthority ca2 = new TestCertificateAuthority("ca2", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
-        Path dir = Files.createTempDirectory("ssl-hot-reload");
+        Path dir = Files.createTempDirectory("ssl-auto-reload");
         Path keys = dir.resolve("keys.jks");
         Path trust = dir.resolve("trust.jks");
 
@@ -68,7 +68,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
 
             SSLContext initCtx = serverFactory.create();
 
-            assertTrue("Hot reload must be due at startup", serverFactory.hotReloadTime() < now);
+            assertTrue("Automatic reload must be due at startup", serverFactory.autoReloadTime() < now);
 
             save(ca2.keyStore("node", now - MINUTES.toMillis(1), now + DAYS.toMillis(10)), keys);
             save(ca2.trustStore(), trust);
@@ -95,20 +95,20 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a node starts with expired certificates, so hot reload stays due.
+     * Given: a node starts with expired certificates, so automatic reload stays due.
      * When: the automatic attempt reloads the same certificates.
      * Then: the node counts the failure and logs the transport and the reason.
      */
     @Test
-    public void testNodeReportsHotReloadFailureForExpiredCertificates() throws Exception {
+    public void testNodeReportsAutoReloadFailureForExpiredCertificates() throws Exception {
         long now = System.currentTimeMillis();
         TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
-        Path dir = Files.createTempDirectory("ssl-hot-reload");
+        Path dir = Files.createTempDirectory("ssl-auto-reload");
         Path keys = dir.resolve("keys.jks");
         Path trust = dir.resolve("trust.jks");
         ListeningTestLogger nodeLog = new ListeningTestLogger(log);
-        LogListener failure = LogListener.matches("TLS hot reload failed [transports=client connector").build();
-        LogListener reason = LogListener.matches("Loaded certificates are still due for hot reload").build();
+        LogListener failure = LogListener.matches("TLS automatic reload failed [transports=client connector").build();
+        LogListener reason = LogListener.matches("Loaded certificates are still due for automatic reload").build();
 
         nodeLog.registerListener(failure);
         nodeLog.registerListener(reason);
@@ -122,7 +122,7 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
             IgniteEx node = startGrid(0, cfg -> {
                 cfg.setGridLogger(nodeLog).setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
-            LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveHotReloadFailures");
+            LongMetric failures = node.context().metric().registry("ssl").findMetric("ConsecutiveAutoReloadFailures");
 
             assertTrue("The automatic attempt did not fail", waitForCondition(() -> failures.value() > 0, TIMEOUT_MS));
             assertTrue(failure.check(TIMEOUT_MS));
@@ -135,15 +135,15 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a node with a TLS transport runs its hot reload thread.
+     * Given: a node with a TLS transport runs its automatic reload thread.
      * When: the node stops.
-     * Then: the hot reload thread ends.
+     * Then: the automatic reload thread ends.
      */
     @Test
-    public void testNodeStopEndsHotReloadThread() throws Exception {
+    public void testNodeStopEndsAutoReloadThread() throws Exception {
         long now = System.currentTimeMillis();
         TestCertificateAuthority ca = new TestCertificateAuthority("ca", now - DAYS.toMillis(1), now + DAYS.toMillis(10));
-        Path dir = Files.createTempDirectory("ssl-hot-reload");
+        Path dir = Files.createTempDirectory("ssl-auto-reload");
         Path keys = dir.resolve("keys.jks");
         Path trust = dir.resolve("trust.jks");
 
@@ -157,19 +157,19 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
                 cfg.setClientConnectorConfiguration(sslClientConnector(serverFactory));
             });
 
-            Thread hotReload = null;
+            Thread autoReload = null;
 
             for (Thread thread : Thread.getAllStackTraces().keySet()) {
-                if (thread.getName().startsWith("ssl-hot-reload") && thread.getName().contains(node.name()))
-                    hotReload = thread;
+                if (thread.getName().startsWith("ssl-auto-reload") && thread.getName().contains(node.name()))
+                    autoReload = thread;
             }
 
-            assertNotNull("The hot reload thread is not running", hotReload);
+            assertNotNull("The automatic reload thread is not running", autoReload);
 
             stopAllGrids();
-            hotReload.join(TIMEOUT_MS);
+            autoReload.join(TIMEOUT_MS);
 
-            assertFalse("The hot reload thread is still running", hotReload.isAlive());
+            assertFalse("The automatic reload thread is still running", autoReload.isAlive());
         }
         finally {
             stopAllGrids();
@@ -181,10 +181,10 @@ public class SslCertificateHotReloadTest extends GridCommonAbstractTest {
      * Given: a node with the client connector and REST, which stop their servers in their own {@code onKernalStop}.
      * When: the node starts its components.
      * Then: the SSL factory registry comes after both, so the node, which stops components in reverse order,
-     *     stops hot reload before them.
+     *     stops automatic reload before them.
      */
     @Test
-    public void testHotReloadStopsBeforeClientConnectorAndRest() throws Exception {
+    public void testAutoReloadStopsBeforeClientConnectorAndRest() throws Exception {
         IgniteEx node = startGrid(0);
 
         try {

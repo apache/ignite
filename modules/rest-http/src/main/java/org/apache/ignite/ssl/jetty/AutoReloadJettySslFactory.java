@@ -20,19 +20,19 @@ package org.apache.ignite.ssl.jetty;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 /**
- * Hot reload settings of a Jetty SSL context factory that serves HTTPS for the HTTP REST endpoint. To change the settings
+ * Automatic reload settings of a Jetty SSL context factory that serves HTTPS for the HTTP REST endpoint. To change the settings
  * of a factory, implement this interface in a subclass of Jetty's {@code SslContextFactory.Server}, add setters for both
  * properties, and set them on the factory in the Jetty XML file. A factory that does not implement this interface keeps
- * hot reload enabled with the lead time {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+ * automatic reload enabled with the lead time {@link AbstractSslContextFactory#DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS}.
  * The reload command reloads the factory either way.
  */
-public interface ReloadableJettySslFactory {
+public interface AutoReloadJettySslFactory {
     /** @return Whether Ignite reloads the factory before its certificates expire. Changes require a node restart. */
-    public boolean isHotReloadEnabled();
+    public boolean isAutoReloadEnabled();
 
     /**
-     * @return How long before the earliest certificate expiry in the private key chains hot reload becomes due,
+     * @return How long before the earliest certificate expiry in the private key chains automatic reload becomes due,
      *     in milliseconds. Must be positive.
      */
-    public long getHotReloadBeforeExpiryMs();
+    public long getAutoReloadBeforeExpiryMs();
 }

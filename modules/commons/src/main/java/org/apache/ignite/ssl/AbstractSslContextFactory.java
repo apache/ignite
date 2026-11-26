@@ -35,8 +35,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Base class for SSL context factories that cache their {@link SSLContext}. {@link #init()} loads a new context, and
- * {@link #create()} returns the last one that it loaded, loading one on the first call. The hot reload time comes
- * {@link #getHotReloadBeforeExpiryMs()} before the earliest expiry in the key store that the factory passed to
+ * {@link #create()} returns the last one that it loaded, loading one on the first call. The automatic reload time comes
+ * {@link #getAutoReloadBeforeExpiryMs()} before the earliest expiry in the key store that the factory passed to
  * {@link #createKeyManagers(KeyManagerFactory, KeyStore, char[])} during the last successful load.
  */
 public abstract class AbstractSslContextFactory implements ReloadableSslFactory {
@@ -46,8 +46,8 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     /** Default SSL protocol. */
     public static final String DFLT_SSL_PROTOCOL = "TLS";
 
-    /** Default lead time for certificate hot reload: 7 days. */
-    public static final long DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
+    /** Default lead time for automatic certificate reload: 7 days. */
+    public static final long DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS = TimeUnit.DAYS.toMillis(7);
 
     /** SSL protocol. */
     protected String proto = DFLT_SSL_PROTOCOL;
@@ -62,10 +62,10 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     protected final AtomicReference<SSLContext> sslCtx = new AtomicReference<>();
 
     /** */
-    private boolean hotReloadEnabled = true;
+    private boolean autoReloadEnabled = true;
 
     /** */
-    private volatile long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+    private volatile long autoReloadBeforeExpiryMs = DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
 
     /** */
     private transient volatile long earliestExpiry;
@@ -74,40 +74,40 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     private transient long pendingExpiry;
 
     /** {@inheritDoc} */
-    @Override public boolean isHotReloadEnabled() {
-        return hotReloadEnabled;
+    @Override public boolean isAutoReloadEnabled() {
+        return autoReloadEnabled;
     }
 
     /**
-     * @param enabled Whether automatic certificate hot reload is enabled. It is enabled by default. Changes require
+     * @param enabled Whether automatic certificate reload is enabled. It is enabled by default. Changes require
      *     a node restart.
      */
-    public void setHotReloadEnabled(boolean enabled) {
-        hotReloadEnabled = enabled;
+    public void setAutoReloadEnabled(boolean enabled) {
+        autoReloadEnabled = enabled;
     }
 
     /**
-     * @return How long before the certificates expire hot reload becomes due, in milliseconds.
-     *     Defaults to {@link #DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+     * @return How long before the certificates expire automatic reload becomes due, in milliseconds.
+     *     Defaults to {@link #DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS}.
      */
-    public long getHotReloadBeforeExpiryMs() {
-        return hotReloadBeforeExpiryMs;
+    public long getAutoReloadBeforeExpiryMs() {
+        return autoReloadBeforeExpiryMs;
     }
 
     /**
-     * @param millis How long before the certificates expire hot reload becomes due, in milliseconds. Must be positive.
+     * @param millis How long before the certificates expire automatic reload becomes due, in milliseconds. Must be positive.
      */
-    public void setHotReloadBeforeExpiryMs(long millis) {
+    public void setAutoReloadBeforeExpiryMs(long millis) {
         A.ensure(millis > 0, "millis > 0");
 
-        hotReloadBeforeExpiryMs = millis;
+        autoReloadBeforeExpiryMs = millis;
     }
 
     /** {@inheritDoc} */
-    @Override public long hotReloadTime() {
+    @Override public long autoReloadTime() {
         long expiry = earliestExpiry;
 
-        return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs;
+        return expiry == 0 ? 0 : expiry - autoReloadBeforeExpiryMs;
     }
 
     /**
@@ -234,7 +234,7 @@ public abstract class AbstractSslContextFactory implements ReloadableSslFactory 
     protected abstract KeyManager[] createKeyManagers() throws SSLException;
 
     /**
-     * Creates key managers from the key store. For the hot reload date, call it once per load with the key store that
+     * Creates key managers from the key store. For the automatic reload date, call it once per load with the key store that
      * supplies the key managers.
      *
      * @param keyMgrFactory Key manager factory.

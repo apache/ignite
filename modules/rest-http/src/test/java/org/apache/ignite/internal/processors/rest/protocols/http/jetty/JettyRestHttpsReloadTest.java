@@ -41,7 +41,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.ssl.SslReloadCommand;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.ssl.TestCertificateAuthority;
-import org.apache.ignite.ssl.jetty.ReloadableJettySslFactory;
+import org.apache.ignite.ssl.jetty.AutoReloadJettySslFactory;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.util.resource.Resource;
@@ -57,7 +57,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_TCP_PORT;
 import static org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyRestProtocol.DFLT_JETTY_PORT;
-import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
 import static org.apache.ignite.ssl.TestCertificateAuthority.PASSWORD;
 import static org.apache.ignite.ssl.TestCertificateAuthority.save;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
@@ -69,7 +69,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * and requires an SNI host name ({@code jetty/https.xml}); {@code jetty/https-detector.xml} reads the same file through
  * a connector that accepts HTTP and HTTPS on one port. The custom factory ({@code jetty/https-source.xml}) takes its
  * key stores from {@link SourceSslContextFactory}; {@code jetty/https-source-manual.xml} configures the same source
- * with hot reload disabled. The connectors in these files set no port, so the tests set {@code IGNITE_JETTY_PORT};
+ * with automatic reload disabled. The connectors in these files set no port, so the tests set {@code IGNITE_JETTY_PORT};
  * otherwise the node would publish port 0.
  */
 @WithSystemProperty(key = IGNITE_JETTY_PORT, value = DFLT_JETTY_PORT)
@@ -181,12 +181,12 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a custom Jetty factory starts with certificate A, which is due for hot reload, and its source then supplies B.
-     * When: the node runs its hot reload check at startup, then the source fails and the operator runs the reload command.
+     * Given: a custom Jetty factory starts with certificate A, which is due for automatic reload, and its source then supplies B.
+     * When: the node runs its automatic reload check at startup, then the source fails and the operator runs the reload command.
      * Then: a new client sees B after the check. The command fails, and a new client still sees B.
      */
     @Test
-    public void testHotReloadedKeysSurviveFailedManualReload() throws Exception {
+    public void testAutoReloadedKeysSurviveFailedManualReload() throws Exception {
         KeyStore a = due();
         KeyStore b = fresh();
 
@@ -214,11 +214,11 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a custom Jetty factory has loaded certificate A, valid for 30 days.
      * When: the factory reloads by itself and gets certificate B, which was issued 20 hours ago and expires in an hour.
      *     Then its source fails, and Ignite reloads the factory.
-     * Then: the hot reload date comes 7 days before the certificate in use expires: 23 days ahead for A, 7 days before
+     * Then: the automatic reload date comes 7 days before the certificate in use expires: 23 days ahead for A, 7 days before
      *     the expiry of B for B. The failed reload keeps B's date.
      */
     @Test
-    public void testHotReloadTimeFollowsKeysInUse() throws Exception {
+    public void testAutoReloadTimeFollowsKeysInUse() throws Exception {
         SourceSslContextFactory.supply(fresh(), due(), new IOException("Source is unavailable"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
@@ -227,15 +227,15 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(23), adapter.hotReloadTime());
+            assertEquals(now + DAYS.toMillis(23), adapter.autoReloadTime());
 
             jettyFactory.reload(f -> { });
 
             long dueB = now + HOURS.toMillis(1) - DAYS.toMillis(7);
 
-            assertEquals(dueB, adapter.hotReloadTime());
+            assertEquals(dueB, adapter.autoReloadTime());
             assertThrows(log, adapter::init, IgniteException.class, "Source is unavailable");
-            assertEquals(dueB, adapter.hotReloadTime());
+            assertEquals(dueB, adapter.autoReloadTime());
         }
         finally {
             jettyFactory.stop();
@@ -243,17 +243,17 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: binary REST and HTTPS use separate factories and key stores, and the Jetty XML file disables hot reload
-     *     of the HTTPS factory. Both serve certificate A. A of HTTPS is due for hot reload at start. A of binary REST
+     * Given: binary REST and HTTPS use separate factories and key stores, and the Jetty XML file disables automatic reload
+     *     of the HTTPS factory. Both serve certificate A. A of HTTPS is due for automatic reload at start. A of binary REST
      *     becomes due 5 seconds after the test creates it, so on a usual start binary REST reloads after any check of
      *     HTTPS at start. Both sources hold replacement B. The HTTPS source fails any load after the second one, so
      *     an automatic load of HTTPS before the command makes the command fail.
-     * When: hot reload loads B for binary REST, and then the operator runs the reload command.
-     * Then: after hot reload, a new binary REST client sees B, and a new HTTPS client still sees A. After the command,
+     * When: automatic reload loads B for binary REST, and then the operator runs the reload command.
+     * Then: after automatic reload, a new binary REST client sees B, and a new HTTPS client still sees A. After the command,
      *     a new HTTPS client sees B.
      */
     @Test
-    public void testHttpsFactoryWithHotReloadDisabledWaitsForReloadCommand() throws Exception {
+    public void testHttpsFactoryWithAutoReloadDisabledWaitsForReloadCommand() throws Exception {
         KeyStore binaryA = ca.keyStore(HOST, now - HOURS.toMillis(1), now + DAYS.toMillis(7) + SECONDS.toMillis(5));
         KeyStore binaryB = fresh();
         KeyStore httpsA = due();
@@ -291,23 +291,23 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Given: a custom Jetty factory that implements {@link ReloadableJettySslFactory} sets a lead time of an hour, and
+     * Given: a custom Jetty factory that implements {@link AutoReloadJettySslFactory} sets a lead time of an hour, and
      *     has loaded a certificate valid for 30 days.
-     * When: Ignite reads the hot reload time of the factory.
-     * Then: hot reload becomes due an hour before the certificate expires.
+     * When: Ignite reads the automatic reload time of the factory.
+     * Then: automatic reload becomes due an hour before the certificate expires.
      */
     @Test
-    public void testHotReloadTimeUsesLeadTimeOfJettyFactory() throws Exception {
+    public void testAutoReloadTimeUsesLeadTimeOfJettyFactory() throws Exception {
         SourceSslContextFactory.supply(fresh());
 
         ConfigurableSourceSslContextFactory jettyFactory = new ConfigurableSourceSslContextFactory();
         JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
-        jettyFactory.setHotReloadBeforeExpiryMs(HOURS.toMillis(1));
+        jettyFactory.setAutoReloadBeforeExpiryMs(HOURS.toMillis(1));
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(30) - HOURS.toMillis(1), adapter.hotReloadTime());
+            assertEquals(now + DAYS.toMillis(30) - HOURS.toMillis(1), adapter.autoReloadTime());
         }
         finally {
             jettyFactory.stop();
@@ -344,7 +344,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
      * Given: a reload that Ignite did not start, such as one by Jetty's {@code KeyStoreScanner}, has failed and left
      *     the custom Jetty factory without keys.
      * When: Ignite reloads the factory while the source still fails, and again after the source supplies certificate B.
-     * Then: the first reload reports the source error, and the factory is due for hot reload right away, so a scheduled
+     * Then: the first reload reports the source error, and the factory is due for automatic reload right away, so a scheduled
      *     check reloads it as the reload command does. The second reload installs B.
      */
     @Test
@@ -362,9 +362,9 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
             assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
             assertThrows(log, adapter::init, IgniteException.class, "Source is unavailable");
 
-            long hotReloadTime = adapter.hotReloadTime();
+            long autoReloadTime = adapter.autoReloadTime();
 
-            assertTrue(hotReloadTime > 0 && hotReloadTime <= System.currentTimeMillis());
+            assertTrue(autoReloadTime > 0 && autoReloadTime <= System.currentTimeMillis());
 
             SourceSslContextFactory.supply(b);
             adapter.init();
@@ -456,12 +456,12 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** @return Key store with a server certificate valid for 30 days, which is not due for hot reload. */
+    /** @return Key store with a server certificate valid for 30 days, which is not due for automatic reload. */
     private KeyStore fresh() throws Exception {
         return ca.keyStore(HOST, now - HOURS.toMillis(1), now + DAYS.toMillis(30));
     }
 
-    /** @return Key store with a server certificate that expires in an hour, so it is due for hot reload. */
+    /** @return Key store with a server certificate that expires in an hour, so it is due for automatic reload. */
     private KeyStore due() throws Exception {
         return ca.keyStore(HOST, now - HOURS.toMillis(20), now + HOURS.toMillis(1));
     }
@@ -566,13 +566,13 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         }
     }
 
-    /** Custom Jetty factory of {@link SourceSslContextFactory} with hot reload settings that the Jetty XML file can set. */
-    public static class ConfigurableSourceSslContextFactory extends SourceSslContextFactory implements ReloadableJettySslFactory {
+    /** Custom Jetty factory of {@link SourceSslContextFactory} with automatic reload settings that the Jetty XML file can set. */
+    public static class ConfigurableSourceSslContextFactory extends SourceSslContextFactory implements AutoReloadJettySslFactory {
         /** */
-        private boolean hotReloadEnabled = true;
+        private boolean autoReloadEnabled = true;
 
         /** */
-        private long hotReloadBeforeExpiryMs = DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+        private long autoReloadBeforeExpiryMs = DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
 
         /** */
         public ConfigurableSourceSslContextFactory() throws Exception {
@@ -580,23 +580,23 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isHotReloadEnabled() {
-            return hotReloadEnabled;
+        @Override public boolean isAutoReloadEnabled() {
+            return autoReloadEnabled;
         }
 
         /** */
-        public void setHotReloadEnabled(boolean hotReloadEnabled) {
-            this.hotReloadEnabled = hotReloadEnabled;
+        public void setAutoReloadEnabled(boolean autoReloadEnabled) {
+            this.autoReloadEnabled = autoReloadEnabled;
         }
 
         /** {@inheritDoc} */
-        @Override public long getHotReloadBeforeExpiryMs() {
-            return hotReloadBeforeExpiryMs;
+        @Override public long getAutoReloadBeforeExpiryMs() {
+            return autoReloadBeforeExpiryMs;
         }
 
         /** */
-        public void setHotReloadBeforeExpiryMs(long hotReloadBeforeExpiryMs) {
-            this.hotReloadBeforeExpiryMs = hotReloadBeforeExpiryMs;
+        public void setAutoReloadBeforeExpiryMs(long autoReloadBeforeExpiryMs) {
+            this.autoReloadBeforeExpiryMs = autoReloadBeforeExpiryMs;
         }
     }
 }

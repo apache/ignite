@@ -17,7 +17,7 @@
 
 /**
  * <!-- Package description. -->
- * Contains hot reload settings of Jetty SSL context factories that serve HTTPS for the HTTP REST endpoint.
+ * Contains automatic reload settings of Jetty SSL context factories that serve HTTPS for the HTTP REST endpoint.
  */
 
 package org.apache.ignite.ssl.jetty;

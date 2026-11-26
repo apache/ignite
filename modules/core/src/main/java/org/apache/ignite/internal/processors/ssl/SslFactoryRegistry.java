@@ -56,7 +56,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     private final AtomicLong manualReloadAttempts = new AtomicLong();
 
     /** */
-    private final AtomicLong automaticHotReloadAttempts = new AtomicLong();
+    private final AtomicLong autoReloadAttempts = new AtomicLong();
 
     /** @param ctx Kernal context. */
     public SslFactoryRegistry(GridKernalContext ctx) {
@@ -96,25 +96,25 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     @Override public void onKernalStart(boolean active) {
         MetricRegistryImpl metrics = ctx.metric().registry("ssl");
 
-        metrics.register("ConsecutiveHotReloadFailures", this::consecutiveHotReloadFailures,
-            "Number of consecutive automatic hot reload failures.");
+        metrics.register("ConsecutiveAutoReloadFailures", this::consecutiveAutoReloadFailures,
+            "Number of consecutive automatic reload failures.");
         metrics.register("ManualReloadAttempts", manualReloadAttempts::get, "Number of manual reload attempts.");
-        metrics.register("AutomaticHotReloadAttempts", automaticHotReloadAttempts::get,
-            "Number of automatic hot reload attempts.");
+        metrics.register("AutoReloadAttempts", autoReloadAttempts::get,
+            "Number of automatic reload attempts.");
 
         for (RegisteredFactory registered : factories) {
-            if (registered.reloadable == null || !registered.reloadable.isHotReloadEnabled())
+            if (registered.reloadable == null || !registered.reloadable.isAutoReloadEnabled())
                 continue;
 
             if (executor == null)
-                executor = newSingleThreadScheduledExecutor("ssl-hot-reload", ctx.igniteInstanceName());
+                executor = newSingleThreadScheduledExecutor("ssl-auto-reload", ctx.igniteInstanceName());
 
             registered.scheduleCheck(0);
         }
     }
 
-    /** @return Sum of consecutive automatic hot reload failures across factories. */
-    private long consecutiveHotReloadFailures() {
+    /** @return Sum of consecutive automatic reload failures across factories. */
+    private long consecutiveAutoReloadFailures() {
         long sum = 0;
 
         for (RegisteredFactory registered : factories)
@@ -130,10 +130,10 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
     }
 
     /**
-     * Reloads a registered factory. For a factory with hot reload enabled, waits for its running check, resets its failure
+     * Reloads a registered factory. For a factory with automatic reload enabled, waits for its running check, resets its failure
      * count and schedules its next check for the loaded certificates. If they are already due, the next check comes after
-     * {@link #CHECK_PERIOD}, because a hot reload right away would load the same certificates from the source. If the
-     * factory cannot give the hot reload time of the loaded certificates, the reload still succeeds, and the next check
+     * {@link #CHECK_PERIOD}, because an automatic reload right away would load the same certificates from the source. If the
+     * factory cannot give the automatic reload time of the loaded certificates, the reload still succeeds, and the next check
      * comes after {@link #CHECK_PERIOD}.
      *
      * @param factory Registered factory to reload.
@@ -145,7 +145,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         }
     }
 
-    /** Registered factory with its transports and hot reload state. Its checks and manual reload hold its monitor. */
+    /** Registered factory with its transports and automatic reload state. Its checks and manual reload hold its monitor. */
     private class RegisteredFactory {
         /** */
         private final Factory<SSLContext> factory;
@@ -162,8 +162,8 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
         /** */
         @Nullable private ScheduledFuture<?> nextCheck;
 
-        /** Hot reload time that the registry logged last, or {@code -1} before the first log. */
-        private long loggedHotReloadTime = -1;
+        /** Automatic reload time that the registry logged last, or {@code -1} before the first log. */
+        private long loggedAutoReloadTime = -1;
 
         /** */
         private RegisteredFactory(Factory<SSLContext> factory, String transports) {
@@ -183,7 +183,7 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
                 return;
 
             if (log.isDebugEnabled())
-                log.debug("TLS hot reload check started [transports=" + transports + ']');
+                log.debug("TLS automatic reload check started [transports=" + transports + ']');
 
             long nextCheckDelay = CHECK_PERIOD;
 
@@ -194,28 +194,28 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
                 if (!executor.isShutdown()) {
                     failures.incrementAndGet();
 
-                    log.warning("TLS hot reload failed [transports=" + transports + ", nextAttempt="
+                    log.warning("TLS automatic reload failed [transports=" + transports + ", nextAttempt="
                         + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
                 }
                 else if (log.isDebugEnabled())
-                    log.debug("TLS hot reload failed during node stop [transports=" + transports + ", err=" + e + ']');
+                    log.debug("TLS automatic reload failed during node stop [transports=" + transports + ", err=" + e + ']');
             }
 
             scheduleCheck(nextCheckDelay);
         }
 
         /**
-         * Reloads the factory if its hot reload time has come, and ends the failure streak if it has not.
+         * Reloads the factory if its automatic reload time has come, and ends the failure streak if it has not.
          *
          * @return Delay of the next check.
          * @throws IgniteException If the reload fails or leaves certificates that are still due.
          */
         private long reloadIfDue() {
-            long hotReloadTime = reloadable.hotReloadTime();
+            long autoReloadTime = reloadable.autoReloadTime();
 
-            logHotReloadTime(hotReloadTime);
+            logAutoReloadTime(autoReloadTime);
 
-            long nextCheckDelay = nextCheckDelay(hotReloadTime);
+            long nextCheckDelay = nextCheckDelay(autoReloadTime);
 
             if (nextCheckDelay != 0) {
                 failures.set(0);
@@ -223,41 +223,41 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
                 return nextCheckDelay;
             }
 
-            automaticHotReloadAttempts.incrementAndGet();
+            autoReloadAttempts.incrementAndGet();
 
             if (log.isInfoEnabled())
-                log.info("TLS hot reload started [transports=" + transports + ']');
+                log.info("TLS automatic reload started [transports=" + transports + ']');
 
             reloadable.init();
 
-            hotReloadTime = reloadable.hotReloadTime();
-            nextCheckDelay = nextCheckDelay(hotReloadTime);
+            autoReloadTime = reloadable.autoReloadTime();
+            nextCheckDelay = nextCheckDelay(autoReloadTime);
 
             if (nextCheckDelay == 0) {
-                throw new IgniteException("Loaded certificates are still due for hot reload [hotReloadTime="
-                    + new Date(hotReloadTime) + ']');
+                throw new IgniteException("Loaded certificates are still due for automatic reload [autoReloadTime="
+                    + new Date(autoReloadTime) + ']');
             }
 
             failures.set(0);
 
             if (log.isInfoEnabled())
-                log.info("TLS hot reload succeeded [transports=" + transports + ']');
+                log.info("TLS automatic reload succeeded [transports=" + transports + ']');
 
-            logHotReloadTime(hotReloadTime);
+            logAutoReloadTime(autoReloadTime);
 
             return nextCheckDelay;
         }
 
         /**
-         * @param hotReloadTime Hot reload time of the loaded certificates, or {@code 0} if they have none.
-         * @return Delay until the hot reload time, but no longer than {@link #CHECK_PERIOD}, or {@code 0} if the time has
-         *     come. Certificates without a hot reload time are checked again after the full period.
+         * @param autoReloadTime Automatic reload time of the loaded certificates, or {@code 0} if they have none.
+         * @return Delay until the automatic reload time, but no longer than {@link #CHECK_PERIOD}, or {@code 0} if the time has
+         *     come. Certificates without an automatic reload time are checked again after the full period.
          */
-        private static long nextCheckDelay(long hotReloadTime) {
-            if (hotReloadTime == 0)
+        private static long nextCheckDelay(long autoReloadTime) {
+            if (autoReloadTime == 0)
                 return CHECK_PERIOD;
 
-            return Math.max(0, Math.min(hotReloadTime - System.currentTimeMillis(), CHECK_PERIOD));
+            return Math.max(0, Math.min(autoReloadTime - System.currentTimeMillis(), CHECK_PERIOD));
         }
 
         /** Replaces the scheduled check of the factory with one after the given delay, once the registry has started. */
@@ -282,18 +282,18 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
 
             reloadable.init();
 
-            if (!reloadable.isHotReloadEnabled())
+            if (!reloadable.isAutoReloadEnabled())
                 return;
 
             failures.set(0);
 
-            long hotReloadTime;
+            long autoReloadTime;
 
             try {
-                hotReloadTime = reloadable.hotReloadTime();
+                autoReloadTime = reloadable.autoReloadTime();
             }
             catch (RuntimeException e) {
-                log.warning("TLS hot reload could not read certificate expiry after manual reload [transports=" + transports
+                log.warning("TLS automatic reload could not read certificate expiry after manual reload [transports=" + transports
                     + ", nextAttempt=" + new Date(System.currentTimeMillis() + CHECK_PERIOD) + ']', e);
 
                 scheduleCheck(CHECK_PERIOD);
@@ -301,26 +301,26 @@ public class SslFactoryRegistry extends GridProcessorAdapter {
                 return;
             }
 
-            logHotReloadTime(hotReloadTime);
+            logAutoReloadTime(autoReloadTime);
 
-            long nextCheckDelay = nextCheckDelay(hotReloadTime);
+            long nextCheckDelay = nextCheckDelay(autoReloadTime);
 
             scheduleCheck(nextCheckDelay == 0 ? CHECK_PERIOD : nextCheckDelay);
         }
 
-        /** Logs the hot reload time of the loaded certificates if it differs from the one logged last. */
-        private void logHotReloadTime(long hotReloadTime) {
-            if (hotReloadTime == loggedHotReloadTime)
+        /** Logs the automatic reload time of the loaded certificates if it differs from the one logged last. */
+        private void logAutoReloadTime(long autoReloadTime) {
+            if (autoReloadTime == loggedAutoReloadTime)
                 return;
 
-            loggedHotReloadTime = hotReloadTime;
+            loggedAutoReloadTime = autoReloadTime;
 
-            if (hotReloadTime == 0) {
-                log.warning("TLS hot reload will not run: no private key with an X.509 certificate chain was found [transports="
+            if (autoReloadTime == 0) {
+                log.warning("TLS automatic reload will not run: no private key with an X.509 certificate chain was found [transports="
                     + transports + ']');
             }
             else if (log.isInfoEnabled())
-                log.info("TLS hot reload due [transports=" + transports + ", hotReloadTime=" + new Date(hotReloadTime) + ']');
+                log.info("TLS automatic reload due [transports=" + transports + ", autoReloadTime=" + new Date(autoReloadTime) + ']');
         }
     }
 }

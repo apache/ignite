@@ -25,17 +25,17 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.ssl.AbstractSslContextFactory;
-import org.apache.ignite.ssl.jetty.ReloadableJettySslFactory;
+import org.apache.ignite.ssl.jetty.AutoReloadJettySslFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
 
 /**
  * Adapter through which the SSL factory registry reloads the TLS factory of the Jetty HTTPS connector. A failed reload
  * leaves the previous keys and trust settings in use.
- * Hot reload follows the settings of the Jetty factory if it implements {@link ReloadableJettySslFactory}. Otherwise
- * hot reload is enabled with the lead time {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
+ * Automatic reload follows the settings of the Jetty factory if it implements {@link AutoReloadJettySslFactory}. Otherwise
+ * automatic reload is enabled with the lead time {@link AbstractSslContextFactory#DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS}.
  * <p>
  * Jetty's factory guards its TLS state with an internal lock: it loads the state under this lock, and new connections
  * take the state under it too. Before loading a replacement, Jetty clears the state. So that new connections never see
@@ -45,7 +45,7 @@ import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BE
  * Jetty selects certificates for SNI host names from the key store of the state, so the restore keeps SNI selection.
  * If the restore fails too, the factory has no state until the next successful reload, and the reload error carries
  * that failure as a suppressed exception. A failed reload outside Ignite, such as one by Jetty's {@code KeyStoreScanner},
- * can also leave the factory without state. Such a factory is due for hot reload right away, and the reload has nothing
+ * can also leave the factory without state. Such a factory is due for automatic reload right away, and the reload has nothing
  * to restore: it loads the configured sources.
  * <p>
  * After a failed reload, the factory gets back the context and stores set in {@code jetty.xml}, and the next reload
@@ -91,12 +91,12 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isHotReloadEnabled() {
-        return !(factory instanceof ReloadableJettySslFactory reloadable) || reloadable.isHotReloadEnabled();
+    @Override public boolean isAutoReloadEnabled() {
+        return !(factory instanceof AutoReloadJettySslFactory reloadable) || reloadable.isAutoReloadEnabled();
     }
 
     /** {@inheritDoc} */
-    @Override public long hotReloadTime() {
+    @Override public long autoReloadTime() {
         TlsState state = currentState();
 
         if (state == null)
@@ -106,18 +106,18 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
             KeyStore store = state.keyStore();
             long expiry = store == null ? 0 : ReloadableSslFactory.keyChainsExpiry(store);
 
-            return expiry == 0 ? 0 : expiry - hotReloadBeforeExpiryMs();
+            return expiry == 0 ? 0 : expiry - autoReloadBeforeExpiryMs();
         }
         catch (GeneralSecurityException e) {
             throw new IgniteException("Failed to read the certificates of the HTTPS connector", e);
         }
     }
 
-    /** @return How long before the certificates expire hot reload becomes due, in milliseconds. */
-    private long hotReloadBeforeExpiryMs() {
-        return factory instanceof ReloadableJettySslFactory reloadable
-            ? reloadable.getHotReloadBeforeExpiryMs()
-            : DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
+    /** @return How long before the certificates expire automatic reload becomes due, in milliseconds. */
+    private long autoReloadBeforeExpiryMs() {
+        return factory instanceof AutoReloadJettySslFactory reloadable
+            ? reloadable.getAutoReloadBeforeExpiryMs()
+            : DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
     }
 
     /**

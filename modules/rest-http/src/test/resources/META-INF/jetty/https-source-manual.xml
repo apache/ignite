@@ -26,7 +26,7 @@
                 <Arg name="server"><Ref refid="Server"/></Arg>
                 <Arg name="sslContextFactory">
                     <New class="org.apache.ignite.internal.processors.rest.protocols.http.jetty.JettyRestHttpsReloadTest$ConfigurableSourceSslContextFactory">
-                        <Set name="hotReloadEnabled">false</Set>
+                        <Set name="autoReloadEnabled">false</Set>
                     </New>
                 </Arg>
             </New>
