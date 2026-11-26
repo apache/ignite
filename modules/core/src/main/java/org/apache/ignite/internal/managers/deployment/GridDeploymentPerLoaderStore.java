@@ -292,17 +292,12 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                 // Create peer class loader.
                 ClassLoader clsLdr = new GridDeploymentClassLoader(
                     meta.classLoaderId(),
-                    meta.userVersion(),
-                    meta.deploymentMode(),
+                    meta,
                     true,
                     ctx,
                     parent,
-                    meta.classLoaderId(),
-                    meta.senderNodeId(),
                     comm,
-                    ctx.config().getNetworkTimeout(),
                     log,
-                    ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                     ctx.config().getPeerClassLoadingMissedResourcesCacheSize(),
                     false,
                     false);

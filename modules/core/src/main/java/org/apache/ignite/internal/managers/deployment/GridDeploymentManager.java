@@ -523,23 +523,10 @@ public class GridDeploymentManager extends GridManagerAdapter<DeploymentSpi> {
             if (!sndNodeId.equals(ctx.localNodeId())) {
                 String[] p2pExc = ctx.config().getPeerClassLoadingLocalClassPathExclude();
 
-                if (p2pExc != null) {
-                    for (String rsrc : p2pExc) {
-                        // Remove star (*) at the end.
-                        if (rsrc.endsWith("*"))
-                            rsrc = rsrc.substring(0, rsrc.length() - 1);
+                reuse = !U.isLocallyExcluded(p2pExc, meta.alias()) && !U.isLocallyExcluded(p2pExc, meta.className());
 
-                        if (meta.alias().startsWith(rsrc) || meta.className().startsWith(rsrc)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Will not reuse local deployment because resource is excluded [meta=" +
-                                    meta + ']');
-
-                            reuse = false;
-
-                            break;
-                        }
-                    }
-                }
+                if (!reuse && log.isDebugEnabled())
+                    log.debug("Will not reuse local deployment because resource is excluded [meta=" + meta + ']');
             }
 
             GridDeployment dep = verStore.searchDeploymentCache(meta);

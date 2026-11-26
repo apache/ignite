@@ -716,17 +716,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             // Temporary class loader.
             GridDeploymentClassLoader temp = new GridDeploymentClassLoader(
                 IgniteUuid.fromUuid(ctx.localNodeId()),
-                meta.userVersion(),
-                meta.deploymentMode(),
+                meta,
                 true,
                 ctx,
-                ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
-                meta.classLoaderId(),
-                meta.senderNodeId(),
+                U.resolveClassLoader(ctx.config()),
                 comm,
-                ctx.config().getNetworkTimeout(),
                 log,
-                ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                 0,
                 false,
                 true);
@@ -1022,21 +1017,14 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
         if (meta.deploymentMode() == CONTINUOUS || meta.participants() == null) {
             // Create peer class loader.
-            // Note that we are passing empty list for local P2P exclude, as it really
-            // does not make sense with shared deployment.
             clsLdr = new GridDeploymentClassLoader(
                 ldrId,
-                meta.userVersion(),
-                meta.deploymentMode(),
+                meta,
                 false,
                 ctx,
-                ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
-                meta.classLoaderId(),
-                meta.senderNodeId(),
+                U.resolveClassLoader(ctx.config()),
                 comm,
-                ctx.config().getNetworkTimeout(),
                 log,
-                ctx.config().getPeerClassLoadingLocalClassPathExclude(),
                 ctx.config().getPeerClassLoadingMissedResourcesCacheSize(),
                 meta.deploymentMode() == CONTINUOUS /* enable class byte cache in CONTINUOUS mode */,
                 false);
@@ -1053,21 +1041,14 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             assert meta.deploymentMode() == SHARED;
 
             // Create peer class loader.
-            // Note that we are passing empty list for local P2P exclude, as it really
-            // does not make sense with shared deployment.
             clsLdr = new GridDeploymentClassLoader(
                 ldrId,
-                meta.userVersion(),
-                meta.deploymentMode(),
+                meta,
                 false,
                 ctx,
                 U.gridClassLoader(),
-                meta.participants(),
                 comm,
-                ctx.config().getNetworkTimeout(),
                 log,
-                ctx.config().getPeerClassLoadingLocalClassPathExclude(),
-                ctx.config().getPeerClassLoadingMissedResourcesCacheSize(),
                 false,
                 false);
 
