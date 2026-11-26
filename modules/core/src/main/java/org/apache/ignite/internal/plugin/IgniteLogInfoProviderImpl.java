@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -51,6 +52,8 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridLoggerProxy;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
+import org.apache.ignite.internal.maintenance.MaintenanceTaskState;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -674,6 +677,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         GridKernalContext ctx = ignite.context();
         IgniteConfiguration cfg = ignite.configuration();
+        MaintenanceProcessor mntcProc = (MaintenanceProcessor)ctx.maintenanceRegistry();
 
         ExecutorService execSvc = ctx.pools().getExecutorService();
         ExecutorService sysExecSvc = ctx.pools().getSystemExecutorService();
@@ -734,6 +738,31 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
             netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
 
         SB msg = new SB();
+
+        if (mntcProc.isMaintenanceMode()) {
+            List<MaintenanceTaskState> statesList = mntcProc.tasksStates();
+
+            msg.nl()
+                .a("!!! ATTENTION! NODE IS IN MAINTENANCE MODE !!!").nl()
+                .a(statesList.size() == 1 ? "    MaintenanceTask " : "    MaintenanceTasks");
+
+            for (MaintenanceTaskState state : statesList) {
+                SB sb = new SB();
+
+                sb.a("    ^-- ")
+                    .a(state.isRegistered() ? "REGISTERED" : "UNREGISTERED")
+                    .a(" name=").a(state.task().name())
+                    .a(", description=").a(state.task().description())
+                    .a(", params=[").a(state.task().parameters()).a("]")
+                    .a(state.executedActionsLifecycles().isEmpty() ? "" : ", executedActions=[")
+                    .a(String.join(", ", state.executedActionsLifecycles().stream()
+                        .map(lifecycle -> lifecycle.actionName() + "=" + String.join("->", lifecycle.states().stream()
+                            .map(Enum::name).toList())).toList()))
+                    .a(state.executedActionsLifecycles().isEmpty() ? "" : "]");
+
+                msg.nl().a(sb);
+            }
+        }
 
         msg.nl()
             .a("Metrics for local node (to disable set 'metricsLogFrequency' to 0)").nl()

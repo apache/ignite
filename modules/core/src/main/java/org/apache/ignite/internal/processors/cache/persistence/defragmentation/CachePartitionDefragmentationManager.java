@@ -696,6 +696,11 @@ public class CachePartitionDefragmentationManager {
         return status;
     }
 
+    /** */
+    public boolean isCanceled() {
+        return cancel.get();
+    }
+
     /**
      * Defragmentate partition.
      *
