@@ -32,7 +32,8 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.ssl.AbstractSslContextFactory.DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
 
 /**
- * TLS factory of the Jetty HTTPS connector. A failed reload leaves the previous keys and trust settings in use.
+ * Adapter through which the SSL factory registry reloads the TLS factory of the Jetty HTTPS connector. A failed reload
+ * leaves the previous keys and trust settings in use.
  * Hot reload follows the settings of the Jetty factory if it implements {@link ReloadableJettySslFactory}. Otherwise
  * hot reload is enabled with the lead time {@link AbstractSslContextFactory#DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS}.
  * <p>
@@ -62,9 +63,6 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
     /** State set in {@code jetty.xml}. The factory loads a {@code null} part from its configured source. */
     private final TlsState configured;
 
-    /** Hot reload settings of the factory, or {@code null} to use the defaults. */
-    @Nullable private final ReloadableJettySslFactory hotReloadSettings;
-
     /**
      * @param factory TLS factory of the HTTPS connector before startup, when its getters return the state set in {@code jetty.xml}.
      */
@@ -74,7 +72,6 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
         this.factory = factory;
 
         configured = new TlsState(factory);
-        hotReloadSettings = factory instanceof ReloadableJettySslFactory settings ? settings : null;
     }
 
     /** {@inheritDoc} */
@@ -95,7 +92,7 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
 
     /** {@inheritDoc} */
     @Override public boolean isHotReloadEnabled() {
-        return hotReloadSettings == null || hotReloadSettings.isHotReloadEnabled();
+        return !(factory instanceof ReloadableJettySslFactory reloadable) || reloadable.isHotReloadEnabled();
     }
 
     /** {@inheritDoc} */
@@ -118,7 +115,9 @@ class JettySslFactoryAdapter implements ReloadableSslFactory {
 
     /** @return How long before the certificates expire hot reload becomes due, in milliseconds. */
     private long hotReloadBeforeExpiryMs() {
-        return hotReloadSettings == null ? DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS : hotReloadSettings.getHotReloadBeforeExpiryMs();
+        return factory instanceof ReloadableJettySslFactory reloadable
+            ? reloadable.getHotReloadBeforeExpiryMs()
+            : DFLT_HOT_RELOAD_BEFORE_EXPIRY_MS;
     }
 
     /**

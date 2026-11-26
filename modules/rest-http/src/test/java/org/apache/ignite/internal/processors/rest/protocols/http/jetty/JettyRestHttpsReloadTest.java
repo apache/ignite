@@ -222,20 +222,20 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh(), due(), new IOException("Source is unavailable"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
-        JettySslFactoryAdapter factory = new JettySslFactoryAdapter(jettyFactory);
+        JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(23), factory.hotReloadTime());
+            assertEquals(now + DAYS.toMillis(23), adapter.hotReloadTime());
 
             jettyFactory.reload(f -> { });
 
             long dueB = now + HOURS.toMillis(1) - DAYS.toMillis(7);
 
-            assertEquals(dueB, factory.hotReloadTime());
-            assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
-            assertEquals(dueB, factory.hotReloadTime());
+            assertEquals(dueB, adapter.hotReloadTime());
+            assertThrows(log, adapter::init, IgniteException.class, "Source is unavailable");
+            assertEquals(dueB, adapter.hotReloadTime());
         }
         finally {
             jettyFactory.stop();
@@ -301,13 +301,13 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh());
 
         ConfigurableSourceSslContextFactory jettyFactory = new ConfigurableSourceSslContextFactory();
-        JettySslFactoryAdapter factory = new JettySslFactoryAdapter(jettyFactory);
+        JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
         jettyFactory.setHotReloadBeforeExpiryMs(HOURS.toMillis(1));
         jettyFactory.start();
 
         try {
-            assertEquals(now + DAYS.toMillis(30) - HOURS.toMillis(1), factory.hotReloadTime());
+            assertEquals(now + DAYS.toMillis(30) - HOURS.toMillis(1), adapter.hotReloadTime());
         }
         finally {
             jettyFactory.stop();
@@ -325,14 +325,14 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh(), new NoClassDefFoundError("Key store provider"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
-        JettySslFactoryAdapter factory = new JettySslFactoryAdapter(jettyFactory);
+        JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
         jettyFactory.start();
 
         try {
             SSLContext ctx = jettyFactory.getSslContext();
 
-            assertThrows(log, factory::init, IgniteException.class, "Key store provider");
+            assertThrows(log, adapter::init, IgniteException.class, "Key store provider");
             assertSame(ctx, jettyFactory.getSslContext());
         }
         finally {
@@ -354,20 +354,20 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         SourceSslContextFactory.supply(fresh(), new IOException("Source is unavailable"));
 
         SourceSslContextFactory jettyFactory = new SourceSslContextFactory();
-        JettySslFactoryAdapter factory = new JettySslFactoryAdapter(jettyFactory);
+        JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
         jettyFactory.start();
 
         try {
             assertThrows(log, () -> jettyFactory.reload(f -> { }), Exception.class, "Source is unavailable");
-            assertThrows(log, factory::init, IgniteException.class, "Source is unavailable");
+            assertThrows(log, adapter::init, IgniteException.class, "Source is unavailable");
 
-            long hotReloadTime = factory.hotReloadTime();
+            long hotReloadTime = adapter.hotReloadTime();
 
             assertTrue(hotReloadTime > 0 && hotReloadTime <= System.currentTimeMillis());
 
             SourceSslContextFactory.supply(b);
-            factory.init();
+            adapter.init();
 
             assertEquals(b.getCertificate(HOST), jettyFactory.getKeyStore().getCertificate(HOST));
         }
@@ -395,7 +395,7 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.setTrustStoreType("JKS");
         jettyFactory.setTrustStorePassword(new String(PASSWORD));
 
-        JettySslFactoryAdapter factory = new JettySslFactoryAdapter(jettyFactory);
+        JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
         jettyFactory.start();
 
@@ -404,14 +404,14 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
 
             Files.writeString(trust, "not a trust store");
 
-            assertThrows(log, factory::init, IgniteException.class, null);
+            assertThrows(log, adapter::init, IgniteException.class, null);
             assertSame(ctx, jettyFactory.getSslContext());
 
             Certificate cert = keys.getCertificate(HOST);
 
             trusted.setCertificateEntry(HOST, cert);
             save(trusted, trust);
-            factory.init();
+            adapter.init();
 
             assertSame(keys, jettyFactory.getKeyStore());
             assertEquals(cert, jettyFactory.getTrustStore().getCertificate(HOST));
@@ -442,12 +442,12 @@ public class JettyRestHttpsReloadTest extends GridCommonAbstractTest {
         jettyFactory.setKeyStore(fresh());
         jettyFactory.setKeyStorePassword(new String(PASSWORD));
 
-        JettySslFactoryAdapter factory = new JettySslFactoryAdapter(jettyFactory);
+        JettySslFactoryAdapter adapter = new JettySslFactoryAdapter(jettyFactory);
 
         jettyFactory.start();
 
         try {
-            factory.init();
+            adapter.init();
 
             assertEquals(1, reloads.get());
         }
