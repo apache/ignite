@@ -73,6 +73,27 @@ public class TcpDiscoverySpiMetricsTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testClientNodesLeftAndFailedMetrics() throws Exception {
+        IgniteEx srv = startGrid(0);
+        IgniteEx cli = startClientGrid(1);
+
+        startClientGrid(2);
+
+        stopGrid(2);
+
+        srv.configuration().getDiscoverySpi().failNode(startClientGrid(3).localNode().id(), null);
+
+        for (IgniteEx node : new IgniteEx[] {srv, cli}) {
+            for (String name : new String[] {"LeftNodes", "LeftClientNodes", "FailedNodes", "FailedClientNodes"}) {
+                IntMetric metric = node.context().metric().registry(DISCO_METRICS).findMetric(name);
+
+                assertTrue(name, GridTestUtils.waitForCondition(() -> metric.value() == 1, 15_000));
+            }
+        }
+    }
+
+    /** */
     private void checkMetric(boolean read) throws Exception {
         IgniteEx node0;
 

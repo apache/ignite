@@ -5338,6 +5338,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 spi.stats.onNodeLeft();
 
+                if (leftNode.isClient())
+                    spi.stats.onClientNodeLeft();
+
                 boolean notified = notifyDiscovery(EVT_NODE_LEFT, topVer, leftNode);
 
                 notifiedDiscovery.set(notified);
@@ -5537,6 +5540,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 notifiedDiscovery.set(notified);
 
                 spi.stats.onNodeFailed();
+
+                if (failedNode.isClient())
+                    spi.stats.onClientNodeFailed();
             }
 
             if (sendMessageToRemotes(msg))

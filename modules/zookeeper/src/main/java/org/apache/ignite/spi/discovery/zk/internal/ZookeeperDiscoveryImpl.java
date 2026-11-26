@@ -3641,6 +3641,13 @@ public class ZookeeperDiscoveryImpl {
             stats.onNodeFailed();
         else
             stats.onNodeLeft();
+
+        if (leftNode.isClient()) {
+            if (failed)
+                stats.onClientNodeFailed();
+            else
+                stats.onClientNodeLeft();
+        }
     }
 
     /**

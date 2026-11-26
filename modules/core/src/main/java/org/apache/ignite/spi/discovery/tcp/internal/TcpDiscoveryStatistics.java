@@ -46,11 +46,17 @@ public class TcpDiscoveryStatistics {
     /** Failed nodes count. */
     private final IntMetricImpl failedNodesCnt;
 
+    /** Left nodes count. */
+    private final IntMetricImpl leftNodesCnt;
+
     /** Joined client nodes count. */
     private final IntMetricImpl joinedClientNodesCnt;
 
-    /** Left nodes count. */
-    private final IntMetricImpl leftNodesCnt;
+    /** Failed client nodes count. */
+    private final IntMetricImpl failedClientNodesCnt;
+
+    /** Left client nodes count. */
+    private final IntMetricImpl leftClientNodesCnt;
 
     /** Received messages. */
     @GridToStringInclude
@@ -91,9 +97,13 @@ public class TcpDiscoveryStatistics {
 
         failedNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedNodes"), "Failed nodes count");
 
+        leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
+
         joinedClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "JoinedClientNodes"), "Joined client nodes count.");
 
-        leftNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftNodes"), "Left nodes count");
+        failedClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "FailedClientNodes"), "Failed client nodes count.");
+
+        leftClientNodesCnt = new IntMetricImpl(metricName(DISCO_METRICS, "LeftClientNodes"), "Left client nodes count.");
 
         pendingMsgsRegistered = new IntMetricImpl(metricName(DISCO_METRICS, "PendingMessagesRegistered"),
             "Pending messages registered count");
@@ -124,8 +134,10 @@ public class TcpDiscoveryStatistics {
 
         discoReg.register(joinedNodesCnt);
         discoReg.register(failedNodesCnt);
-        discoReg.register(joinedClientNodesCnt);
         discoReg.register(leftNodesCnt);
+        discoReg.register(joinedClientNodesCnt);
+        discoReg.register(failedClientNodesCnt);
+        discoReg.register(leftClientNodesCnt);
         discoReg.register(pendingMsgsRegistered);
         discoReg.register(rejectedSslConnectionsCnt);
         discoReg.register(sockReadTimeoutsCnt);
@@ -137,11 +149,6 @@ public class TcpDiscoveryStatistics {
      */
     public void onNodeJoined() {
         joinedNodesCnt.increment();
-    }
-
-    /** Increments joined client nodes count. */
-    public void onClientNodeJoined() {
-        joinedClientNodesCnt.increment();
     }
 
     /**
@@ -156,6 +163,21 @@ public class TcpDiscoveryStatistics {
      */
     public void onNodeFailed() {
         failedNodesCnt.increment();
+    }
+
+    /** Increments joined client nodes count. */
+    public void onClientNodeJoined() {
+        joinedClientNodesCnt.increment();
+    }
+
+    /** Increments left client nodes count. */
+    public void onClientNodeLeft() {
+        leftClientNodesCnt.increment();
+    }
+
+    /** Increments failed client nodes count. */
+    public void onClientNodeFailed() {
+        failedClientNodesCnt.increment();
     }
 
     /**
@@ -366,8 +388,10 @@ public class TcpDiscoveryStatistics {
         crdSinceTs.set(0);
         failedNodesCnt.reset();
         joinedNodesCnt.reset();
-        joinedClientNodesCnt.reset();
         leftNodesCnt.reset();
+        joinedClientNodesCnt.reset();
+        failedClientNodesCnt.reset();
+        leftClientNodesCnt.reset();
         maxMsgProcTime = 0;
         pendingMsgsRegistered.reset();
         procMsgs.clear();
