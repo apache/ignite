@@ -106,6 +106,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_SIBLINGS;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TASK_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.deployment.GridDeployment.visorManagementTask;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
@@ -541,7 +542,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     ) {
         assert sesId != null;
 
-        authorizeUserTask(taskName, taskCls, task, opts);
+        authorizeTask(taskName, taskCls, task, arg, opts);
 
         assert opts.timeout() >= 0;
 
@@ -733,7 +734,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 assert taskWorker0 == null : "Session ID is not unique: " + sesId;
 
-                if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && dep.visorManagementTask(task, taskCls)) {
+                if (ctx.event().isRecordable(EVT_MANAGEMENT_TASK_STARTED) && visorManagementTask(task, taskCls)) {
                     VisorTaskArgument visorTaskArg = (VisorTaskArgument)arg;
 
                     Event evt = new ManagementTaskEvent(
@@ -1588,10 +1589,11 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     }
 
     /** */
-    private void authorizeUserTask(
+    private void authorizeTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<?, ?> task,
+        @Nullable Object arg,
         TaskExecutionOptions opts
     ) {
         taskCls = resolveTaskClass(taskName, taskCls, task);
@@ -1601,6 +1603,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), TASK_EXECUTE);
         }
+        else if (opts.isPublicRequest() && visorManagementTask(task, taskCls))
+            ctx.security().authorizeManagementTask(taskCls, (VisorTaskArgument<?>)arg);
     }
 
     /**

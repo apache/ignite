@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.commandline.ManagementTaskAuthorizationTest;
 import org.apache.ignite.internal.commandline.SecurityCommandHandlerPermissionsTest;
 import org.apache.ignite.internal.commandline.indexreader.IgniteIndexReaderTest;
 import org.apache.ignite.util.CacheMetricsCommandTest;
@@ -72,6 +73,7 @@ import org.junit.runners.Suite;
     CdcResendCommandTest.class,
 
     SecurityCommandHandlerPermissionsTest.class,
+    ManagementTaskAuthorizationTest.class,
 
     IdleVerifyDumpTest.class
 })
