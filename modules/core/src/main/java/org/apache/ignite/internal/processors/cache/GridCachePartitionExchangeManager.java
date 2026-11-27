@@ -3214,8 +3214,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // same event.
                             boolean changed = false;
 
-                            for (CacheGroupContext grp : cctx.cache().cacheGroups())
+                            for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                                AffinityTopologyVersion grpStartTopVer =
+                                    cctx.cache().cacheGroupDescriptor(grp.groupId()).startTopologyVersion();
+
+                                if (grpStartTopVer != null && grpStartTopVer.after(exchFut.initialVersion()))
+                                    continue;
+
                                 changed |= grp.topology().afterExchange(exchFut);
+                            }
 
                             if (!cctx.kernalContext().clientNode() && changed) {
                                 if (log.isDebugEnabled())
@@ -3226,7 +3233,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         if (rebalanceRequired(exchFut)) {
+                            final AffinityTopologyVersion exchInitVer = exchFut.initialVersion();
+
                             NavigableSet<CacheGroupContext> assignsSet = cctx.cache().cacheGroups().stream()
+                                .filter(grp -> {
+                                    AffinityTopologyVersion grpStartTopVer =
+                                        cctx.cache().cacheGroupDescriptor(grp.groupId()).startTopologyVersion();
+
+                                    return grpStartTopVer == null || !grpStartTopVer.after(exchInitVer);
+                                })
                                 .collect(Collectors.toCollection(() -> new TreeSet<>(new CacheRebalanceOrderComparator())));
 
                             RebalanceFuture next = null;

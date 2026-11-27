@@ -2127,6 +2127,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         forAllRegisteredCacheGroups(new IgniteInClosureX<CacheGroupDescriptor>() {
             @Override public void applyx(CacheGroupDescriptor desc) throws IgniteCheckedException {
+                AffinityTopologyVersion grpStartTopVer = desc.startTopologyVersion();
+
+                if (grpStartTopVer != null && grpStartTopVer.after(fut.initialVersion())) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Skip affinity initialization for cache group started after current exchange " +
+                            "[grp=" + desc.cacheOrGroupName() + ", curTopVer=" + fut.initialVersion() +
+                            ", grpStartTopVer=" + grpStartTopVer + ']');
+                    }
+
+                    return;
+                }
+
                 CacheGroupHolder grpHolder = getOrCreateGroupHolder(evts.topologyVersion(), desc);
 
                 CacheGroupHolder cache = getOrCreateGroupHolder(evts.topologyVersion(), desc);

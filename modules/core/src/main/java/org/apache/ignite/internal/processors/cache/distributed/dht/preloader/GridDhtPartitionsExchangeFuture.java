@@ -2391,8 +2391,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cleanIdxRebuildFutures = false;
 
-                for (CacheGroupContext grp : cctx.cache().cacheGroups())
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    AffinityTopologyVersion grpStartTopVer = cctx.cache().cacheGroupDescriptor(grp.groupId()).startTopologyVersion();
+
+                    if (grpStartTopVer != null && grpStartTopVer.after(initialVersion()))
+                        continue;
+
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                }
 
                 if (changedAffinity())
                     cctx.walState().disableGroupDurabilityForPreloading(this);
@@ -3690,6 +3696,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.kernalContext().pools().getSystemExecutorService(),
                     cctx.affinity().cacheGroups().values(),
                     desc -> {
+                        AffinityTopologyVersion grpStartTopVer = desc.startTopologyVersion();
+
+                        if (grpStartTopVer != null && grpStartTopVer.after(initialVersion()))
+                            return null;
+
                         if (!enterBusy())
                             return null;
 
@@ -4595,6 +4606,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 parallelismLvl,
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 msg.partitions().keySet(), grpId -> {
+                    CacheGroupDescriptor desc = cctx.cache().cacheGroupDescriptor(grpId);
+
+                    if (desc != null && desc.startTopologyVersion() != null &&
+                        desc.startTopologyVersion().after(initialVersion()))
+                        return null;
+
                     CachePartitionFullCountersMap cntrMap = msg.partitionUpdateCounters(grpId);
 
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
