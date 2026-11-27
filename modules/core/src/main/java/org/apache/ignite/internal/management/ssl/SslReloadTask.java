@@ -32,13 +32,13 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.api.NoArg;
+import org.apache.ignite.internal.processors.ssl.ReloadableSslFactory;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.plugin.security.SecuritySubject;
-import org.apache.ignite.ssl.AbstractSslContextFactory;
 
 import static java.util.stream.Collectors.joining;
 
@@ -137,7 +137,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
             }
 
             for (Entry<Factory<SSLContext>, String> entry : factories) {
-                if (!(entry.getKey() instanceof AbstractSslContextFactory)) {
+                if (!(entry.getKey() instanceof ReloadableSslFactory)) {
                     String report = entry.getValue() + ": unsupported: " + entry.getKey().getClass().getName();
 
                     ignite.log().warning("TLS reload: " + nodeId + ": " + report + initiator);
@@ -152,7 +152,7 @@ public class SslReloadTask extends VisorMultiNodeTask<NoArg, String, String> {
                 String transports = entry.getValue();
 
                 try {
-                    ignite.context().ssl().reload((AbstractSslContextFactory)entry.getKey());
+                    ignite.context().ssl().reload((ReloadableSslFactory)entry.getKey());
                 }
                 catch (Exception e) {
                     ignite.log().warning("TLS reload: " + nodeId + ": " + transports + ": failed" + initiator, e);

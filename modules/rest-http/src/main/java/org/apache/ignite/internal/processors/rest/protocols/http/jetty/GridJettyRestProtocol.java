@@ -169,10 +169,19 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         int portRange = config().getPortRange();
         int lastPort = portRange == 0 ? initPort : initPort + portRange - 1;
 
+        Collection<JettySslFactoryAdapter> adapters = connector.getContainedBeans(SslConnectionFactory.class).stream()
+            .map(SslConnectionFactory::getSslContextFactory)
+            .distinct()
+            .map(JettySslFactoryAdapter::new)
+            .toList();
+
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);
 
             if (startJetty()) {
+                for (JettySslFactoryAdapter adapter : adapters)
+                    ctx.ssl().register("HTTP REST", adapter);
+
                 if (log.isInfoEnabled()) {
                     log.info(startInfo());
 

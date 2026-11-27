@@ -104,6 +104,73 @@ NOTE: Ignite uses Jetty 12. Custom Jetty XML configurations created for earlier 
 include::code-snippets/xml/jetty.xml[tags=, indent=0]
 ----
 
+=== HTTPS
+
+Configure the HTTPS connector, its SSL context factory, and its key and trust stores in the Jetty XML file set by `setJettyPath(String)`.
+Both the standard Jetty factory and custom subclasses of `SslContextFactory.Server` work.
+
+After you replace the stores, run the link:tools/control-script#reloading-tls-certificates[`--ssl reload` command].
+The node also reloads the stores automatically before its certificates expire, as described in link:security/ssl-tls#automatic-certificate-reload[Automatic Certificate Reload].
+By default, automatic reload of the Jetty factory is enabled and becomes due 7 days before the earliest certificate expiry in its private key chains.
+To change these settings for a factory, configure it with your own subclass of `SslContextFactory.Server` that implements `org.apache.ignite.ssl.jetty.AutoReloadJettySslFactory` from the `ignite-rest-http` module.
+The interface has getters for two properties: `autoReloadEnabled` and `autoReloadBeforeExpiryMs`, the lead time in milliseconds, which must be positive.
+Add setters for them, so that the Jetty XML file can set them:
+
+[source,java]
+----
+public class MySslContextFactory extends SslContextFactory.Server implements AutoReloadJettySslFactory {
+    private boolean autoReloadEnabled = true;
+
+    private long autoReloadBeforeExpiryMs = AbstractSslContextFactory.DFLT_AUTO_RELOAD_BEFORE_EXPIRY_MS;
+
+    @Override public boolean isAutoReloadEnabled() {
+        return autoReloadEnabled;
+    }
+
+    public void setAutoReloadEnabled(boolean autoReloadEnabled) {
+        this.autoReloadEnabled = autoReloadEnabled;
+    }
+
+    @Override public long getAutoReloadBeforeExpiryMs() {
+        return autoReloadBeforeExpiryMs;
+    }
+
+    public void setAutoReloadBeforeExpiryMs(long autoReloadBeforeExpiryMs) {
+        if (autoReloadBeforeExpiryMs <= 0)
+            throw new IllegalArgumentException("autoReloadBeforeExpiryMs must be positive: " + autoReloadBeforeExpiryMs);
+
+        this.autoReloadBeforeExpiryMs = autoReloadBeforeExpiryMs;
+    }
+}
+----
+
+Then set the properties on the factory in the Jetty XML file:
+
+[source,xml]
+----
+<Arg name="sslContextFactory">
+    <New class="com.example.MySslContextFactory">
+        <Set name="keyStorePath">/opt/ignite/config/https.jks</Set>
+        <Set name="keyStorePassword">changeit</Set>
+        <Set name="autoReloadEnabled">false</Set>
+    </New>
+</Arg>
+----
+
+These settings apply only to this factory: other transports keep their own automatic reload settings.
+Changing them requires a node restart.
+The reload command reloads the factory either way.
+
+Each reload asks the Jetty factory to load its stores again.
+New connections use the replacement certificates; established connections stay open.
+If loading fails, the endpoint keeps its current keys and trust settings, and new connections keep working with them.
+Correct the stores and run the command again.
+A failed reload by Jetty's own `KeyStoreScanner` leaves the endpoint without keys.
+Correct the stores, then run the command or, if automatic reload is enabled, wait for its next check, as described in link:security/ssl-tls#when-automatic-reload-runs[When Automatic Reload Runs].
+
+Keep the stores in the sources that the factory loads: the store paths in the Jetty XML file, or the `loadKeyStore(Resource)` and `loadTrustStore(Resource)` methods of a custom subclass.
+A store that your code sets on the running factory, for example with `setKeyStore(KeyStore)`, does not survive a failed reload: the next reload loads the stores configured in the Jetty XML file instead.
+
 === Security
 
 When link:security/authentication[authentication] is configured in the cluster, all applications that use REST API request authentication by providing security credentials.

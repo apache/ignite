@@ -163,9 +163,8 @@ Enable it in the configuration (`IgniteConfiguration#setClientConnectorConfigura
 == Reloading TLS Certificates
 
 Use `--ssl reload` to load replaced key and trust stores on all server and thick-client nodes in the current topology.
-It reloads discovery, communication, client connector, and binary REST transports that started with TLS.
+It reloads discovery, communication, client connector, binary REST, and the link:restapi#https[HTTP REST endpoint] when they use TLS.
 New connections use the replacement context; established connections stay open.
-The command does not reload TLS for the HTTP REST endpoint (Jetty).
 
 Follow link:security/ssl-tls#upgrading-certificates[Upgrading Certificates] to prepare peer trust, replace the files, and verify the result.
 Add the <<connecting-to-cluster,connection parameters>> required by your cluster:
@@ -190,7 +189,8 @@ When security is enabled, logs identify the initiator by login and subject ID.
 This is the control-script user, or the node receiving a JMX call.
 
 The report lists every target node, even if none of its TCP transports use TLS.
-Each node first checks that all registered factories extend `AbstractSslContextFactory`.
+Each node first checks that the factories of discovery, communication, client connector, and binary REST extend `AbstractSslContextFactory`.
+The HTTP REST endpoint passes this check with any Jetty factory, standard or custom, as described in link:restapi#https[HTTPS].
 If any factory is unsupported, that node reloads none of its factories.
 Otherwise, it reloads them until the first failure and reports the error.
 Other nodes continue independently.
