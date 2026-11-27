@@ -365,9 +365,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** Register caches future. Initialized on exchange init. Must be waited on exchange end. */
     private IgniteInternalFuture<?> registerCachesFuture;
 
-    /** Latest (by update sequences) full message with exchangeId == null, need to be processed right after future is done. */
+    /** Full messages with exchangeId == null, one per topology version, processed after the future is done. */
     @GridToStringExclude
-    private GridDhtPartitionsFullMessage delayedLatestMsg;
+    private List<GridDhtPartitionsFullMessage> delayedMsgs;
 
     /** Time bag to measure and store exchange stages times. */
     @GridToStringExclude
@@ -2296,6 +2296,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean cleanIdxRebuildFutures = true;
 
         try {
+            Collection<CacheGroupContext> locChangedGrps = new HashSet<>();
+
             waitUntilNewCachesAreRegistered();
 
             if (err == null &&
@@ -2349,7 +2351,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
 
                 if (exchCtx.events().hasServerLeft() || activateCluster())
-                    detectLostPartitions(res);
+                    locChangedGrps.addAll(detectLostPartitions(res));
 
                 Map<Integer, CacheGroupValidation> m = U.newHashMap(cctx.cache().cacheGroups().size());
 
@@ -2391,8 +2393,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 cleanIdxRebuildFutures = false;
 
-                for (CacheGroupContext grp : cctx.cache().cacheGroups())
-                    grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
+                for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+                    if (grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false))
+                        locChangedGrps.add(grp);
+                }
+
+                if (!locChangedGrps.isEmpty()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("Refresh partitions due to local partition changes at the end of exchange [grps=" +
+                            locChangedGrps.stream().map(CacheGroupContext::cacheOrGroupName)
+                                .collect(Collectors.toList()) + ']');
+                    }
+
+                    // This future isn't done yet, so the exchange manager would take the initial version.
+                    cctx.exchange().refreshPartitions(locChangedGrps, res);
+                }
 
                 if (changedAffinity())
                     cctx.walState().disableGroupDurabilityForPreloading(this);
@@ -3500,8 +3515,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * {@link GridDhtPartitionsFullMessage}.
      *
      * @param resTopVer Result topology version.
+     * @return Cache groups where the local partition map changed.
      */
-    private void detectLostPartitions(AffinityTopologyVersion resTopVer) {
+    private Collection<CacheGroupContext> detectLostPartitions(AffinityTopologyVersion resTopVer) {
+        Collection<CacheGroupContext> changedGrps = ConcurrentHashMap.newKeySet();
+
         try {
             // Reserve at least 2 threads for system operations.
             doInParallelUninterruptibly(
@@ -3509,7 +3527,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.kernalContext().pools().getSystemExecutorService(),
                 cctx.affinity().cacheGroups().values(),
                 desc -> {
-                    partitionTopology(desc.groupId()).detectLostPartitions(resTopVer, this);
+                    if (partitionTopology(desc.groupId()).detectLostPartitions(resTopVer, this))
+                        changedGrps.add(cctx.cache().cacheGroup(desc.groupId()));
 
                     return null;
                 });
@@ -3519,6 +3538,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         timeBag.finishGlobalStage("Detect lost partitions");
+
+        return changedGrps;
     }
 
     /**
@@ -5197,29 +5218,39 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (isDone())
             return false;
 
-        GridDhtPartitionsFullMessage prev = delayedLatestMsg;
+        if (delayedMsgs == null) {
+            delayedMsgs = new ArrayList<>();
 
-        if (prev == null) {
-            delayedLatestMsg = fullMsg;
+            delayedMsgs.add(fullMsg);
 
             listen(f -> {
                 if (f.error() != null)
                     return;
 
-                GridDhtPartitionsFullMessage msg;
+                List<GridDhtPartitionsFullMessage> msgs;
 
                 synchronized (this) {
-                    msg = delayedLatestMsg;
+                    msgs = delayedMsgs;
 
-                    delayedLatestMsg = null;
+                    delayedMsgs = null;
                 }
 
-                if (msg != null)
+                for (GridDhtPartitionsFullMessage msg : msgs)
                     cctx.exchange().processFullPartitionUpdate(node, msg);
             });
+
+            return true;
         }
-        else
-            delayedLatestMsg.merge(fullMsg, cctx.discovery());
+
+        for (GridDhtPartitionsFullMessage msg : delayedMsgs) {
+            if (msg.topologyVersion().equals(fullMsg.topologyVersion())) {
+                msg.merge(fullMsg, cctx.discovery());
+
+                return true;
+            }
+        }
+
+        delayedMsgs.add(fullMsg);
 
         return true;
     }
