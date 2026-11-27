@@ -58,16 +58,6 @@ DATA_CHECKER_APP = _APP_PKG + "MdcDataCheckerApplication"
 LOAD_APP = _APP_PKG + "MdcContinuousLoadApplication"
 THIN_LOAD_APP = _APP_PKG + "MdcThinClientLoadApplication"
 
-# Suspicious server log patterns: none of them is expected in any MDC scenario,
-# partitioned or not. Matched against the node console capture.
-LRT_PATTERN = "long running transactions"
-PME_FREEZE_PATTERN = "Failed to wait for partition map exchange"
-LOST_PARTITIONS_PATTERN = "Detected lost partitions"
-ASSERTION_ERROR_PATTERN = "AssertionError"
-
-# Every log of a server node, including the ones rotated by a restart.
-ALL_LOGS_GLOB = "ignite*.log*"
-
 
 def dc_jvm_opts(dc: str) -> List[str]:
     """
@@ -469,12 +459,10 @@ class MdcCluster:
 
     def verify_servers_log_clean(self):
         """
-        Verifies the negative invariants on all server nodes: no long running transactions
-        were detected, no PME hang and no lost partitions were reported.
+        Verifies that no server log has a suspicious line.
         """
-        for pattern in (LRT_PATTERN, PME_FREEZE_PATTERN, LOST_PARTITIONS_PATTERN, ASSERTION_ERROR_PATTERN):
-            for svc in self.servers.values():
-                svc.check_event_absent(pattern, log_file=ALL_LOGS_GLOB)
+        for svc in self.servers.values():
+            svc.check_logs_clean()
 
     def verify_no_hanging_txs(self, dc: str = DC_1, try_kill_hanging_tx: bool = False):
         """

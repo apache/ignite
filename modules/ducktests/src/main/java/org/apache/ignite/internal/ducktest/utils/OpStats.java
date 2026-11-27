@@ -32,7 +32,7 @@ public class OpStats {
     private long cnt;
 
     /** Records a single operation latency. */
-    public void record(long ns) {
+    public synchronized void record(long ns) {
         totalNs += ns;
 
         minNs = Math.min(minNs, ns);
@@ -42,17 +42,17 @@ public class OpStats {
     }
 
     /** @return Minimum latency in nanoseconds, or {@code -1} if nothing was recorded. */
-    public long minNs() {
+    public synchronized long minNs() {
         return cnt > 0 ? minNs : -1;
     }
 
     /** @return Maximum latency in nanoseconds, or {@code -1} if nothing was recorded. */
-    public long maxNs() {
+    public synchronized long maxNs() {
         return cnt > 0 ? maxNs : -1;
     }
 
     /** @return Average latency in nanoseconds, or {@code -1} if nothing was recorded. */
-    public double avgNs() {
+    public synchronized double avgNs() {
         return cnt > 0 ? totalNs / (double)cnt : -1;
     }
 
@@ -60,7 +60,7 @@ public class OpStats {
      * @return Derived throughput: recorded operations per second of pure operation time,
      * or {@code -1} if nothing was recorded.
      */
-    public double tps() {
+    public synchronized double tps() {
         return totalNs > 0 ? cnt * 1e9 / totalNs : -1;
     }
 }

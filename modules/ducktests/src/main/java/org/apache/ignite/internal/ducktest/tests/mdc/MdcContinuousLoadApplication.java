@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.ducktest.tests.mdc;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.IgniteCache;
@@ -31,6 +38,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.ducktest.utils.Utils.fmtMs;
 import static org.apache.ignite.internal.ducktest.utils.Utils.getEnum;
 import static org.apache.ignite.internal.ducktest.utils.Utils.timed;
@@ -38,8 +46,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Universal MDC load application. Runs a single-threaded synchronous load of the
- * requested {@link LoadMode} either for a fixed number of iterations (a "burst") or until
+ * Universal MDC load application. Runs a synchronous load of the requested
+ * {@link LoadMode} in one or more threads either for a fixed number of iterations (a "burst") or until
  * externally terminated (a "background" load spanning several test phases, e.g. a
  * network partition and its healing).
  * <p>
@@ -51,8 +59,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *         configuration parameters (see {@link MdcCacheAwareApplication}); otherwise the
  *         cache must already exist;</li>
  *     <li>{@code keyFrom} / {@code keyTo} - key range. Read modes cycle within the range;
- *         write modes advance sequentially from {@code keyFrom} on every success, so on
- *         completion the keys {@code [keyFrom, keyFrom + opsCnt)} are guaranteed written;</li>
+ *         write modes advance sequentially from {@code keyFrom} on every success, so with one
+ *         thread on completion the keys {@code [keyFrom, keyFrom + opsCnt)} are guaranteed written;</li>
+ *     <li>{@code threads} - number of load threads, default 1. Thread {@code i} starts from key
+ *         {@code keyFrom + i}, so the threads overwrite each other's keys;</li>
  *     <li>{@code iterations} - number of operations; {@code 0} means "run until terminated";</li>
  *     <li>{@code inadmissible} - write modes only. {@code false} (default): writes must
  *         succeed; {@code true}: every write must be rejected by the topology validator
@@ -68,7 +78,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *     <li>{@code opPauseMs} - pause between operations, default 0;</li>
  *     <li>{@code resultPrefix} - prefix for recorded results, so that several runs reusing one
  *         service produce uniquely named results;</li>
- *     <li>{@code txConcurrency} / {@code txIsolation} - transaction parameters for {@code TX_PUT}.</li>
+ *     <li>{@code txConcurrency} / {@code txIsolation} - transaction parameters for {@code TX_PUT};</li>
+ *     <li>{@code lockCache} - an existing transactional cache. If set, every operation runs under an
+ *         explicit lock on its key in this cache. A lock not taken within 10 seconds counts as a failed
+ *         operation;</li>
+ *     <li>{@code progressIntervalMs} - if positive, records {@code Progress-><ts> <ok> <err> <sinceOkMs><-}
+ *         at this interval: the time, the successful and the failed operations so far, and the time
+ *         since the last successful one.</li>
  * </ul>
  */
 public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
@@ -80,6 +96,24 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
     /** */
     public static final int DFLT_TX_TIMEOUT = 1_000;
+
+    /** Explicit lock wait in the {@code lockCache} mode. */
+    private static final long LOCK_TIMEOUT_MS = 10_000;
+
+    /** Successful operations. */
+    private final AtomicLong opsCnt = new AtomicLong();
+
+    /** Failed operations. */
+    private final AtomicLong errCnt = new AtomicLong();
+
+    /** Time of the last successful operation. */
+    private final AtomicLong lastOkTs = new AtomicLong();
+
+    /** Longest time without a successful operation. */
+    private final AtomicLong maxStallMs = new AtomicLong();
+
+    /** Cache of the explicit locks ({@code null} unless {@code lockCache} is set). */
+    private IgniteCache<Integer, Object> lockCache;
 
     /** Cache for the cache API modes ({@code null} in SQL modes). */
     private IgniteCache<Integer, IndexedDataRecord> cache;
@@ -105,28 +139,62 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
     /** */
     private int txTimeout;
 
+    /** */
+    private LoadMode mode;
+
+    /** */
+    private int keyFrom;
+
+    /** */
+    private int keyTo;
+
+    /** */
+    private long iterations;
+
+    /** */
+    private boolean inadmissible;
+
+    /** */
+    private boolean continueOnError;
+
+    /** */
+    private boolean stopOnError;
+
+    /** */
+    private long opPauseMs;
+
+    /** Whether an operation failure cut the load short. */
+    private volatile boolean stoppedOnError;
+
+    /** Set when a load thread ends, so the others end too. */
+    private volatile boolean stop;
+
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) throws Exception {
-        LoadMode mode = getEnum(jNode, "mode", LoadMode.class);
+        mode = getEnum(jNode, "mode", LoadMode.class);
 
         String cacheName = jNode.path("cacheName").asText(DFLT_CACHE_NAME);
         boolean createCache = jNode.path("createCache").asBoolean(false);
 
-        int keyFrom = jNode.path("keyFrom").asInt(0);
-        int keyTo = jNode.path("keyTo").asInt(Integer.MAX_VALUE);
-        long iterations = jNode.path("iterations").asLong(0);
+        keyFrom = jNode.path("keyFrom").asInt(0);
+        keyTo = jNode.path("keyTo").asInt(Integer.MAX_VALUE);
+        iterations = jNode.path("iterations").asLong(0);
 
-        boolean inadmissible = jNode.path("inadmissible").asBoolean(false);
-        boolean continueOnError = jNode.path("continueOnError").asBoolean(false);
-        boolean stopOnError = jNode.path("stopOnError").asBoolean(false);
+        inadmissible = jNode.path("inadmissible").asBoolean(false);
+        continueOnError = jNode.path("continueOnError").asBoolean(false);
+        stopOnError = jNode.path("stopOnError").asBoolean(false);
 
-        long opPauseMs = jNode.path("opPauseMs").asLong(0);
+        opPauseMs = jNode.path("opPauseMs").asLong(0);
 
         String pfx = jNode.path("resultPrefix").asText("");
 
         txConcurrency = getEnum(jNode, "txConcurrency", DFLT_TX_CONCURRENCY);
         txIsolation = getEnum(jNode, "txIsolation", DFLT_TX_ISOLATION);
         txTimeout = jNode.path("txTimeout").asInt(DFLT_TX_TIMEOUT);
+
+        String lockCacheName = jNode.path("lockCache").asText("");
+        long progressIntervalMs = jNode.path("progressIntervalMs").asLong(0);
+        int threads = jNode.path("threads").asInt(1);
 
         markInitialized();
         waitForActivation();
@@ -136,68 +204,101 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
         else
             cache = createCache ? mdcCache(jNode) : ignite.cache(cacheName);
 
+        if (!lockCacheName.isEmpty())
+            lockCache = Objects.requireNonNull(ignite.cache(lockCacheName), "No lock cache: " + lockCacheName);
+
         mergeSql = String.format("MERGE INTO \"%s\".%s(_KEY, _VAL) VALUES(?, ?)", cacheName, SQL_TABLE);
         selectSql = String.format("SELECT _VAL FROM \"%s\".%s WHERE _KEY = ?", cacheName, SQL_TABLE);
 
         log.info("MDC load started [dc=" + dcId() + ", mode=" + mode + ", cache=" + cacheName +
             ", keyFrom=" + keyFrom + ", keyTo=" + keyTo + ", iterations=" + iterations +
-            ", inadmissible=" + inadmissible + ", continueOnError=" + continueOnError + "]");
-
-        long opsCnt = 0;
-        long errCnt = 0;
-
-        boolean stoppedOnError = false;
-
-        long maxStallMs = 0;
+            ", inadmissible=" + inadmissible + ", continueOnError=" + continueOnError +
+            ", lockCache=" + lockCacheName + ", threads=" + threads + "]");
 
         long startTs = System.currentTimeMillis();
-        long lastOkTs = startTs;
+        lastOkTs.set(startTs);
 
-        int key = keyFrom;
+        ScheduledExecutorService progress = progressIntervalMs > 0 ? startProgress(pfx, progressIntervalMs) : null;
 
-        while (!terminated() && (iterations == 0 || opsCnt + errCnt < iterations)) {
-            boolean ok = true;
+        runThreads(threads);
 
-            try {
-                doOperation(mode, key);
+        if (progress != null) {
+            progress.shutdownNow();
+            progress.awaitTermination(progressIntervalMs, MILLISECONDS);
+        }
+
+        long durationMs = System.currentTimeMillis() - startTs;
+
+        if (mode.isWrite() && inadmissible && opsCnt.get() > 0) {
+            throw new IllegalStateException("Write load is admissible while expected to be inadmissible [dc=" +
+                dcId() + ", mode=" + mode + ", succeeded=" + opsCnt + ", rejected=" + errCnt + "]");
+        }
+
+        recordResults(pfx, durationMs);
+
+        markFinished();
+    }
+
+    /** Starts recording the progress of the load at the given interval. */
+    private ScheduledExecutorService startProgress(String pfx, long intervalMs) {
+        ScheduledExecutorService progress = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "load-progress");
+
+            t.setDaemon(true);
+
+            return t;
+        });
+
+        progress.scheduleAtFixedRate(() -> recordProgress(pfx), intervalMs, intervalMs, MILLISECONDS);
+
+        return progress;
+    }
+
+    /** Runs the load loop in the given number of threads; a thread's failure is thrown. */
+    private void runThreads(int threads) throws Exception {
+        ExecutorService exec = Executors.newFixedThreadPool(threads);
+
+        try {
+            List<Future<?>> futs = new ArrayList<>();
+
+            for (int i = 0; i < threads; i++) {
+                int startKey = keyFrom + i;
+
+                futs.add(exec.submit(() -> {
+                    try {
+                        runLoop(startKey);
+                    }
+                    finally {
+                        stop = true;
+                    }
+
+                    return null;
+                }));
             }
-            catch (CacheException | IgniteException e) {
-                ok = false;
 
-                // A read reaching here is a missed or corrupted entry, never a rejected write:
-                // 'inadmissible' must not excuse it.
-                if (mode.isWrite() && inadmissible)
-                    log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key +
-                        ", msg=" + e.getMessage() + "]");
-                else if (stopOnError) {
-                    log.warn("Operation failed, cutting the load on first error [dc=" + dcId() + ", mode=" + mode +
-                        ", key=" + key + ", succeeded=" + opsCnt + ", msg=" + e.getMessage() + "]", e);
+            for (Future<?> fut : futs)
+                fut.get();
+        }
+        finally {
+            exec.shutdown();
+        }
+    }
 
-                    errCnt++;
-                    stoppedOnError = true;
+    /** Runs operations from the given key until the load stops. */
+    private void runLoop(int key) throws InterruptedException {
+        while (!terminated() && !stop && (iterations == 0 || opsCnt.get() + errCnt.get() < iterations)) {
+            boolean ok = runOperation(key);
 
-                    break;
-                }
-                else if (continueOnError)
-                    log.warn("Operation failed, tolerated [dc=" + dcId() + ", mode=" + mode +
-                        ", key=" + key + ", msg=" + e.getMessage() + "]");
-                else
-                    throw new IllegalStateException("Operation failed [dc=" + dcId() + ", mode=" + mode +
-                        ", key=" + key + "]", e);
+            if (ok)
+                onSuccess();
+            else {
+                errCnt.incrementAndGet();
+
+                if (stoppedOnError)
+                    return;
             }
 
-            if (ok) {
-                opsCnt++;
-
-                long now = System.currentTimeMillis();
-
-                maxStallMs = Math.max(maxStallMs, now - lastOkTs);
-                lastOkTs = now;
-            }
-            else
-                errCnt++;
-
-            // Writes advance on success only, so [keyFrom, keyFrom + opsCnt) is guaranteed written.
+            // Writes advance on success only, so with one thread [keyFrom, keyFrom + opsCnt) is guaranteed written.
             // The inadmissible-probe mode advances always to probe distinct keys. Reads cycle the range.
             if (ok || (mode.isWrite() && inadmissible)) {
                 key++;
@@ -209,16 +310,58 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
             if (opPauseMs > 0)
                 Thread.sleep(opPauseMs);
         }
+    }
 
-        long durationMs = System.currentTimeMillis() - startTs;
+    /** @return Whether the operation succeeded; a failure that must fail the application is thrown. */
+    private boolean runOperation(int key) throws InterruptedException {
+        try {
+            if (lockCache == null)
+                doOperation(key);
+            else
+                doLockedOperation(key);
 
-        if (mode.isWrite() && inadmissible && opsCnt > 0) {
-            throw new IllegalStateException("Write load is admissible while expected to be inadmissible [dc=" +
-                dcId() + ", mode=" + mode + ", succeeded=" + opsCnt + ", rejected=" + errCnt + "]");
+            return true;
         }
+        catch (CacheException | IgniteException e) {
+            onFailure(key, e);
 
-        recordResult(pfx + "OpsCnt", String.valueOf(opsCnt));
-        recordResult(pfx + "ErrCnt", String.valueOf(errCnt));
+            return false;
+        }
+    }
+
+    /** Counts a successful operation. */
+    private void onSuccess() {
+        opsCnt.incrementAndGet();
+
+        long now = System.currentTimeMillis();
+
+        maxStallMs.accumulateAndGet(now - lastOkTs.getAndSet(now), Math::max);
+    }
+
+    /** Logs a tolerated failure, cuts the load short, or fails the application. */
+    private void onFailure(int key, RuntimeException e) {
+        // A read reaching here is a missed or corrupted entry, never a rejected write:
+        // 'inadmissible' must not excuse it.
+        if (mode.isWrite() && inadmissible)
+            log.info("Write rejected as expected [dc=" + dcId() + ", key=" + key + ", msg=" + e.getMessage() + "]");
+        else if (stopOnError) {
+            log.warn("Operation failed, cutting the load on first error [dc=" + dcId() + ", mode=" + mode +
+                ", key=" + key + ", succeeded=" + opsCnt + ", msg=" + e.getMessage() + "]", e);
+
+            stoppedOnError = true;
+        }
+        else if (continueOnError)
+            log.warn("Operation failed, tolerated [dc=" + dcId() + ", mode=" + mode +
+                ", key=" + key + ", msg=" + e.getMessage() + "]");
+        else
+            throw new IllegalStateException("Operation failed [dc=" + dcId() + ", mode=" + mode +
+                ", key=" + key + "]", e);
+    }
+
+    /** Records the results of the load and logs them. */
+    private void recordResults(String pfx, long durationMs) {
+        recordResult(pfx + "OpsCnt", opsCnt.get());
+        recordResult(pfx + "ErrCnt", errCnt.get());
         recordResult(pfx + "StoppedOnError", String.valueOf(stoppedOnError));
         recordResult(pfx + "DurationMs", String.valueOf(durationMs));
 
@@ -228,22 +371,42 @@ public class MdcContinuousLoadApplication extends MdcCacheAwareApplication {
 
         recordResult(pfx + "DerivedTps", String.format(Locale.US, "%.1f", stats.tps()));
 
-        recordResult(pfx + "MaxStallMs", String.valueOf(maxStallMs));
+        recordResult(pfx + "MaxStallMs", maxStallMs.get());
 
         log.info("MDC load finished [dc=" + dcId() + ", mode=" + mode + ", ops=" + opsCnt +
             ", errs=" + errCnt + ", stoppedOnError=" + stoppedOnError + ", durationMs=" + durationMs +
             ", avgOpMs=" + fmtMs(stats.avgNs()) + ", maxOpMs=" + fmtMs(stats.maxNs()) +
             ", maxStallMs=" + maxStallMs + "]");
+    }
 
-        markFinished();
+    /** Records the progress of the load. */
+    private void recordProgress(String pfx) {
+        long now = System.currentTimeMillis();
+
+        recordResult(pfx + "Progress", now + " " + opsCnt.get() + " " + errCnt.get() + " " + (now - lastOkTs.get()));
+    }
+
+    /** Executes an operation under an explicit lock on its key in the lock cache. */
+    private void doLockedOperation(int key) throws InterruptedException {
+        Lock lock = lockCache.lock(key);
+
+        if (!lock.tryLock(LOCK_TIMEOUT_MS, MILLISECONDS))
+            throw new IgniteException("Failed to take the explicit lock [dc=" + dcId() + ", key=" + key + "]");
+
+        try {
+            doOperation(key);
+        }
+        finally {
+            lock.unlock();
+        }
     }
 
     /**
-     * Executes a single operation of the given mode against the given key. Throws a
+     * Executes a single operation of the load's mode against the given key. Throws a
      * {@link CacheException} or {@link IgniteException} on operation failure (e.g. a write
      * rejected by the topology validator).
      */
-    private void doOperation(LoadMode mode, int key) {
+    private void doOperation(int key) {
         switch (mode) {
             case GET: {
                 IndexedDataRecord val = timed(stats, () -> cache.get(key));
