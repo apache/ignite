@@ -1,0 +1,109 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Public behavior changes
+
+# pull_request (NOT pull_request_target): the job builds and runs PR code, so it keeps the read-only token.
+# "edited" reruns the check when the author links an RFC in the PR description. A run cannot be skipped instead:
+# GitHub treats a skipped required check as passed.
+on:
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Public behavior changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout PR merge
+        uses: actions/checkout@v4
+        with:
+          path: merge
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Check out target branch and find changed sources
+        id: prepare
+        working-directory: merge
+        run: |
+          git worktree add ../base HEAD^1
+          # The files that the builds and the collectors read, and the files of the check. A collector that reads another path
+          # adds it here.
+          if git diff --quiet HEAD^1 HEAD -- modules pom.xml parent bin .github/public-behavior \
+              .github/workflows/public-behavior-changes.yml; then
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test the check
+        id: tests
+        working-directory: merge
+        run: node --test .github/public-behavior/check/*.test.js
+
+      - name: Setup java
+        id: java
+        if: steps.prepare.outputs.build == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      # Each build is described by its own version of the check, which is written for its code. The target branch may have
+      # no check yet, or a broken one that this PR fixes: then the version of this PR describes it.
+      - name: Describe target branch
+        id: base
+        if: steps.prepare.outputs.build == 'true'
+        working-directory: base
+        run: |
+          describe=.github/public-behavior/describe/describe.sh
+          if ! bash "$describe" > ../base.txt; then
+            echo "::warning title=Public behavior changes::The check of the target branch could not describe it, so the check of this PR did."
+            bash "../merge/$describe" > ../base.txt
+          fi
+
+      - name: Describe PR merge
+        id: merge
+        if: steps.prepare.outputs.build == 'true'
+        working-directory: merge
+        run: bash .github/public-behavior/describe/describe.sh > ../merge.txt
+
+      - name: Report
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          PREPARE: ${{ steps.prepare.outcome }}
+          TESTS: ${{ steps.tests.outcome }}
+          JAVA: ${{ steps.java.outcome }}
+          BASE: ${{ steps.base.outcome }}
+          MERGE: ${{ steps.merge.outcome }}
+        with:
+          script: |
+            const { report } = require('./merge/.github/public-behavior/check/report.js');
+            const { PREPARE, TESTS, JAVA, BASE, MERGE } = process.env;
+            const steps = { checkout: PREPARE, tests: TESTS, java: JAVA, base: BASE, merge: MERGE };
+            await report({ core, context, steps });
+
