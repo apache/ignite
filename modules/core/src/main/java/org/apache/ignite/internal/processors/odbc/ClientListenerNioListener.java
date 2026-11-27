@@ -388,6 +388,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
             if (connCtx.isVersionSupported(ver)) {
                 connCtx.initializeFromHandshake(ses, ver, reader);
 
+                // Protects from the connection contexts that skip authentication: requests of such a connection
+                // would be processed in the security context of the local node.
+                if (ctx.security().enabled() && connCtx.securityContext() == null) {
+                    throw new IgniteAccessControlException("Client is not authenticated [type=" +
+                        clientTypeLabel(clientType) + ", ver=" + ver.asString() + ']');
+                }
+
                 ensureConnectionAllowed(connCtx);
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);

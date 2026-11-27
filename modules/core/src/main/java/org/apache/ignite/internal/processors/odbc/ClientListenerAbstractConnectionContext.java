@@ -137,7 +137,7 @@ public abstract class ClientListenerAbstractConnectionContext implements ClientL
     @Override public void onDisconnected() {
         cleanupTxs();
 
-        if (ctx.security().enabled())
+        if (ctx.security().enabled() && secCtx != null)
             ctx.security().onSessionExpired(secCtx.subject().id());
     }
 
