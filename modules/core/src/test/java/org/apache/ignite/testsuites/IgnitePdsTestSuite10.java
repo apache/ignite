@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cdc.CdcCacheVersionTest;
+import org.apache.ignite.cdc.CdcClearRollingUpgradeTest;
 import org.apache.ignite.cdc.CdcManagerTest;
 import org.apache.ignite.cdc.WalForCdcTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.HistoricalRebalanceCheckpointTest;
@@ -91,6 +92,7 @@ public class IgnitePdsTestSuite10 {
      */
     public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
         GridTestUtils.addTestIfNeeded(suite, CdcCacheVersionTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CdcClearRollingUpgradeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcManagerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CheckpointFailBeforeWriteMarkTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CheckpointFreeListTest.class, ignoredTests);

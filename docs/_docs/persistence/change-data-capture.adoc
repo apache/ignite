@@ -83,7 +83,8 @@ The distributed properties listed in the table below allow you to configure CDC 
 |===
 |Property | Description | Default Value
 |`cdc.disabled`| Disables CDC in the cluster to avoid disk overflow. Note that cache changes will be lost when CDC
-is disabled. Useful if the CDC application is down for a long time. | false
+is disabled. Useful if the CDC application is down for a long time.
+See link:tools/control-script#working-with-cluster-properties[Working with Cluster Properties]. | false
 |===
 
 == API
@@ -206,6 +207,54 @@ control.sh|bat --cdc resend --caches cache1,...,cacheN
 The command will iterate over caches and writes primary copies of data entries to the WAL to get captured by the CDC application.
 
 NOTE: There are no guarantees of notifying the CDC consumer on concurrent cache updates: use the `CdcEvent#version` to resolve version.
+
+== Clear CDC directory
+
+Sometimes the CDC application has to start from scratch, for example, after a long CDC outage or when replication
+is being set up again. In this case you can delete all WAL segment links and the CDC application state from the CDC
+directory.
+
+NOTE: Use the link:#handling-skipped-segments[`--cdc delete_lost_segment_links`] command if the CDC application fails
+because of skipped segments. Use the `--cdc clear` command to drop all the accumulated changes and the CDC application
+state.
+
+WARNING: All changes in deleted segment links will be lost!
+
+To clear the CDC directory, follow the steps below. Steps 3–5 are required only if changes must be captured after
+clearing.
+
+ 1. Shut down the CDC application. The command fails if the CDC directory is locked by the running application.
+If CDC events are captured within the Ignite node by a custom CDC manager, see the documentation of the manager. The
+consumer state of the manager is not stored in the CDC directory and is handled by the manager. The manager can forbid
+clearing, then the command fails and the CDC directory of the node is not cleared.
+ 2. Run the following link:tools/control-script[Control Script] command:
++
+[source,shell]
+----
+# Clear CDC directories on all server nodes.
+control.sh|bat --cdc clear
+
+# Clear CDC directory on a node.
+control.sh|bat --cdc clear --node-id node_id
+
+# Clear CDC directories completely, including the CDC mode state.
+control.sh|bat --cdc clear --reset-mode
+----
++
+If the command fails, fix the reported error and run it again. Do not start the CDC application until the command
+succeeds.
+ 3. If the command was run with `--reset-mode`, restart the cleared Ignite nodes with CDC enabled (before the restart,
+make sure the `cdc.disabled` distributed property is set to `false`). Without the restart, the CDC application does not
+capture changes.
+ 4. Start the CDC application.
+ 5. Synchronize data with the destination (e.g. a remote cluster), because changes in the cleared segment links are not
+transmitted. Use the link:#forcefully-resend-all-cache-data-to-cdc[resend command], a snapshot or other methods.
+
+NOTE: There is no need to disable CDC with the `cdc.disabled` distributed property before clearing. Segment links
+created after clearing are kept, and the CDC application consumes them after start.
+
+NOTE: The command clears CDC directories only on the server nodes that are in the topology. CDC directories of offline
+nodes are not cleared. After such a node joins the cluster, clear its CDC directory with the `--node-id` argument.
 
 == cdc-ext
 
