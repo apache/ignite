@@ -723,7 +723,14 @@ public class InboundConnectionHandler extends GridNioServerListenerAdapter<Messa
         if (createClient) {
             client = new GridTcpNioCommunicationClient(connKey.connectionIndex(), ses, log);
 
-            clientPool.addNodeClient(node, connKey.connectionIndex(), client);
+            GridCommunicationClient published =
+                clientPool.addNodeClient(node, connKey.connectionIndex(), client);
+
+            if (published != client)
+                // A concurrent establishment claimed the slot before this client could be published:
+                // this connection is the duplicate, already disposed of by addNodeClient, so hand
+                // out the published client instead.
+                client = (GridTcpNioCommunicationClient)published;
         }
 
         return client;

@@ -45,6 +45,8 @@ import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWa
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationHandshakeWaitTest;
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationHandshakeTimeoutTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiConnectClosureSelfTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiConnectClosureSslSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientSslTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
@@ -72,6 +74,9 @@ import org.junit.runners.Suite;
 
     GridTcpCommunicationSpiConcurrentConnectSelfTest.class,
     GridTcpCommunicationSpiConcurrentConnectSslSelfTest.class,
+
+    TcpCommunicationSpiConnectClosureSelfTest.class,
+    TcpCommunicationSpiConnectClosureSslSelfTest.class,
 
     GridTcpCommunicationSpiSslSelfTest.class,
     GridTcpCommunicationSpiSslSmallBuffersSelfTest.class,
