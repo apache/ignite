@@ -29,12 +29,10 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.junit.Test;
-import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
@@ -49,12 +47,6 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 public class ManagementTaskAuthorizationTest extends GridCommandHandlerAbstractTest {
     /** */
     private static final String ERR = "Performance statistics start is forbidden";
-
-    /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}")
-    public static List<String> commandHandlers() {
-        return F.asList(CLI_CMD_HND, JMX_CMD_HND);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
