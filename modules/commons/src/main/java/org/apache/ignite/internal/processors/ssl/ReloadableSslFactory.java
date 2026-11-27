@@ -84,10 +84,10 @@ public interface ReloadableSslFactory extends Factory<SSLContext> {
             return expiry;
 
         for (Certificate cert : chain) {
-            if (!(cert instanceof X509Certificate x509))
+            if (!(cert instanceof X509Certificate x509Cert))
                 return Long.MAX_VALUE;
 
-            expiry = Math.min(expiry, x509.getNotAfter().getTime());
+            expiry = Math.min(expiry, x509Cert.getNotAfter().getTime());
         }
 
         return expiry;
