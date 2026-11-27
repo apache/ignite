@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartFailWi
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.AtomicUpdateRetryInterruptTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
@@ -100,6 +101,8 @@ public class IgniteCacheTestSuite7 {
         GridTestUtils.addTestIfNeeded(suite, TxWithSmallTimeoutAndContentionOneKeyTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheRentingStateRepairTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, AtomicUpdateRetryInterruptTest.class, ignoredTests);
 
         return suite;
     }
