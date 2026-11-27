@@ -60,11 +60,11 @@ public class ManagementTaskAuthorizationTest extends GridCommandHandlerAbstractT
                     return new TestSecurityProcessor(ctx, nodeData, Arrays.asList(clientData), false) {
                         @Override public void authorizeManagementTask(
                             Class<?> taskCls,
-                            Object arg,
+                            VisorTaskArgument<?> arg,
                             SecurityContext securityCtx
                         ) {
                             if (PerformanceStatisticsTask.class.equals(taskCls)
-                                && ((VisorTaskArgument<?>)arg).getArgument() instanceof PerformanceStatisticsStartCommandArg)
+                                && arg.getArgument() instanceof PerformanceStatisticsStartCommandArg)
                                 throw new SecurityException(ERR);
                         }
                     };

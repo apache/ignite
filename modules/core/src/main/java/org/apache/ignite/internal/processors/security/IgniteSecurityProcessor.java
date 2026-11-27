@@ -38,6 +38,7 @@ import org.apache.ignite.internal.thread.context.OperationContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -235,7 +236,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void authorizeManagementTask(Class<?> taskCls, Object arg) throws SecurityException {
+    @Override public void authorizeManagementTask(Class<?> taskCls, VisorTaskArgument<?> arg) throws SecurityException {
         secPrc.authorizeManagementTask(taskCls, arg, securityContext());
     }
 

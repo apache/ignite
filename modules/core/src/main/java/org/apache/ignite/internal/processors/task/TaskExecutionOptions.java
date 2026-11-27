@@ -52,9 +52,6 @@ public class TaskExecutionOptions {
     private boolean isSysTask;
 
     /** */
-    private boolean isManagementTask;
-
-    /** */
     private boolean isPublicReq;
 
     /** */
@@ -71,7 +68,6 @@ public class TaskExecutionOptions {
         isFailoverDisabled = other.isFailoverDisabled;
         isResultCacheDisabled = other.isResultCacheDisabled;
         isSysTask = other.isSysTask;
-        isManagementTask = other.isManagementTask;
         isPublicReq = other.isPublicReq;
     }
 
@@ -194,18 +190,6 @@ public class TaskExecutionOptions {
     /** */
     public TaskExecutionOptions asSystemTask() {
         isSysTask = true;
-
-        return this;
-    }
-
-    /** */
-    public boolean isManagementTask() {
-        return isManagementTask;
-    }
-
-    /** */
-    public TaskExecutionOptions asManagementTask() {
-        isManagementTask = true;
 
         return this;
     }

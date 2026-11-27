@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -112,13 +113,14 @@ public interface GridSecurityProcessor extends GridProcessor {
     /**
      * Authorizes a management task: an Ignite internal task executed through the public API, e.g. by a control.sh
      * command. Unlike user tasks, such tasks are not authorized with {@link SecurityPermission#TASK_EXECUTE}.
+     * These tasks are also checked against the permissions declared by {@link PublicAccessJob#requiredPermissions()}.
      *
      * @param taskCls Task class.
      * @param arg Task argument.
      * @param securityCtx Security context.
      * @throws SecurityException If security check failed.
      */
-    public default void authorizeManagementTask(Class<?> taskCls, Object arg, SecurityContext securityCtx)
+    public default void authorizeManagementTask(Class<?> taskCls, VisorTaskArgument<?> arg, SecurityContext securityCtx)
         throws SecurityException {
         // No-op.
     }
