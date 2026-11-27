@@ -37,6 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryClientTopologyGapTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryConcurrentStartTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryDeadNodeAddressResolvingTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderFailureTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryLongAddressListWarnSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMetricsWarnLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
@@ -104,6 +105,7 @@ import org.junit.runners.Suite;
     DiscoverySpiDataExchangeTest.class,
     TcpDiscoveryIpFinderFailureTest.class,
     TcpDiscoveryDeadNodeAddressResolvingTest.class,
+    TcpDiscoveryLongAddressListWarnSelfTest.class,
     DiscoveryDeserializationExceptionTest.class,
     TcpDiscoveryPendingMessageDeliveryMdcReversedTest.class,
     MultiDataCenterRingTest.class,
