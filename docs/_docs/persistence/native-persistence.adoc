@@ -269,6 +269,21 @@ todo: add c++ examples
 
 [tabs]
 --
+tab:Control Script[]
+[source,sh]
+----
+# Check the WAL state for all cache groups.
+control.sh --wal state
+
+# Disable WAL for a cache group while loading data.
+control.sh --wal disable --groups cache-group
+
+# Enable WAL again after loading completes.
+control.sh --wal enable --groups cache-group
+----
+
+Use `--groups group1,group2` to operate on specific cache groups. If the option is omitted, the command applies to all cache groups.
+
 tab:Java[]
 [source,java]
 ----
