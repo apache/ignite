@@ -458,9 +458,16 @@ public class TypeUtils {
 
     /** */
     public static @Nullable Object toInternal(DataContext ctx, @Nullable Object val, Type storageType) {
-        if (val == null)
-            return null;
-        else if (storageType == java.sql.Date.class)
+        // Fast path: numbers and strings of the storage type are kept as is. The method is small to be inlined.
+        if (val == null || storageType == val.getClass() && (val instanceof Number || val instanceof String))
+            return val;
+
+        return toInternal0(ctx, val, storageType);
+    }
+
+    /** */
+    private static Object toInternal0(DataContext ctx, Object val, Type storageType) {
+        if (storageType == java.sql.Date.class)
             return (int)(toLong(ctx, val) / DateTimeUtils.MILLIS_PER_DAY);
         else if (storageType == LocalDate.class)
             return (int)(toLong(ctx, val) / DateTimeUtils.MILLIS_PER_DAY);
