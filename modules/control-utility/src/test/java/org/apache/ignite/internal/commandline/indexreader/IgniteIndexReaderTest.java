@@ -54,6 +54,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -885,6 +886,35 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     @Test
     public void testQryCacheGroup() throws IgniteCheckedException {
         checkQryCacheGroup();
+    }
+
+    /**
+     * Test checks that the page lists scan counts each {@link PagesListNodeIO} page once.
+     * <p>
+     * Steps:
+     * 1) Run {@link IgniteIndexReader} for {@link #CACHE_GROUP_NAME};
+     * 2) Check that the page lists scan found as many {@link PagesListNodeIO} pages as the sequential scan of index.bin.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Test
+    public void testPageListNodesCountedOnce() throws IgniteCheckedException {
+        String output = runIndexReader(CACHE_GROUP_NAME, null, false);
+
+        assertEquals(output, pageListNodesCount(output, ""), pageListNodesCount(output, "<PAGE_LIST> "));
+    }
+
+    /**
+     * @param output Index reader output.
+     * @param prefix Prefix of the page stat table.
+     * @return Count of {@link PagesListNodeIO} pages in the page stat table with the given prefix.
+     */
+    private static long pageListNodesCount(String output, String prefix) {
+        Matcher m = compile("(?m)^" + prefix + PagesListNodeIO.class.getSimpleName() + "\\s+(\\d+)\\s").matcher(output);
+
+        assertTrue(output, m.find());
+
+        return Long.parseLong(m.group(1));
     }
 
     /**
