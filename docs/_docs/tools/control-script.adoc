@@ -190,6 +190,7 @@ This is the control-script user, or the node receiving a JMX call.
 
 The report lists every target node, even if none of its TCP transports use TLS.
 Each node first checks that the factories of discovery, communication, client connector, and binary REST extend `AbstractSslContextFactory`.
+The HTTP REST endpoint passes this check with any Jetty factory, standard or custom, as described in link:restapi#https[HTTPS].
 If any factory is unsupported, that node reloads none of its factories.
 Otherwise, it reloads them until the first failure and reports the error.
 Other nodes continue independently.
