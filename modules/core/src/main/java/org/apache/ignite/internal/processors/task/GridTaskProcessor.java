@@ -1602,8 +1602,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             ctx.security().authorize(taskCls == null ? taskName : taskCls.getName(), TASK_EXECUTE);
         }
-        else if (opts.isPublicRequest() && arg instanceof VisorTaskArgument)
-            ctx.security().authorizeManagementTask(taskCls, (VisorTaskArgument<?>)arg);
+        else if (opts.isManagementTask())
+            ctx.security().authorizeManagementTask(taskCls, arg);
     }
 
     /**

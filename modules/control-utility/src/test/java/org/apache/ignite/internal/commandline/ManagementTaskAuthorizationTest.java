@@ -53,7 +53,7 @@ public class ManagementTaskAuthorizationTest extends GridCommandHandlerAbstractT
     /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
-        return F.asList(CLI_CMD_HND);
+        return F.asList(CLI_CMD_HND, JMX_CMD_HND);
     }
 
     /** {@inheritDoc} */
@@ -68,11 +68,11 @@ public class ManagementTaskAuthorizationTest extends GridCommandHandlerAbstractT
                     return new TestSecurityProcessor(ctx, nodeData, Arrays.asList(clientData), false) {
                         @Override public void authorizeManagementTask(
                             Class<?> taskCls,
-                            VisorTaskArgument<?> arg,
+                            Object arg,
                             SecurityContext securityCtx
                         ) {
                             if (PerformanceStatisticsTask.class.equals(taskCls)
-                                && arg.getArgument() instanceof PerformanceStatisticsStartCommandArg)
+                                && ((VisorTaskArgument<?>)arg).getArgument() instanceof PerformanceStatisticsStartCommandArg)
                                 throw new SecurityException(ERR);
                         }
                     };

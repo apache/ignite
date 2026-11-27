@@ -26,7 +26,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -112,7 +111,7 @@ public class NoOpIgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void authorizeManagementTask(Class<?> taskCls, VisorTaskArgument<?> arg) throws SecurityException {
+    @Override public void authorizeManagementTask(Class<?> taskCls, Object arg) throws SecurityException {
         // No-op.
     }
 

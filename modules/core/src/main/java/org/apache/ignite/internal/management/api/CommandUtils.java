@@ -42,6 +42,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteComputeHandler;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -779,10 +781,12 @@ public class CommandUtils {
             }
         }
 
-        return ignite
-            .compute(ignite.cluster())
-            .execute(taskCls, new VisorTaskArgument<>(nodesIds, arg, false))
-            .result();
+        return new IgniteComputeHandler(((IgniteEx)ignite).context(),
+                opts -> opts.asPublicRequest()
+                    .asManagementTask()
+                    .withProjection(ignite.cluster().nodes()))
+            .executeAsync(taskCls, new VisorTaskArgument<>(nodesIds, arg, false))
+            .get().result();
     }
 
     /** */

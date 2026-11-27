@@ -109,6 +109,9 @@ class ClientComputeTask implements ClientCloseableResource {
             .withProjectionPredicate(nodePredicate)
             .withTimeout(timeout);
 
+        if (ctx.managementClient())
+            opts.asManagementTask();
+
         if ((flags & NO_FAILOVER_FLAG_MASK) != 0)
             opts.withFailoverDisabled();
 
