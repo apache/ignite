@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 
@@ -35,6 +36,17 @@ public class Snapshots {
         File exSnpDir = new File("work", "ex_snapshots");
 
         cfg.setSnapshotPath(exSnpDir.getAbsolutePath());
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setExtraStoragePaths(
+                new File("work", "persistence-a").getAbsolutePath(),
+                new File("work", "persistence-b").getAbsolutePath()
+            )
+            .setExtraSnapshotPaths(
+                new File("work", "snapshots-a").getAbsolutePath(),
+                new File("work", "snapshots-b").getAbsolutePath()
+            )
+        );
         //end::config[]
 
         Ignite ignite = Ignition.start(cfg);

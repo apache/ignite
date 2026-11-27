@@ -24,6 +24,24 @@
         -->
         <property name="snapshotPath" value="/snapshots"/>
 
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="extraStoragePaths">
+                    <array>
+                        <value>/ignite/persistence-a</value>
+                        <value>/ignite/persistence-b</value>
+                    </array>
+                </property>
+
+                <property name="extraSnapshotPaths">
+                    <array>
+                        <value>/snapshots/persistence-a</value>
+                        <value>/snapshots/persistence-b</value>
+                    </array>
+                </property>
+            </bean>
+        </property>
+
         <!-- tag::cache[] -->
         <property name="cacheConfiguration">
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
