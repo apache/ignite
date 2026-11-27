@@ -17,14 +17,23 @@
 
 package org.apache.ignite.jdbc.thin;
 
+import java.io.DataInputStream;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -98,6 +107,73 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
         checkInvalidUserPassword(URL, "another_user", "ignite", err);
         checkInvalidUserPassword(URL, "another_user", "password", err);
         checkInvalidUserPassword(URL, "another_user", "password", err);
+    }
+
+    /**
+     * Checks that the clients using the legacy protocol versions, which handshake carries no credentials,
+     * are not able to bypass the authentication.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testLegacyProtocolHandshakeRejected() throws Exception {
+        checkLegacyHandshakeRejected(2, 1, 0);
+        checkLegacyHandshakeRejected(2, 1, 5);
+        checkLegacyHandshakeRejected(2, 3, 0);
+        checkLegacyHandshakeRejected(2, 4, 0);
+    }
+
+    /**
+     * @param major Protocol major version.
+     * @param minor Protocol minor version.
+     * @param maintenance Protocol maintenance version.
+     * @throws Exception If failed.
+     */
+    private void checkLegacyHandshakeRejected(int major, int minor, int maintenance) throws Exception {
+        ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(major, minor, maintenance);
+
+        ByteBuffer req = ByteBuffer.allocate(64).order(ByteOrder.LITTLE_ENDIAN);
+
+        req.putInt(0); // Message size placeholder.
+        req.put((byte)ClientListenerRequest.HANDSHAKE);
+        req.putShort((short)major);
+        req.putShort((short)minor);
+        req.putShort((short)maintenance);
+        req.put(ClientListenerNioListener.JDBC_CLIENT);
+
+        // Distributed joins, enforce join order, collocated, replicated only, auto close cursors.
+        for (int i = 0; i < 5; i++)
+            req.put((byte)0);
+
+        if (ver.compareTo(ClientListenerProtocolVersion.create(2, 1, 5)) >= 0)
+            req.put((byte)0); // Lazy.
+
+        if (ver.compareTo(ClientListenerProtocolVersion.create(2, 3, 0)) >= 0)
+            req.put((byte)0); // Skip reducer on update.
+
+        req.putInt(0, req.position() - Integer.BYTES);
+
+        try (Socket sock = new Socket("127.0.0.1", ClientConnectorConfiguration.DFLT_PORT)) {
+            sock.setSoTimeout(10_000);
+
+            sock.getOutputStream().write(req.array(), 0, req.position());
+            sock.getOutputStream().flush();
+
+            DataInputStream in = new DataInputStream(sock.getInputStream());
+
+            byte[] sizeBytes = new byte[Integer.BYTES];
+
+            in.readFully(sizeBytes);
+
+            byte[] resp = new byte[ByteBuffer.wrap(sizeBytes).order(ByteOrder.LITTLE_ENDIAN).getInt()];
+
+            in.readFully(resp);
+
+            assertEquals("Handshake must be rejected [ver=" + ver + ']', 0, resp[0]);
+
+            assertTrue("Unexpected handshake error [ver=" + ver + ']',
+                new String(resp, StandardCharsets.UTF_8).contains("The user name or password is incorrect"));
+        }
     }
 
     /**

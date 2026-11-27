@@ -230,10 +230,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             lb = reader.readString();
         }
 
-        if (ver.compareTo(VER_2_5_0) >= 0) {
-            String user = null;
-            String passwd = null;
+        String user = null;
+        String passwd = null;
 
+        if (ver.compareTo(VER_2_5_0) >= 0) {
             try {
                 if (reader.available() > 0) {
                     user = reader.readString();
@@ -243,9 +243,11 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             catch (Exception e) {
                 throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
-
-            authenticate(ses, user, passwd);
         }
+
+        // Must be performed for all protocol versions: the handshake of versions prior to 2.5.0 carries no credentials,
+        // so such clients are authenticated with empty ones and are rejected if the security does not accept them.
+        authenticate(ses, user, passwd);
 
         protoCtx = new JdbcProtocolContext(ver, features, true);
 
