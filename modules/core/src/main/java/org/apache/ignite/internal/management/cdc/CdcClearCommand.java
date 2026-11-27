@@ -64,7 +64,9 @@ public class CdcClearCommand implements ComputeCommand<CdcClearCommandArg, Void>
 
     /** {@inheritDoc} */
     @Override public void printResult(CdcClearCommandArg arg, Void res, Consumer<String> printer) {
-        printer.accept("CDC directories were successfully cleared.");
+        printer.accept(arg.nodeId() == null
+            ? "CDC directories were successfully cleared."
+            : "CDC directory was successfully cleared.");
     }
 
     /** {@inheritDoc} */

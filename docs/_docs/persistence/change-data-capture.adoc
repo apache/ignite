@@ -224,6 +224,9 @@ To clear the CDC directory, follow the steps below. Steps 3–5 are required onl
 clearing.
 
  1. Shut down the CDC application. The command fails if the CDC directory is locked by the running application.
+If CDC events are captured within the Ignite node by a custom CDC manager, see the documentation of the manager. The
+consumer state of the manager is not stored in the CDC directory and is handled by the manager. The manager can forbid
+clearing, then the command fails and the CDC directory of the node is not cleared.
  2. Run the following link:tools/control-script[Control Script] command:
 +
 [source,shell]

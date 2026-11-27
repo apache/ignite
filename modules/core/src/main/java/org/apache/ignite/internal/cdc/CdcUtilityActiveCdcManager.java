@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.cdc;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.record.CdcManagerStopRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -61,5 +64,31 @@ public class CdcUtilityActiveCdcManager extends GridCacheSharedManagerAdapter im
     /** {@inheritDoc} */
     @Override public void collect(ByteBuffer dataBuf) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeClear() {
+        // No-op. Events are consumed by CdcMain, whose state is cleared.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterClear(boolean resetMode) throws IgniteCheckedException {
+        // CdcMain switches to the mode after node restart.
+        if (resetMode)
+            return;
+
+        // CdcManagerStopRecord might be in a deleted segment link and is not logged again: it is logged once after node start.
+        // The mode is overwritten if it exists, because events are consumed by CdcMain with this manager.
+        NodeFileTree ft = cctx.kernalContext().pdsFolderResolver().fileTree();
+
+        try {
+            // Absent if CdcMain has never started.
+            Files.createDirectories(ft.cdcState());
+
+            new CdcConsumerState(log, ft).saveCdcMode(CdcMode.CDC_UTILITY_ACTIVE);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to save CDC mode [mode=" + CdcMode.CDC_UTILITY_ACTIVE + ']', e);
+        }
     }
 }

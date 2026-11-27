@@ -19,6 +19,8 @@ package org.apache.ignite.util;
 
 import java.io.File;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,10 +41,14 @@ import org.apache.ignite.internal.GridJobExecuteResponse;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.cdc.CdcManager;
+import org.apache.ignite.internal.cdc.CdcMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CdcDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -563,7 +569,7 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
         File[] links1 = cdcLinks(1);
 
         assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, NODE_ID, grid(1).localNode().id().toString()),
-            "CDC directories were successfully cleared.");
+            "CDC directory was successfully cleared.");
 
         for (File link : links0)
             assertTrue("Segment link is deleted: " + link, link.exists());
@@ -599,6 +605,51 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         checkCdcCleared(0, links0, false);
         checkCdcCleared(1, links1, false);
+    }
+
+    /** Checks that the mode is deleted after the rest of the state if clearing with mode reset fails. */
+    @Test
+    public void testCdcClearWithResetModePartialFailure() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        NodeFileTree ft0 = fileTree(0);
+
+        assertTrue(ft0.cdcCachesState().toFile().exists());
+
+        // Deletion of a non-empty directory fails, so it replaces the mode state.
+        File modeState = ft0.cdcModeState().toFile();
+        File modeStateBlocker = new File(modeState, "blocker");
+
+        assertTrue(modeState.delete());
+        assertTrue(modeState.mkdir());
+        assertTrue(modeStateBlocker.createNewFile());
+
+        File[] links0 = cdcLinks(0);
+        File[] links1 = cdcLinks(1);
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR, RESET_MODE),
+            "Failed to clear CDC directory");
+
+        for (File link : links0)
+            assertFalse("Segment link is not deleted: " + link, link.exists());
+
+        assertFalse(ft0.cdcWalState().toFile().exists());
+        assertFalse(ft0.cdcTypesState().toFile().exists());
+        assertFalse(ft0.cdcMappingsState().toFile().exists());
+        assertFalse(ft0.cdcCachesState().toFile().exists());
+        assertTrue(modeState.exists());
+
+        checkCdcCleared(1, links1, false);
+
+        // The command can be rerun after fixing the error.
+        assertTrue(modeStateBlocker.delete());
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, RESET_MODE),
+            "CDC directories were successfully cleared.");
+
+        checkCdcCleared(0, links0, false);
     }
 
     /** */
@@ -655,6 +706,102 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
 
         checkPrimaryKeysCaptured(grid(0), cnsmr0, KEYS_CNT, 2 * KEYS_CNT);
         checkPrimaryKeysCaptured(grid(1), cnsmr1, KEYS_CNT, 2 * KEYS_CNT);
+    }
+
+    /** Checks that the default CDC manager saves the CDC application mode even if the mode exists. */
+    @Test
+    public void testCdcClearOverwritesMode() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        NodeFileTree ft0 = fileTree(0);
+
+        File[] links0 = cdcLinks(0);
+
+        new CdcConsumerState(log, ft0).saveCdcMode(CdcMode.IGNITE_NODE_ACTIVE);
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, NODE_ID, grid(0).localNode().id().toString()),
+            "CDC directory was successfully cleared.");
+
+        checkCdcCleared(0, links0, true);
+
+        assertEquals(CdcMode.CDC_UTILITY_ACTIVE, new CdcConsumerState(log, ft0).loadCdcMode());
+    }
+
+    /**
+     * Checks that the command fails and nothing is deleted on the node if CDC manager forbids clearing.
+     * Other nodes are cleared.
+     */
+    @Test
+    public void testCdcClearForbiddenByCdcManager() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        File[] links0 = cdcLinks(0);
+        File[] links1 = cdcLinks(1);
+
+        replaceCdcManager(1, new TestCdcManager(fileTree(1), true));
+
+        assertContains(log, executeCommand(EXIT_CODE_UNEXPECTED_ERROR, CDC, CLEAR),
+            "CDC manager failed to prepare for clearing");
+
+        for (File link : links1)
+            assertTrue("Segment link is deleted: " + link, link.exists());
+
+        checkCdcNotCleared(1, 2);
+
+        // Clearing on other nodes doesn't depend on the failed node.
+        checkCdcCleared(0, links0, true);
+    }
+
+    /** Checks that CDC manager is notified before and after clearing, and the mode is saved only by the manager. */
+    @Test
+    public void testCdcClearNotifiesCdcManager() throws Exception {
+        injectTestSystemOut();
+
+        prepareForClear();
+
+        NodeFileTree ft0 = fileTree(0);
+
+        File[] links0 = cdcLinks(0);
+
+        new CdcConsumerState(log, ft0).saveCdcMode(CdcMode.IGNITE_NODE_ACTIVE);
+
+        TestCdcManager cdcMgr = new TestCdcManager(ft0, false);
+
+        replaceCdcManager(0, cdcMgr);
+
+        String nodeId = grid(0).localNode().id().toString();
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, NODE_ID, nodeId),
+            "CDC directory was successfully cleared.");
+
+        assertTrue(cdcMgr.walStateExistsBeforeClear);
+        assertFalse(cdcMgr.walStateExistsAfterClear);
+        assertFalse(cdcMgr.resetMode);
+
+        checkCdcCleared(0, links0, true);
+
+        assertEquals(CdcMode.IGNITE_NODE_ACTIVE, new CdcConsumerState(log, ft0).loadCdcMode());
+
+        assertContains(log, executeCommand(EXIT_CODE_OK, CDC, CLEAR, NODE_ID, nodeId, RESET_MODE),
+            "CDC directory was successfully cleared.");
+
+        assertTrue(cdcMgr.resetMode);
+
+        assertFalse(ft0.cdcState().toFile().exists());
+    }
+
+    /**
+     * Replaces CDC manager of the started node. The CDC clear job gets the manager of the node on each run.
+     *
+     * @param idx Node index.
+     * @param cdcMgr CDC manager.
+     */
+    private void replaceCdcManager(int idx, CdcManager cdcMgr) {
+        GridTestUtils.setFieldValue(grid(idx).context().cache().context(), "cdcMgr", cdcMgr);
     }
 
     /**
@@ -794,5 +941,57 @@ public class CdcCommandTest extends GridCommandHandlerAbstractTest {
     public static void waitForSize(UserCdcConsumer cnsmr, int expSize) throws Exception {
         assertTrue(waitForCondition(() -> expSize == cnsmr.data(UPDATE, CU.cacheId(DEFAULT_CACHE_NAME)).size(),
             60_000));
+    }
+
+    /** Custom CDC manager that captures CDC events within the Ignite node. */
+    private static class TestCdcManager extends GridCacheSharedManagerAdapter implements CdcManager {
+        /** File tree of the node. */
+        private final NodeFileTree ft;
+
+        /** Whether to forbid clearing. */
+        private final boolean forbidClear;
+
+        /** Whether the WAL state exists on {@link #beforeClear()}. */
+        private volatile boolean walStateExistsBeforeClear;
+
+        /** Whether the WAL state exists on {@link #afterClear(boolean)}. */
+        private volatile boolean walStateExistsAfterClear;
+
+        /** Reset mode flag of the last {@link #afterClear(boolean)} call. */
+        private volatile boolean resetMode;
+
+        /**
+         * @param ft File tree of the node.
+         * @param forbidClear Whether to forbid clearing.
+         */
+        TestCdcManager(NodeFileTree ft, boolean forbidClear) {
+            this.ft = ft;
+            this.forbidClear = forbidClear;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean enabled() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void collect(ByteBuffer dataBuf) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeClear() throws IgniteCheckedException {
+            if (forbidClear)
+                throw new IgniteCheckedException("Test CDC manager forbids clearing.");
+
+            walStateExistsBeforeClear = Files.exists(ft.cdcWalState());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterClear(boolean resetMode) {
+            walStateExistsAfterClear = Files.exists(ft.cdcWalState());
+
+            this.resetMode = resetMode;
+        }
     }
 }

@@ -391,5 +391,15 @@ public class CdcIgniteNodeActiveModeTest extends AbstractCdcTest {
         @Override public void collect(ByteBuffer dataBuf) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public void beforeClear() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterClear(boolean resetMode) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

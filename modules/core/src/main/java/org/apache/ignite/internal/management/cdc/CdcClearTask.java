@@ -1,12 +1,12 @@
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements. See the NOTICE file distributed with
+ * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -30,10 +30,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcFileLockHolder;
-import org.apache.ignite.internal.cdc.CdcMode;
-import org.apache.ignite.internal.cdc.CdcUtilityActiveCdcManager;
+import org.apache.ignite.internal.cdc.CdcManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.rollingupgrade.feature.CoreFeatureRegistry;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -57,7 +55,7 @@ public class CdcClearTask extends VisorMultiNodeTask<CdcClearCommandArg, Void, V
 
     /** {@inheritDoc} */
     @Override protected VisorJob<CdcClearCommandArg, Void> job(CdcClearCommandArg arg) {
-        return new CdcClearJob(arg, false);
+        return new CdcClearJob(arg, debug);
     }
 
     /** {@inheritDoc} */
@@ -97,45 +95,80 @@ public class CdcClearTask extends VisorMultiNodeTask<CdcClearCommandArg, Void, V
 
         /** {@inheritDoc} */
         @Override protected Void run(CdcClearCommandArg arg) throws IgniteException {
+            try {
+                clear(arg);
+
+                return null;
+            }
+            catch (Throwable e) {
+                // Compute logs job failures only in debug mode, and the task reports the error of a single node.
+                U.error(log, "Failed to clear CDC directory [resetMode=" + arg.resetMode() + ']', e);
+
+                throw e;
+            }
+        }
+
+        /**
+         * Clears the CDC directory of the local node.
+         *
+         * @param arg Command argument.
+         */
+        private void clear(CdcClearCommandArg arg) {
             if (!CU.isCdcEnabled(ignite.configuration()))
                 throw new IgniteException("CDC is not configured.");
 
             NodeFileTree ft = ignite.context().pdsFolderResolver().fileTree();
 
-            CdcFileLockHolder lock = new CdcFileLockHolder(ft.walCdc().getAbsolutePath(), "Clear CDC job", log);
+            if (!ft.walCdc().isDirectory()) {
+                throw new IgniteException("Failed to clear CDC directory. The directory does not exist " +
+                    "[dir=" + ft.walCdc().getAbsolutePath() + ']');
+            }
+
+            CdcManager cdcMgr = ignite.context().cache().context().cdc();
+
+            CdcFileLockHolder lock = lock(ft);
 
             try {
-                lock.tryLock(1);
+                try {
+                    cdcMgr.beforeClear();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to clear CDC directory. CDC manager failed to prepare for clearing " +
+                        "[cdcManager=" + cdcMgr.getClass().getName() + ", reason=" + e.getMessage() + ']', e);
+                }
 
-                // Links go first, in ascending order: on partial failure the remaining links follow the kept WAL state,
-                // so the CDC application fails on start instead of consuming them.
+                // Order matters on partial failure: links go first in ascending order, so the kept links remain a contiguous
+                // tail, then the state with the WAL state last and the mode after it. So if the WAL state is kept, the CDC
+                // application either resumes from it or fails on start, but never silently skips events, types, mappings or caches.
                 File[] links = ft.walCdcSegments();
+
+                if (links == null)
+                    throw new IOException("Failed to list WAL segment links");
 
                 Arrays.sort(links, Comparator.comparingLong(link -> ft.walSegmentIndex(link.toPath())));
 
-                for (File link : links)
-                    Files.delete(link.toPath());
+                int deletedLinksCnt = 0;
+
+                for (File link : links) {
+                    if (Files.deleteIfExists(link.toPath()))
+                        deletedLinksCnt++;
+                }
+
+                deleteStateExceptMode(ft);
 
                 if (arg.resetMode()) {
+                    Files.deleteIfExists(ft.cdcModeState());
+
                     if (Files.exists(ft.cdcState()) && !U.delete(ft.cdcState()))
                         throw new IgniteException("Failed to delete CDC state directory [dir=" + ft.cdcState() + ']');
                 }
-                else {
-                    deleteStateExceptMode(ft);
-                    saveUtilityActiveModeIfAbsent(ft);
-                }
+
+                cdcMgr.afterClear(arg.resetMode());
 
                 log.info("CDC directory cleared [dir=" + ft.walCdc().getAbsolutePath() +
-                    ", deletedLinksCnt=" + links.length + ']');
-
-                return null;
+                    ", deletedLinksCnt=" + deletedLinksCnt + ']');
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to clear CDC directory. " +
-                    "Unable to acquire lock to the CDC folder. Make sure a CDC app is shut down " +
-                    "[dir=" + ft.walCdc().getAbsolutePath() + ", reason=" + e.getMessage() + ']', e);
-            }
-            catch (IOException e) {
+            catch (IOException | IgniteCheckedException e) {
                 throw new IgniteException("Failed to clear CDC directory " +
                     "[dir=" + ft.walCdc().getAbsolutePath() + ']', e);
             }
@@ -144,41 +177,41 @@ public class CdcClearTask extends VisorMultiNodeTask<CdcClearCommandArg, Void, V
             }
         }
 
+        /** Acquires lock on the CDC directory. */
+        private CdcFileLockHolder lock(NodeFileTree ft) {
+            CdcFileLockHolder lock = new CdcFileLockHolder(ft.walCdc().getAbsolutePath(), "Clear CDC job", log);
+
+            try {
+                lock.tryLock(1);
+
+                return lock;
+            }
+            catch (IgniteCheckedException e) {
+                U.closeQuiet(lock);
+
+                throw new IgniteException("Failed to clear CDC directory. " +
+                    "Unable to acquire lock to the CDC folder. Make sure a CDC app is shut down " +
+                    "and no other CDC command is running on the node " +
+                    "[dir=" + ft.walCdc().getAbsolutePath() + ", reason=" + e.getMessage() + ']', e);
+            }
+        }
+
         /**
-         * Deletes CDC application state except the mode, otherwise the application waits for
-         * {@code CdcManagerStopRecord}, which is not logged again.
+         * Deletes CDC application state except the mode.
          *
          * @param ft Node file tree.
          */
         private void deleteStateExceptMode(NodeFileTree ft) throws IOException {
-            // Including temporary files left after a failed save.
+            // Including temporary files left after a failed save. The WAL state goes last.
             List<Path> stateFiles = List.of(
-                ft.cdcWalState(), ft.tmpCdcWalState(),
                 ft.cdcCachesState(), ft.tmpCdcCachesState(),
                 ft.cdcMappingsState(), ft.tmpCdcMappingsState(),
                 ft.cdcTypesState(), ft.tmpCdcTypesState(),
-                ft.tmpCdcModeState());
+                ft.tmpCdcModeState(),
+                ft.tmpCdcWalState(), ft.cdcWalState());
 
             for (Path file : stateFiles)
                 Files.deleteIfExists(file);
-        }
-
-        /**
-         * Saves {@link CdcMode#CDC_UTILITY_ACTIVE} for the default CDC manager if the mode is absent:
-         * {@code CdcManagerStopRecord} is logged once on node start and may be in a deleted link.
-         *
-         * @param ft Node file tree.
-         */
-        private void saveUtilityActiveModeIfAbsent(NodeFileTree ft) throws IOException {
-            boolean dfltMgr = ignite.context().cache().context().cdc() instanceof CdcUtilityActiveCdcManager;
-
-            if (!dfltMgr || Files.exists(ft.cdcModeState()))
-                return;
-
-            // Absent if the CDC application has never started.
-            Files.createDirectories(ft.cdcState());
-
-            new CdcConsumerState(log, ft).saveCdcMode(CdcMode.CDC_UTILITY_ACTIVE);
         }
     }
 }

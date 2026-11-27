@@ -420,6 +420,16 @@ public class CdcManagerTest extends GridCommonAbstractTest {
             return true;
         }
 
+        /** {@inheritDoc} */
+        @Override public void beforeClear() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterClear(boolean resetMode) {
+            throw new UnsupportedOperationException();
+        }
+
         /** @return CdcManager for specified Ignite node. */
         static TestCdcManager cdcMgr(IgniteEx ign) {
             return (TestCdcManager)ign.context().cache().context().cdc();
@@ -465,6 +475,16 @@ public class CdcManagerTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public boolean enabled() {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeClear() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterClear(boolean resetMode) {
+            throw new UnsupportedOperationException();
         }
     }
 }

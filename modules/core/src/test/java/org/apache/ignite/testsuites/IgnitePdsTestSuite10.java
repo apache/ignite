@@ -79,6 +79,8 @@ public class IgnitePdsTestSuite10 {
 
         addRealPageStoreTests(suite, ignoredTests);
 
+        GridTestUtils.addTestIfNeeded(suite, CdcClearRollingUpgradeTest.class, ignoredTests);
+
         return suite;
     }
 
@@ -92,7 +94,6 @@ public class IgnitePdsTestSuite10 {
      */
     public static void addRealPageStoreTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
         GridTestUtils.addTestIfNeeded(suite, CdcCacheVersionTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, CdcClearRollingUpgradeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcManagerTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CheckpointFailBeforeWriteMarkTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CheckpointFreeListTest.class, ignoredTests);

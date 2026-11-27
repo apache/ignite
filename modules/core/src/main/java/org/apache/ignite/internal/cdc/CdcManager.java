@@ -49,6 +49,10 @@ import org.apache.ignite.plugin.PluginProvider;
  *         last consumed {@link CdcManagerRecord}.
  *     </li>
  *     <li>
+ *         This manager is notified with {@link #beforeClear()} and {@link #afterClear(boolean)} when the CDC directory
+ *         is cleared.
+ *     </li>
+ *     <li>
  *         Apache Ignite provides a default implementation - {@link CdcUtilityActiveCdcManager}. It is disabled from the
  *         beginning, logs the {@link CdcManagerStopRecord} after Ignite node started, and then delegates consuming CDC
  *         events to the {@link CdcMain} utility.
@@ -114,4 +118,45 @@ public interface CdcManager extends GridCacheSharedManager {
      * @param dataBuf Buffer that contains data to collect.
      */
     public void collect(ByteBuffer dataBuf);
+
+    /**
+     * Callback is executed before the CDC directory is cleared: WAL segment links and {@link CdcMain} state are deleted.
+     * <p> Implementation suggestions:
+     * <ul>
+     *     <li>
+     *         Method can forbid clearing by throwing an exception, e.g. if this manager is enabled and its consumer state
+     *         can't be reset. Nothing is deleted then.
+     *     </li>
+     *     <li>
+     *         Clearing can fail after this method returns, and the manager isn't notified about it.
+     *         So the method must not make changes that have to be rolled back.
+     *     </li>
+     *     <li>Method must be idempotent: clearing can be repeated after a partial failure.</li>
+     *     <li>The CDC directory may be locked while the method runs to prevent {@link CdcMain} from starting.</li>
+     *     <li>Method runs concurrently with {@link #collect(ByteBuffer)}.</li>
+     * </ul>
+     *
+     * @throws IgniteCheckedException If the CDC directory must not be cleared or the manager failed to prepare for clearing.
+     */
+    public void beforeClear() throws IgniteCheckedException;
+
+    /**
+     * Callback is executed after the CDC directory is cleared: WAL segment links and {@link CdcMain} state are deleted.
+     * It is expected not to be executed if clearing failed.
+     * <p> Implementation suggestions:
+     * <ul>
+     *     <li>
+     *         {@link CdcManagerStopRecord} logged by this manager might be in a deleted segment link, so {@link CdcMain}
+     *         doesn't switch to {@link CdcMode#CDC_UTILITY_ACTIVE} mode by it. Save the mode with
+     *         {@link CdcConsumerState#saveCdcMode(CdcMode)} if events are consumed by {@link CdcMain}.
+     *     </li>
+     *     <li>Method must be idempotent: clearing can be repeated after a partial failure.</li>
+     *     <li>The CDC directory may be locked while the method runs to prevent {@link CdcMain} from starting.</li>
+     *     <li>Method runs concurrently with {@link #collect(ByteBuffer)}.</li>
+     * </ul>
+     *
+     * @param resetMode {@code True} if the CDC mode state is deleted too.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void afterClear(boolean resetMode) throws IgniteCheckedException;
 }
