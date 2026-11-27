@@ -111,9 +111,8 @@ public interface GridSecurityProcessor extends GridProcessor {
         throws SecurityException;
 
     /**
-     * Authorizes a management task: an Ignite internal task executed through the public API, e.g. by a control.sh
-     * command. Unlike user tasks, such tasks are not authorized with {@link SecurityPermission#TASK_EXECUTE}.
-     * These tasks are also checked against the permissions declared by {@link PublicAccessJob#requiredPermissions()}.
+     * Authorizes a management task called through the public API, e.g. control.sh.
+     * Runs before the job permission checks defined by {@link PublicAccessJob#requiredPermissions()}.
      *
      * @param taskCls Task class.
      * @param arg Task argument.
