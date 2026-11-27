@@ -158,7 +158,8 @@ include::{javaFile}[tag=disable-validation,indent=0]
 
 == Upgrading Certificates
 
-You can replace certificate files and reload them without restarting nodes that use `SslContextFactory`.
+Certificate hot reload lets nodes that use `SslContextFactory` load replacement certificates without restarting.
+You can request a reload immediately or let Ignite reload certificates automatically before they expire.
 The link:tools/control-script#reloading-tls-certificates[`--ssl reload` command] updates TCP transports on all server and thick-client nodes.
 It also reloads the link:restapi#https[HTTP REST endpoint] when its Jetty connector uses HTTPS.
 External client applications reload their certificates separately.

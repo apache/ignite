@@ -433,7 +433,7 @@ Register name: `communication.tcp.{node_consistent_id}`
 |sentMessagesToNode | long | Total number of messages sent by current node to the given node.
 |===
 
-== Automatic Certificate Reload
+== Certificate Hot Reload
 
 Register name: `ssl`
 
