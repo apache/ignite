@@ -218,9 +218,14 @@ public class SqlToNativeCommandConverter {
         String schemaName = deriveSchemaName(sqlCmd.name, ctx);
         String viewName = deriveObjectName(sqlCmd.name, ctx, "View name");
 
-        // Preserve parentheses required around expression-based FETCH when the view SQL is parsed again.
-        return new SqlCreateViewCommand(schemaName, viewName,
-            sqlCmd.query.toSqlString(CalciteSqlDialect.DEFAULT, true).toString(), sqlCmd.getReplace());
+        // Keep niladic function names unquoted and preserve parentheses required by expression-based FETCH.
+        String viewSql = sqlCmd.query.toSqlString(c -> c.withDialect(CalciteSqlDialect.DEFAULT)
+            .withQuoteAllIdentifiers(false)
+            .withAlwaysUseParentheses(true)
+            .withIndentation(0)
+        ).getSql();
+
+        return new SqlCreateViewCommand(schemaName, viewName, viewSql, sqlCmd.getReplace());
     }
 
     /**
