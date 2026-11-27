@@ -31,6 +31,7 @@ import org.apache.calcite.schema.TableMacro;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.prepare.BaseQueryContext;
@@ -55,11 +56,25 @@ public class ViewTableMacroImpl implements TableMacro {
     /** */
     private final FrameworkConfig frameworkCfg;
 
-    /** Ctor. */
-    public ViewTableMacroImpl(String viewSql, SchemaPlus schema, FrameworkConfig frameworkCfg) {
+    /** */
+    private final CalciteQueryEngineConfiguration qryEngineCfg;
+
+    /**
+     * @param viewSql View SQL.
+     * @param schema View schema.
+     * @param frameworkCfg Framework config.
+     * @param qryEngineCfg Query engine configuration.
+     */
+    public ViewTableMacroImpl(
+        String viewSql,
+        SchemaPlus schema,
+        FrameworkConfig frameworkCfg,
+        CalciteQueryEngineConfiguration qryEngineCfg
+    ) {
         this.viewSql = viewSql;
         this.schema = schema;
         this.frameworkCfg = frameworkCfg;
+        this.qryEngineCfg = qryEngineCfg;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +86,7 @@ public class ViewTableMacroImpl implements TableMacro {
         try {
             IgnitePlanner planner = PlanningContext.builder()
                 .parentContext(BaseQueryContext.builder().frameworkConfig(frameworkCfg).defaultSchema(schema).build())
+                .queryEngineConfiguration(qryEngineCfg)
                 .build()
                 .planner();
 

@@ -468,7 +468,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         performanceStatisticsProcessor(ctx.performanceStatistics());
         iteratorsHolder(new ClosableIteratorsHolder(log));
 
-        CalciteQueryProcessor proc = queryProcessor(ctx);
+        CalciteQueryProcessor proc = CalciteQueryProcessor.queryProcessor(ctx);
         queryPlanCache(proc.queryPlanCache());
         schemaHolder(proc.schemaHolder());
         taskExecutor(proc.taskExecutor());

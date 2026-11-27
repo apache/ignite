@@ -98,7 +98,7 @@ public final class Commons {
      * @param ctx QueryContext.
      * @return Planner context.
      */
-    public static Context convert(QueryContext ctx) {
+    public static Context convert(@Nullable QueryContext ctx) {
         return ctx == null ? Contexts.empty() : Contexts.of(ctx.unwrap(Object[].class));
     }
 

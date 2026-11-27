@@ -29,9 +29,9 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RuleSet;
 import org.apache.calcite.util.CancelFlag;
+import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_RECURSIVE_CTE_ITERATION_LIMIT;
@@ -67,6 +67,9 @@ public final class PlanningContext implements Context {
     /** Maximum number of recursive CTE iterations, or a negative value for no limit. */
     private int recursiveCteIterationLimit = DFLT_RECURSIVE_CTE_ITERATION_LIMIT;
 
+    /** */
+    private final @Nullable CalciteQueryEngineConfiguration qryEngineCfg;
+
     /**
      * Private constructor, used by a builder.
      */
@@ -74,7 +77,8 @@ public final class PlanningContext implements Context {
         Context parentCtx,
         String qry,
         @Nullable Object[] parameters,
-        long plannerTimeout
+        long plannerTimeout,
+        @Nullable CalciteQueryEngineConfiguration qryEngineCfg
     ) {
         this.qry = qry;
         this.parameters = parameters;
@@ -82,6 +86,7 @@ public final class PlanningContext implements Context {
         this.parentCtx = parentCtx;
         startTs = U.currentTimeMillis();
         this.plannerTimeout = plannerTimeout;
+        this.qryEngineCfg = qryEngineCfg;
     }
 
     /**
@@ -223,6 +228,11 @@ public final class PlanningContext implements Context {
         return unwrap(BaseQueryContext.class).rexBuilder();
     }
 
+    /** @return Query engine configuration. */
+    public @Nullable CalciteQueryEngineConfiguration queryEngineConfiguration() {
+        return qryEngineCfg;
+    }
+
     /**
      * Planner context builder.
      */
@@ -240,11 +250,14 @@ public final class PlanningContext implements Context {
         /** */
         private long plannerTimeout;
 
+        /** */
+        private @Nullable CalciteQueryEngineConfiguration qryEngineCfg;
+
         /**
          * @param parentCtx Parent context.
          * @return Builder for chaining.
          */
-        public Builder parentContext(@NotNull Context parentCtx) {
+        public Builder parentContext(Context parentCtx) {
             this.parentCtx = parentCtx;
             return this;
         }
@@ -253,7 +266,7 @@ public final class PlanningContext implements Context {
          * @param qry Query.
          * @return Builder for chaining.
          */
-        public Builder query(@NotNull String qry) {
+        public Builder query(String qry) {
             this.qry = qry;
             return this;
         }
@@ -263,7 +276,7 @@ public final class PlanningContext implements Context {
          * @return Builder for chaining.
          */
         @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
-        public Builder parameters(@NotNull Object... parameters) {
+        public Builder parameters(Object... parameters) {
             this.parameters = parameters;
             return this;
         }
@@ -279,12 +292,22 @@ public final class PlanningContext implements Context {
         }
 
         /**
+         * @param qryEngineCfg Query engine configuration.
+         * @return Builder for chaining.
+         */
+        public Builder queryEngineConfiguration(CalciteQueryEngineConfiguration qryEngineCfg) {
+            this.qryEngineCfg = qryEngineCfg;
+
+            return this;
+        }
+
+        /**
          * Builds planner context.
          *
          * @return Planner context.
          */
         public PlanningContext build() {
-            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout);
+            return new PlanningContext(parentCtx, qry, parameters, plannerTimeout, qryEngineCfg);
         }
     }
 }
