@@ -200,17 +200,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 Details = message;
             }
 
+            // Formatter-based exception serialization requires the deprecated base ctor:
+            // Message can only be restored by Exception(SerializationInfo, StreamingContext).
+#pragma warning disable SYSLIB0051 // Exception serialization ctor is obsolete
             protected CustomStoreException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
+#pragma warning restore SYSLIB0051
             {
                 Details = info.GetString("details");
             }
 
+#pragma warning disable SYSLIB0051, CS0672 // Exception.GetObjectData is obsolete
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 info.AddValue("details", Details);
 
                 base.GetObjectData(info, context);
             }
+#pragma warning restore SYSLIB0051, CS0672
         }
     }
 }

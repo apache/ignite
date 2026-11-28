@@ -427,14 +427,18 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
             /// </summary>
             private EmptyObject(SerializationInfo info, StreamingContext context)
             {
+#if NETFRAMEWORK
                 Assert.AreEqual(StreamingContextStates.All, context.State);
+#endif
                 Assert.IsNull(context.Context);
             }
 
             /** <inheritdoc /> */
             public void GetObjectData(SerializationInfo info, StreamingContext context)
             {
+#if NETFRAMEWORK
                 Assert.AreEqual(StreamingContextStates.All, context.State);
+#endif
                 Assert.IsNull(context.Context);
             }
         }

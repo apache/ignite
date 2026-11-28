@@ -110,7 +110,12 @@ namespace Apache.Ignite.Core.Tests.Client
             // Converting from JKS to PFX:
             // keytool -importkeystore -srckeystore thekeystore.jks -srcstoretype JKS
             // -destkeystore thekeystore.pfx -deststoretype PKCS12
+#if NETFRAMEWORK
             return new X509Certificate2(Path.Combine("Config", "Client", "thin-client-cert.pfx"), "123456");
+#else
+            return X509CertificateLoader.LoadPkcs12FromFile(
+                Path.Combine("Config", "Client", "thin-client-cert.pfx"), "123456");
+#endif
         }
 
         /// <summary>

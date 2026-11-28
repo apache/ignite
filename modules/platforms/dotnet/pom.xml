@@ -61,12 +61,12 @@
                         <id>build-dotnet</id>
                         <phase>generate-sources</phase>
                         <configuration>
-                            <tasks>
+                            <target>
                                 <exec executable="pwsh" dir="${project.basedir}" failonerror="true">
                                     <arg line="${project.basedir}/build.ps1"/>
                                     <arg line="-skipJava -skipExamples"/>
                                 </exec>
-                            </tasks>
+                            </target>
                         </configuration>
                         <goals>
                             <goal>run</goal>

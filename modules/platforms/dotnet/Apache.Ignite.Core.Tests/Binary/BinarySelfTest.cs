@@ -1884,9 +1884,17 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
 
             // ReSharper disable once UnusedMember.Global
-            protected TestHashTable(SerializationInfo info, StreamingContext context) : base(info, context)
+            protected TestHashTable(SerializationInfo info, StreamingContext context)
             {
-                // No-op.
+                // Hashtable serialization ctor is obsolete on modern .NET (SYSLIB0051).
+                // Restore entries manually from the data written by Hashtable.GetObjectData.
+                var keys = (object[]) info.GetValue("Keys", typeof(object[]));
+                var values = (object[]) info.GetValue("Values", typeof(object[]));
+
+                for (var i = 0; i < keys.Length; i++)
+                {
+                    Add(keys[i], values[i]);
+                }
             }
         }
 

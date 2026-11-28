@@ -106,7 +106,11 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         }
 
         [Serializable]
+        // Ignite's SerializableSerializer supports the IObjectReference hook; the interface is
+        // deprecated by .NET but is still functional and intentionally exercised by this test.
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
         private class ObjectInfoHolder : IObjectReference, ISerializable
+#pragma warning restore SYSLIB0050
         {
             public Type ObjectType { get; set; }
 
