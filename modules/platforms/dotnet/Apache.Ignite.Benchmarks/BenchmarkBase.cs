@@ -167,7 +167,7 @@ namespace Apache.Ignite.Benchmarks
                 PrintDebug("Waiting worker threads to start: " + Threads);
 
                 // Await for all threads to start in spin loop.
-                while (Thread.VolatileRead(ref _readyThreads) < Threads)
+                while (Volatile.Read(ref _readyThreads) < Threads)
                     Thread.Sleep(10);
 
                 PrintDebug("Worker threads started: " + Threads);

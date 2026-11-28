@@ -107,11 +107,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(name, javaEx.JavaMessage);
             Assert.IsTrue(javaEx.JavaClassName.EndsWith("." + name));
 
+#if NETFRAMEWORK
             // Check serialization.
             var formatter = new BinaryFormatter();
             using (var ms = new MemoryStream())
             {
-#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete
                 formatter.Serialize(ms, ex);
 
                 ms.Seek(0, SeekOrigin.Begin);
@@ -132,8 +132,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(javaEx.StackTrace, resJavaEx.StackTrace);
                 Assert.AreEqual(javaEx.Source, resJavaEx.Source);
                 Assert.AreEqual(javaEx.HelpLink, resJavaEx.HelpLink);
-#pragma warning restore SYSLIB0011 // BinaryFormatter is obsolete
             }
+#endif
         }
 
         /// <summary>
@@ -194,7 +194,12 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var type in types)
             {
+#if NETFRAMEWORK
                 Assert.IsTrue(type.IsSerializable, "Exception is not serializable: " + type);
+#else
+                // IsSerializable is obsolete on modern .NET; check the attribute directly.
+                Assert.IsTrue(type.IsDefined(typeof(SerializableAttribute), false), "Exception is not serializable: " + type);
+#endif
 
                 // Default ctor.
                 var defCtor = type.GetConstructor(new Type[0]);
@@ -211,16 +216,16 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("myMessage", ex.Message);
 
                 // Serialization.
+#if NETFRAMEWORK
                 var stream = new MemoryStream();
                 var formatter = new BinaryFormatter();
 
-#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete
                 formatter.Serialize(stream, ex);
                 stream.Seek(0, SeekOrigin.Begin);
 
                 ex = (Exception) formatter.Deserialize(stream);
                 Assert.AreEqual("myMessage", ex.Message);
-#pragma warning restore SYSLIB0011 // BinaryFormatter is obsolete
+#endif
 
                 // Message+cause ctor.
                 var msgCauseCtor = type.GetConstructor(new[] { typeof(string), typeof(Exception) });
@@ -238,17 +243,16 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static void TestPartialUpdateExceptionSerialization(Exception ex)
         {
+#if NETFRAMEWORK
             var formatter = new BinaryFormatter();
 
             var stream = new MemoryStream();
 
-#pragma warning disable SYSLIB0011 // BinaryFormatter is obsolete
             formatter.Serialize(stream, ex);
 
             stream.Seek(0, SeekOrigin.Begin);
 
             var ex0 = (Exception) formatter.Deserialize(stream);
-#pragma warning restore SYSLIB0011 // BinaryFormatter is obsolete
 
             var updateEx = ((CachePartialUpdateException) ex);
 
@@ -273,6 +277,10 @@ namespace Apache.Ignite.Core.Tests
             }
 
             Assert.AreEqual(ex, ex0);
+#else
+            // BinaryFormatter is not supported on modern .NET: skip the serialization round-trip.
+            Assert.Ignore("BinaryFormatter serialization check requires .NET Framework.");
+#endif
         }
 
         /// <summary>

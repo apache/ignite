@@ -284,23 +284,23 @@ namespace Apache.Ignite.Core.Tests
                 {
                     Interlocked.Increment(ref localReceived);
                     Thread.MemoryBarrier();
-                    return Thread.VolatileRead(ref stopLocal) == 0;
+                    return Volatile.Read(ref stopLocal) == 0;
                 });
 
                 messaging.LocalListen(localListener);
 
                 Thread.Sleep(100);
 
-                Thread.VolatileWrite(ref stopLocal, 1);
+                Volatile.Write(ref stopLocal, 1);
 
                 Thread.Sleep(1000);
 
-                var result = Thread.VolatileRead(ref localReceived);
+                var result = Volatile.Read(ref localReceived);
 
                 Thread.Sleep(100);
 
                 // Check that unsubscription worked properly
-                Assert.AreEqual(result, Thread.VolatileRead(ref localReceived));
+                Assert.AreEqual(result, Volatile.Read(ref localReceived));
 
                 messaging.StopLocalListen(sharedListener);
 
@@ -310,14 +310,14 @@ namespace Apache.Ignite.Core.Tests
 
             Thread.Sleep(100);
 
-            var sharedResult = Thread.VolatileRead(ref sharedReceived);
+            var sharedResult = Volatile.Read(ref sharedReceived);
 
             messaging.Send(NextMessage());
 
             Thread.Sleep(MessagingTestHelper.SleepTimeout);
 
             // Check that unsubscription worked properly
-            Assert.AreEqual(sharedResult, Thread.VolatileRead(ref sharedReceived));
+            Assert.AreEqual(sharedResult, Volatile.Read(ref sharedReceived));
         }
 
         /// <summary>

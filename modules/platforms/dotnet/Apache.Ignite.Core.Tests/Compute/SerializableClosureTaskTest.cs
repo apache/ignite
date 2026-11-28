@@ -179,18 +179,24 @@ namespace Apache.Ignite.Core.Tests.Compute
             /// </summary>
             /// <param name="info"></param>
             /// <param name="context"></param>
+            // Formatter-based exception serialization requires the deprecated base ctor:
+            // Message can only be restored by Exception(SerializationInfo, StreamingContext).
+#pragma warning disable SYSLIB0051 // Exception serialization ctor is obsolete
             protected SerializableException(SerializationInfo info, StreamingContext context) : base(info, context)
+#pragma warning restore SYSLIB0051
             {
                 Msg = info.GetString("msg");
             }
 
             /** <inheritDoc /> */
+#pragma warning disable SYSLIB0051, CS0672 // Exception.GetObjectData is obsolete
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 info.AddValue("msg", Msg);
 
                 base.GetObjectData(info, context);
             }
+#pragma warning restore SYSLIB0051, CS0672
         }
 
         /// <summary>

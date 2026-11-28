@@ -2,7 +2,7 @@ Requirements
 ============
 
 * Oracle JDK 17
-* .NET 6 SDK
+* .NET 10 SDK
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86)
 * Apache Maven bin directory in PATH, or MAVEN_HOME environment variable
 * PowerShell
@@ -20,7 +20,7 @@ Resulting binaries will be in bin folder, and NuGet packages in nupkg folder.
 Build Apache Ignite .NET with Maven
 ===================================
 
-Note that .NET 6 SDK and PowerShell must be installed first.
+Note that .NET 10 SDK and PowerShell must be installed first.
 
 The command below will build the binaries and NuGet packages with Maven:
 

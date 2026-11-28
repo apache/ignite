@@ -741,11 +741,14 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inheritDoc /> */
+#if !NETFRAMEWORK
+            [Obsolete]
+#endif
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
+                // Exception.GetObjectData is obsolete (SYSLIB0051) and not needed: the serialization
+                // ctor only reads the "mode" value.
                 info.AddValue("mode", (int)Mode);
-
-                base.GetObjectData(info, context);
             }
         }
 
